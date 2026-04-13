@@ -35,7 +35,7 @@ auth.onAuthStateChanged(async (user) => {
 
 </head>
 
-auth.onAuthStateChanged(async (user) => {
+(async (user) => {
   if (user) {
     usuarioFirebase = user;
     await carregarFirestore();
