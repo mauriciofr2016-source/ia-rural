@@ -1471,76 +1471,83 @@ function montarDiagnostico() {
 }
 
 function gerarRespostaLocal(pergunta) {
-  const p = pergunta.trim();
+  const p = pergunta.toLowerCase();
 
-  switch (vetState.etapa) {
-    case 'inicio':
-      vetState.animalNome = p;
-      vetState.etapa = 'idade';
-      return `Certo. Qual é a idade aproximada de ${vetState.animalNome}?`;
+  // 🟢 DIARREIA (RESPOSTA DIRETA COMPLETA)
+  if (
+    p.includes("diarreia") ||
+    p.includes("cagando mole") ||
+    p.includes("fezes mole") ||
+    p.includes("fezes líquidas")
+  ) {
+    return `
+🐄 <strong>Possível diagnóstico:</strong><br>
+Diarreia pode ser causada por mudança de alimentação, verminose ou infecção intestinal.<br><br>
 
-    case 'idade':
-      vetState.idade = p;
-      vetState.etapa = 'sintoma';
-      return `Entendi. Qual é o sintoma principal que ${vetState.animalNome} está apresentando?`;
+💊 <strong>O que fazer:</strong><br>
+1. Ofereça bastante água limpa<br>
+2. Pode usar soro oral (reidratação)<br>
+3. Se tiver, usar probiótico (tipo Bovino Biológico)<br>
+4. Vermífugo pode ser necessário se for verminose<br><br>
 
-    case 'sintoma':
-      vetState.sintoma = p;
-      vetState.etapa = 'tempo';
-      return `Há quanto tempo esse sintoma começou?`;
-
-    case 'tempo':
-      vetState.tempo = p;
-      vetState.etapa = 'come';
-      return `${vetState.animalNome} está comendo normalmente?`;
-
-    case 'come':
-      vetState.come = p;
-      vetState.etapa = 'bebeAgua';
-      return `E está bebendo água normalmente?`;
-
-    case 'bebeAgua':
-      vetState.bebeAgua = p;
-      vetState.etapa = 'febre';
-      return `Você notou febre ou temperatura alta?`;
-
-    case 'febre':
-      vetState.febre = p;
-      vetState.etapa = 'fezes';
-      return `Como estão as fezes? Pode me dizer cor e consistência?`;
-
-    case 'fezes':
-      vetState.fezes = p;
-      vetState.etapa = 'locomocao';
-      return `${vetState.animalNome} está se locomovendo normalmente?`;
-
-    case 'locomocao':
-      vetState.locomocao = p;
-      vetState.etapa = 'secrecao';
-      return `Você percebeu alguma secreção nasal, ocular ou vaginal?`;
-
-    case 'secrecao':
-      vetState.secrecao = p;
-      vetState.etapa = 'lactacao';
-      return `${vetState.animalNome} está em lactação?`;
-
-    case 'lactacao':
-      vetState.lactacao = p;
-      vetState.etapa = 'prenha';
-      return `${vetState.animalNome} está prenha?`;
-
-    case 'prenha':
-      vetState.prenha = p;
-      vetState.etapa = 'final';
-      return montarDiagnostico();
-
-    case 'final':
-      return `Se quiser iniciar outro atendimento, clique em <strong>↺ Nova</strong>.`;
-
-    default:
-      resetVetState();
-      return `Vamos recomeçar. Qual é o nome do animal que está apresentando sintomas?`;
+⚠️ <strong>Atenção:</strong><br>
+Se continuar por mais de 2 dias ou o animal ficar fraco → chame veterinário<br>
+`;
   }
+
+  // 🟢 FEBRE
+  if (p.includes("febre") || p.includes("quente")) {
+    return `
+🐄 <strong>Possível problema:</strong><br>
+Infecção no organismo<br><br>
+
+💊 <strong>Tratamento:</strong><br>
+- Antitérmico (dipirona veterinária)<br>
+- Pode precisar antibiótico (com orientação)<br><br>
+
+⚠️ Se passar de 40°C → URGENTE
+`;
+  }
+
+  // 🟢 NÃO COME
+  if (p.includes("não come") || p.includes("parou de comer")) {
+    return `
+🐄 <strong>Alerta:</strong><br>
+Animal sem comer é sinal importante<br><br>
+
+💊 <strong>Possível ação:</strong><br>
+- Verificar febre<br>
+- Verificar dor<br>
+- Pode usar estimulante ruminal<br><br>
+
+⚠️ Se ficar mais de 1 dia → investigar
+`;
+  }
+
+  // 🟢 QUEDA DE LEITE
+  if (p.includes("leite caiu") || p.includes("menos leite")) {
+    return `
+🐄 <strong>Possível causa:</strong><br>
+Mastite ou estresse<br><br>
+
+💊 <strong>O que fazer:</strong><br>
+- Verificar úbere<br>
+- Teste da caneca<br>
+- Pode usar antibiótico intramamário<br>
+`;
+  }
+
+  // 🟢 RESPOSTA INTELIGENTE PADRÃO
+  return `
+🐄 Me diga melhor o que está acontecendo com o animal.<br><br>
+
+Exemplo:<br>
+- Está com diarreia?<br>
+- Está com febre?<br>
+- Parou de comer?<br><br>
+
+Que eu te ajudo com diagnóstico e tratamento.
+`;
 }
 function novaConsulta() {
   if (!confirm('Iniciar uma nova consulta? O histórico desta consulta será apagado.')) return;
