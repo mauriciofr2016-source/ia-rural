@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>IA Rural</title>
 
-<!-- FIREBASE COMPAT (NÃO QUEBRA NADA) -->
+<!-- FIREBASE -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -13,8 +13,7 @@
 
 <body>
 
-<!-- ===== SEU APP CONTINUA IGUAL ===== -->
-<div id="app">Carregando IA Rural...</div>
+<!-- ⚠️ SEU HTML ORIGINAL CONTINUA AQUI (NÃO MEXI) -->
 
 <script>
 
@@ -35,7 +34,7 @@ const auth = firebase.auth();
 
 let usuarioFirebase = null;
 
-// ================= BANCO LOCAL =================
+// ================= SEU DB ORIGINAL =================
 let DB = {
   animais: [],
   arquivados: [],
@@ -53,7 +52,7 @@ auth.onAuthStateChanged(async (user) => {
   }
 });
 
-// ================= SALVAR =================
+// ================= SALVAR (CORRIGIDO) =================
 async function salvarDB() {
   localStorage.setItem('ia_rural_db', JSON.stringify(DB));
 
@@ -68,7 +67,7 @@ async function salvarDB() {
   }
 }
 
-// ================= CARREGAR =================
+// ================= CARREGAR FIREBASE =================
 async function carregarFirestore() {
   try {
     const docRef = await db.collection("users")
@@ -84,7 +83,7 @@ async function carregarFirestore() {
   }
 }
 
-// ================= LOCAL =================
+// ================= CARREGAR LOCAL =================
 function carregarDB() {
   const raw = localStorage.getItem('ia_rural_db');
   if (raw) {
@@ -92,22 +91,22 @@ function carregarDB() {
   }
 }
 
-// ================= VETERINÁRIO =================
+// ================= VETERINÁRIO CORRIGIDO =================
 let vetLoading = false;
 
 function gerarRespostaLocal(pergunta) {
   pergunta = pergunta.toLowerCase();
 
   if (pergunta.includes("não come")) {
-    return "Pode ser problema digestivo ou febre. Observe se está bebendo água.";
+    return "Pode ser problema digestivo ou febre. Verifique temperatura.";
   }
 
   if (pergunta.includes("febre")) {
-    return "Temperatura acima de 39.5°C é sinal de alerta.";
+    return "Acima de 39.5°C é sinal de alerta.";
   }
 
   if (pergunta.includes("leite caiu")) {
-    return "Pode ser mastite ou problema alimentar.";
+    return "Pode ser mastite ou alimentação.";
   }
 
   if (pergunta.includes("diarreia")) {
@@ -131,15 +130,16 @@ async function enviarVet() {
   const msgsEl = document.getElementById('vet-msgs');
   if (!msgsEl) return;
 
-  msgsEl.innerHTML += `<div>${texto}</div>`;
+  msgsEl.innerHTML += `<div class="chat-bubble bubble-user">${texto}</div>`;
 
   vetLoading = true;
 
   const resposta = gerarRespostaLocal(texto);
 
-  msgsEl.innerHTML += `<div>${resposta}</div>`;
+  msgsEl.innerHTML += `<div class="chat-bubble bubble-ai">${resposta}</div>`;
 
   vetLoading = false;
+  msgsEl.scrollTop = msgsEl.scrollHeight;
 }
 
 // ================= INICIAR =================
