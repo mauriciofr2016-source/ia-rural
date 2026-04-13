@@ -1,9 +1,13 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyDs6njrUFchymlhcFHwdGSv6nPrKXoiLEc",
@@ -14,7 +18,9 @@ const firebaseConfig = {
   appId: "1:889787646020:web:d4e1ef26bcf9ca3b1dbc11"
 };
 
-firebase.initializeApp(firebaseConfig);
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
 
 const db = firebase.firestore();
 const auth = firebase.auth();
@@ -32,7 +38,6 @@ let usuarioFirebase = null;
 
 auth.onAuthStateChanged(async (user) => {
   usuarioFirebase = user || null;
-
   if (user) {
     await carregarFirestore();
   }
@@ -41,22 +46,7 @@ auth.onAuthStateChanged(async (user) => {
 
 <title>IA Rural — Gestão Inteligente do Campo</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
-<style>
 
-</head>
-
-(async (user) => {
-  if (user) {
-    usuarioFirebase = user;
-    await carregarFirestore();
-  }
-});
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script><head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IA Rural — Gestão Inteligente do Campo</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
 <style>
 :root {
   --black: #000000;
@@ -85,7 +75,11 @@ auth.onAuthStateChanged(async (user) => {
   --shadow-md: 0 4px 12px rgba(255,255,255,.04);
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
 body {
   font-family: 'DM Sans', sans-serif;
