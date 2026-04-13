@@ -1,6 +1,30 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>// FIREBASE
+const firebaseConfig = {
+  apiKey: "AIzaSyDs6njrUFchymlhcFHwdGSv6nPrKXoiLEc",
+  authDomain: "ia-rural.firebaseapp.com",
+  projectId: "ia-rural",
+  storageBucket: "ia-rural.firebasestorage.app",
+  messagingSenderId: "889787646020",
+  appId: "1:889787646020:web:d4e1ef26bcf9ca3b1dbc11"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const db = firebase.firestore();
+const auth = firebase.auth();
+
+let usuarioFirebase = null;
+
+auth.onAuthStateChanged(async (user) => {
+  if (user) {
+    usuarioFirebase = user;
+    await carregarFirestore();
+  }
+});
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>IA Rural — Gestão Inteligente do Campo</title>
@@ -837,8 +861,32 @@ let animalParaExcluir = null;
 let chatHistory = [];
 let vetLoading = false;
 
-function salvarDB() {
+async function salvarDB() {
   localStorage.setItem('ia_rural_db', JSON.stringify(DB));
+
+  if (!usuarioFirebase) return;
+
+  try {
+    await db.collection("users")
+      .doc(usuarioFirebase.uid)
+      .set(DB);
+  } catch (e) {
+    console.log("Erro Firebase:", e);
+  }
+}
+  async function carregarFirestore() {
+  try {
+    const docRef = await db.collection("users")
+      .doc(usuarioFirebase.uid)
+      .get();
+
+    if (docRef.exists) {
+      DB = docRef.data();
+      localStorage.setItem('ia_rural_db', JSON.stringify(DB));
+    }
+  } catch (e) {
+    console.log("Erro ao carregar:", e);
+  }
 }
 
 function carregarDB() {
@@ -1244,43 +1292,35 @@ function renderArquivados() {
 
 async function enviarVet() {
   if (vetLoading) return;
+
   const input = document.getElementById('vet-input');
-  const text = input.value.trim();
-  if (!text) return;
-  const msgsEl = document.getElementById('vet-msgs');
-  msgsEl.innerHTML += `<div class="chat-bubble bubble-user">${text}</div>`;
+  const texto = input.value.trim();
+  if (!texto) return;
+
   input.value = '';
-  chatHistory.push({ role: 'user', content: text });
-  msgsEl.scrollTop = msgsEl.scrollHeight;
+
+  const msgsEl = document.getElementById('vet-msgs');
+
+  msgsEl.innerHTML += `<div class="chat-bubble bubble-user">${texto}</div>`;
+
   vetLoading = true;
-  const loading = document.createElement('div');
-  loading.className = 'chat-bubble bubble-ai bubble-loading';
-  loading.id = 'vet-loading';
-  loading.textContent = 'Analisando...';
-  msgsEl.appendChild(loading);
-  msgsEl.scrollTop = msgsEl.scrollHeight;
-  try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system: SYSTEM_PROMPT,
-        messages: chatHistory
-      })
-    });
-    const data = await resp.json();
-    const reply = data.content && data.content[0] ? data.content[0].text : 'Desculpe, não consegui processar sua mensagem. Tente novamente.';
-    chatHistory.push({ role: 'assistant', content: reply });
-    document.getElementById('vet-loading').remove();
-    msgsEl.innerHTML += `<div class="chat-bubble bubble-ai">${reply.replace(/\n/g,'<br>')}</div>`;
-  } catch(e) {
-    document.getElementById('vet-loading').remove();
-    msgsEl.innerHTML += `<div class="chat-bubble bubble-ai" style="border-color:#fca5a5;color:#b91c1c">Erro de conexão. Verifique sua internet e tente novamente.</div>`;
-  }
+
+  const resposta = gerarRespostaLocal(texto);
+
+  msgsEl.innerHTML += `<div class="chat-bubble bubble-ai">${resposta}</div>`;
+
   vetLoading = false;
   msgsEl.scrollTop = msgsEl.scrollHeight;
+} 
+  function gerarRespostaLocal(pergunta) {
+  pergunta = pergunta.toLowerCase();
+
+  if (pergunta.includes("não come")) return "Pode ser febre ou problema digestivo.";
+  if (pergunta.includes("febre")) return "Acima de 39.5°C é sinal de alerta.";
+  if (pergunta.includes("leite caiu")) return "Pode ser mastite ou alimentação.";
+  if (pergunta.includes("diarreia")) return "Pode ser infecção ou alimentação.";
+
+  return "Descreva melhor os sintomas do animal.";
 }
 
 function novaConsulta() {
