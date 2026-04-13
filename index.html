@@ -1698,49 +1698,28 @@ async function fazerLogin() {
   if (!usuario || !senha) return;
 
   try {
-    if (!window.iaruralAuth) {
-      alert("Sistema ainda carregando... tente novamente em 2 segundos.");
-      return;
-    }
-
-    await window.iaruralAuth.signIn(
-      usuarioParaEmail(usuario),
-      senha
-    );
-
+    await auth.signInWithEmailAndPassword(usuarioParaEmail(usuario), senha);
     abrirAppLogado(usuario);
-
-    setTimeout(async () => {
-      if (usuarioFirebase) {
-        await carregarFirestore();
-      }
-    }, 1000);
-
+    await carregarFirestore();
   } catch (erro) {
     console.error(erro);
-
-    let msg = "Erro ao entrar";
-
-    if (erro.message.includes("password")) {
-      msg = "Senha incorreta";
-    } else if (erro.message.includes("user")) {
-      msg = "Usuário não encontrado";
-    }
-
-    alert(msg);
+    document.getElementById('login-erro').style.display = 'block';
+    document.getElementById('login-senha').value = '';
   }
 }
 </script>
 
 
-
+<script>
 async function fazerLogout() {
   if (!confirm('Deseja sair do IA Rural?')) return;
+
   try {
-    await window.iaruralAuth.signOut();
+    await auth.signOut();
   } catch (erro) {
     console.error(erro);
   }
+
   usuarioLogado = null;
   restaurarBotaoBackupOriginal();
   document.getElementById('app-wrapper').style.display = 'none';
@@ -1748,33 +1727,8 @@ async function fazerLogout() {
   document.getElementById('login-usuario').value = '';
   document.getElementById('login-senha').value = '';
 }
-
-carregarDB();
-
 </script>
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getAuth, signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyDs6njrUFchymlhcFHwdGSv6nPrKXoiLEc",
-    authDomain: "ia-rural.firebaseapp.com",
-    projectId: "ia-rural",
-    storageBucket: "ia-rural.firebasestorage.app",
-    messagingSenderId: "889787646020",
-    appId: "1:889787646020:web:d4e1ef26bcf9ca3b1dbc11"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  await setPersistence(auth, browserLocalPersistence);
-
-  window.iaruralAuth = {
-    signIn: (email, senha) => signInWithEmailAndPassword(auth, email, senha),
-    signOut: () => signOut(auth)
-  };
-</script>
 </div>
 </body>
 </html>
