@@ -1694,29 +1694,45 @@ function abrirAppLogado(nomeExibicao) {
 async function fazerLogin() {
   const usuario = normalizarUsuario(document.getElementById('login-usuario').value);
   const senha = document.getElementById('login-senha').value;
+
   if (!usuario || !senha) return;
 
   try {
-    await window.iaruralAuth.signIn(usuarioParaEmail(usuario), senha);
+    if (!window.iaruralAuth) {
+      alert("Sistema ainda carregando... tente novamente em 2 segundos.");
+      return;
+    }
+
+    await window.iaruralAuth.signIn(
+      usuarioParaEmail(usuario),
+      senha
+    );
 
     abrirAppLogado(usuario);
 
-    if (usuarioFirebase) {
-      await carregarFirestore();
-    } else {
-      setTimeout(async () => {
-        if (usuarioFirebase) {
-          await carregarFirestore();
-        }
-      }, 1200);
-    }
+    setTimeout(async () => {
+      if (usuarioFirebase) {
+        await carregarFirestore();
+      }
+    }, 1000);
+
   } catch (erro) {
     console.error(erro);
-    document.getElementById('login-erro').style.display = 'block';
-    document.getElementById('login-senha').value = '';
+
+    let msg = "Erro ao entrar";
+
+    if (erro.message.includes("password")) {
+      msg = "Senha incorreta";
+    } else if (erro.message.includes("user")) {
+      msg = "Usuário não encontrado";
+    }
+
+    alert(msg);
   }
 }
 </script>
+
+
 
 async function fazerLogout() {
   if (!confirm('Deseja sair do IA Rural?')) return;
