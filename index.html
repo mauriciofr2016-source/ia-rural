@@ -1342,45 +1342,82 @@ document.querySelectorAll('.modal-bg').forEach(m => m.addEventListener('click', 
 }));
 
 
-const USERS_KEY = 'ia_rural_usuarios';
 let usuarioLogado = null;
+let navUserWrapper = null;
 
-function fazerLogin() {
-  const usuario = document.getElementById('login-usuario').value.trim().toLowerCase();
+function normalizarUsuario(usuario) {
+  return (usuario || '').trim().toLowerCase().replace(/\s+/g, '');
+}
+
+function usuarioParaEmail(usuario) {
+  return `${normalizarUsuario(usuario)}@ia-rural.app`;
+}
+
+function montarBarraUsuario(nomeExibicao) {
+  const navHeader = document.querySelector('.nav-header');
+  const backupBtn = navHeader.querySelector('.nav-backup-btn');
+  if (!backupBtn) return;
+
+  if (navUserWrapper && navUserWrapper.parentNode) {
+    navUserWrapper.remove();
+    navUserWrapper = null;
+  }
+
+  navUserWrapper = document.createElement('div');
+  navUserWrapper.style.cssText = 'display:flex;align-items:center;gap:8px';
+
+  const userDiv = document.createElement('div');
+  userDiv.style.cssText = 'display:flex;align-items:center;gap:8px';
+  userDiv.innerHTML = '<span class="nav-user-name">' + nomeExibicao + '</span><button class="btn-logout" onclick="fazerLogout()">Sair</button>';
+
+  navUserWrapper.appendChild(backupBtn.cloneNode(true));
+  navUserWrapper.querySelector('.nav-backup-btn').onclick = openBackupModal;
+  navUserWrapper.appendChild(userDiv);
+  backupBtn.replaceWith(navUserWrapper);
+}
+
+function restaurarBotaoBackupOriginal() {
+  if (!navUserWrapper || !navUserWrapper.parentNode) return;
+  const backup = navUserWrapper.querySelector('.nav-backup-btn');
+  const novoBackup = backup.cloneNode(true);
+  novoBackup.onclick = openBackupModal;
+  navUserWrapper.replaceWith(novoBackup);
+  navUserWrapper = null;
+}
+
+function abrirAppLogado(nomeExibicao) {
+  usuarioLogado = { nome: nomeExibicao || 'Usuário' };
+  document.getElementById('tela-login').style.display = 'none';
+  document.getElementById('app-wrapper').style.display = 'block';
+  document.getElementById('login-erro').style.display = 'none';
+  montarBarraUsuario((nomeExibicao || 'Usuário').split(' ')[0]);
+  renderRebanho();
+}
+
+async function fazerLogin() {
+  const usuario = normalizarUsuario(document.getElementById('login-usuario').value);
   const senha = document.getElementById('login-senha').value;
   if (!usuario || !senha) return;
-  const lista = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
-  const encontrado = lista.find(u => u.usuario === usuario && u.senha === senha && u.status === 'ativo');
-  if (encontrado) {
-    usuarioLogado = encontrado;
-    document.getElementById('tela-login').style.display = 'none';
-    document.getElementById('app-wrapper').style.display = 'block';
-    document.getElementById('login-erro').style.display = 'none';
-    // Update nav to show user info
-    const navHeader = document.querySelector('.nav-header');
-    const userDiv = document.createElement('div');
-    userDiv.style.cssText = 'display:flex;align-items:center;gap:8px';
-    userDiv.innerHTML = '<span class="nav-user-name">' + encontrado.nome.split(' ')[0] + '</span><button class="btn-logout" onclick="fazerLogout()">Sair</button>';
-    // replace backup button with user+logout
-    const backupBtn = navHeader.querySelector('.nav-backup-btn');
-    if (backupBtn) {
-      const wrapper = document.createElement('div');
-      wrapper.style.cssText = 'display:flex;align-items:center;gap:6px';
-      wrapper.appendChild(backupBtn.cloneNode(true));
-      wrapper.querySelector('.nav-backup-btn').onclick = openBackupModal;
-      wrapper.appendChild(userDiv);
-      backupBtn.replaceWith(wrapper);
-    }
-    renderRebanho();
-  } else {
+
+  try {
+    await window.iaruralAuth.signIn(usuarioParaEmail(usuario), senha);
+    abrirAppLogado(usuario);
+  } catch (erro) {
+    console.error(erro);
     document.getElementById('login-erro').style.display = 'block';
     document.getElementById('login-senha').value = '';
   }
 }
 
-function fazerLogout() {
+async function fazerLogout() {
   if (!confirm('Deseja sair do IA Rural?')) return;
+  try {
+    await window.iaruralAuth.signOut();
+  } catch (erro) {
+    console.error(erro);
+  }
   usuarioLogado = null;
+  restaurarBotaoBackupOriginal();
   document.getElementById('app-wrapper').style.display = 'none';
   document.getElementById('tela-login').style.display = 'flex';
   document.getElementById('login-usuario').value = '';
@@ -1390,6 +1427,31 @@ function fazerLogout() {
 carregarDB();
 
 </script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDs6njrUFchymlhcFHwdGSv6nPrKXoiLEc",
+    authDomain: "ia-rural.firebaseapp.com",
+    projectId: "ia-rural",
+    storageBucket: "ia-rural.firebasestorage.app",
+    messagingSenderId: "889787646020",
+    appId: "1:889787646020:web:d4e1ef26bcf9ca3b1dbc11"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  await setPersistence(auth, browserLocalPersistence);
+
+  window.iaruralAuth = {
+    signIn: (email, senha) => signInWithEmailAndPassword(auth, email, senha),
+    signOut: () => signOut(auth)
+  };
+</script>
 </div>
 </body>
 </html>
+
+
