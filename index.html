@@ -932,7 +932,8 @@ async function salvarDB() {
     console.log("Erro Firebase:", e);
   }
 }
-  async function carregarFirestore() {
+<script>
+async function carregarFirestore() {
   try {
     const docRef = await db.collection("users")
       .doc(usuarioFirebase.uid)
@@ -940,12 +941,31 @@ async function salvarDB() {
 
     if (docRef.exists) {
       DB = docRef.data();
+
+      if (!DB.animais) DB.animais = [];
+      if (!DB.arquivados) DB.arquivados = [];
+      if (!DB.producao) DB.producao = {};
+      if (!DB.entregas) DB.entregas = [];
+      if (!DB.estoqueRacao) DB.estoqueRacao = 0;
+      if (!DB.ultimoBackup) DB.ultimoBackup = null;
+
       localStorage.setItem('ia_rural_db', JSON.stringify(DB));
+    } else {
+      await db.collection("users")
+        .doc(usuarioFirebase.uid)
+        .set(DB);
     }
+
+    renderRebanho();
+    renderProducao();
+    renderDespesas();
+    renderCalendario();
+    renderArquivados();
   } catch (e) {
     console.log("Erro ao carregar:", e);
   }
 }
+</script>
 
 function carregarDB() {
   const raw = localStorage.getItem('ia_rural_db');
@@ -1670,6 +1690,7 @@ function abrirAppLogado(nomeExibicao) {
   renderRebanho();
 }
 
+<script>
 async function fazerLogin() {
   const usuario = normalizarUsuario(document.getElementById('login-usuario').value);
   const senha = document.getElementById('login-senha').value;
@@ -1677,13 +1698,25 @@ async function fazerLogin() {
 
   try {
     await window.iaruralAuth.signIn(usuarioParaEmail(usuario), senha);
+
     abrirAppLogado(usuario);
+
+    if (usuarioFirebase) {
+      await carregarFirestore();
+    } else {
+      setTimeout(async () => {
+        if (usuarioFirebase) {
+          await carregarFirestore();
+        }
+      }, 1200);
+    }
   } catch (erro) {
     console.error(erro);
     document.getElementById('login-erro').style.display = 'block';
     document.getElementById('login-senha').value = '';
   }
 }
+</script>
 
 async function fazerLogout() {
   if (!confirm('Deseja sair do IA Rural?')) return;
