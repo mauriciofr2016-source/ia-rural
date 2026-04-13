@@ -878,6 +878,39 @@ let DB = {
 let animalParaExcluir = null;
 let chatHistory = [];
 let vetLoading = false;
+  let vetState = {
+  etapa: 'inicio',
+  animalNome: '',
+  idade: '',
+  sintoma: '',
+  tempo: '',
+  come: '',
+  bebeAgua: '',
+  febre: '',
+  fezes: '',
+  locomocao: '',
+  secrecao: '',
+  lactacao: '',
+  prenha: ''
+};
+
+function resetVetState() {
+  vetState = {
+    etapa: 'inicio',
+    animalNome: '',
+    idade: '',
+    sintoma: '',
+    tempo: '',
+    come: '',
+    bebeAgua: '',
+    febre: '',
+    fezes: '',
+    locomocao: '',
+    secrecao: '',
+    lactacao: '',
+    prenha: ''
+  };
+}
 
 async function salvarDB() {
   localStorage.setItem('ia_rural_db', JSON.stringify(DB));
@@ -1329,57 +1362,196 @@ async function enviarVet() {
 
   vetLoading = false;
   msgsEl.scrollTop = msgsEl.scrollHeight;
-} 
-function gerarRespostaLocal(pergunta) {
-  pergunta = pergunta.toLowerCase();
 
-  // DIARREIA
+  if (typeof salvarDB === 'function') {
+    await salvarDB();
+  }
+}
+function montarDiagnostico() {
+  const s = (vetState.sintoma || '').toLowerCase();
+  const febre = (vetState.febre || '').toLowerCase();
+  const fezes = (vetState.fezes || '').toLowerCase();
+  const come = (vetState.come || '').toLowerCase();
+  const bebe = (vetState.bebeAgua || '').toLowerCase();
+  const locomocao = (vetState.locomocao || '').toLowerCase();
+  const secrecao = (vetState.secrecao || '').toLowerCase();
+
+  const hipoteses = [];
+  const medidas = [];
+  const urgencias = [];
+
   if (
-    pergunta.includes("diarreia") ||
-    pergunta.includes("cagando mole") ||
-    pergunta.includes("fezes mole") ||
-    pergunta.includes("fezes líquidas")
+    s.includes('diarre') ||
+    s.includes('cagando mole') ||
+    s.includes('fezes mole') ||
+    s.includes('fezes líquidas') ||
+    fezes.includes('mole') ||
+    fezes.includes('líquid') ||
+    fezes.includes('amarel')
   ) {
-    return "Pode ser infecção, verminose ou alimentação inadequada. Observe se há desidratação.";
+    hipoteses.push('Diarreia por alteração alimentar, verminose ou infecção intestinal');
+    medidas.push('Ofereça água limpa à vontade e observe sinais de desidratação');
+    medidas.push('Separe o animal dos demais se houver suspeita de doença contagiosa');
+    medidas.push('Revise alimentação recente, troca de ração ou acesso a alimento estragado');
   }
 
-  // FEBRE
-  if (
-    pergunta.includes("febre") ||
-    pergunta.includes("quente") ||
-    pergunta.includes("temperatura alta")
-  ) {
-    return "Temperatura acima de 39.5°C é sinal de alerta. Pode ser infecção.";
+  if (febre.includes('sim') || febre.includes('alta') || febre.includes('39') || febre.includes('40')) {
+    hipoteses.push('Processo infeccioso ou inflamatório');
+    medidas.push('Verifique a temperatura novamente e acompanhe a evolução');
   }
 
-  // NÃO COME
-  if (
-    pergunta.includes("não come") ||
-    pergunta.includes("sem comer") ||
-    pergunta.includes("parou de comer")
-  ) {
-    return "Falta de apetite pode indicar dor, febre ou problema digestivo.";
+  if (come.includes('não') || come.includes('pouco') || bebe.includes('não')) {
+    hipoteses.push('Comprometimento digestivo ou quadro sistêmico');
+    medidas.push('Observe apetite, ruminação e consumo de água nas próximas horas');
   }
 
-  // LEITE CAIU
   if (
-    pergunta.includes("leite caiu") ||
-    pergunta.includes("produçao caiu") ||
-    pergunta.includes("menos leite")
+    s.includes('leite') ||
+    s.includes('mastite') ||
+    s.includes('úbere') ||
+    s.includes('ubere')
   ) {
-    return "Queda na produção pode ser mastite, estresse ou alimentação.";
+    hipoteses.push('Mastite ou inflamação mamária');
+    medidas.push('Verifique calor, dor, endurecimento e grumos no leite');
   }
 
-  return "Me diga se o animal tem febre, diarreia, parou de comer ou caiu a produção de leite.";
+  if (locomocao.includes('não') || locomocao.includes('manca') || locomocao.includes('dificuldade')) {
+    hipoteses.push('Dor, trauma ou infecção sistêmica com fraqueza');
+    urgencias.push('Dificuldade de locomoção merece avaliação rápida');
+  }
+
+  if (secrecao.includes('sim') || secrecao.includes('nasal') || secrecao.includes('ocular') || secrecao.includes('vaginal')) {
+    hipoteses.push('Infecção respiratória, ocular ou reprodutiva');
+  }
+
+  if (hipoteses.length === 0) {
+    hipoteses.push('Quadro inespecífico que precisa de avaliação clínica mais detalhada');
+  }
+
+  if (
+    (febre.includes('sim') && come.includes('não')) ||
+    bebe.includes('não') ||
+    s.includes('sangue') ||
+    s.includes('muito fraco') ||
+    s.includes('deitado') ||
+    s.includes('não levanta')
+  ) {
+    urgencias.push('Procure um veterinário com urgência');
+  }
+
+  let texto = `Entendi. Com base no que você me informou sobre <strong>${vetState.animalNome || 'o animal'}</strong>, este é o resumo:<br><br>`;
+
+  texto += `<strong>Diagnóstico provável:</strong><br>`;
+  hipoteses.slice(0, 3).forEach((h, i) => {
+    texto += `${i + 1}. ${h}<br>`;
+  });
+
+  texto += `<br><strong>Medidas imediatas:</strong><br>`;
+  if (medidas.length) {
+    medidas.forEach((m, i) => {
+      texto += `${i + 1}. ${m}<br>`;
+    });
+  } else {
+    texto += `1. Observe atentamente a evolução dos sintomas nas próximas horas.<br>`;
+  }
+
+  texto += `<br><strong>Urgência:</strong><br>`;
+  if (urgencias.length) {
+    urgencias.forEach((u, i) => {
+      texto += `${i + 1}. ${u}<br>`;
+    });
+  } else {
+    texto += `1. Siga monitorando e procure atendimento veterinário se piorar.<br>`;
+  }
+
+  texto += `<br>⚠️ Este diagnóstico é orientativo e não substitui a avaliação de um médico-veterinário habilitado.<br><br>`;
+  texto += `Se quiser, posso continuar e te orientar no próximo passo com base nesse caso.`;
+
+  return texto;
 }
 
+function gerarRespostaLocal(pergunta) {
+  const p = pergunta.trim();
+
+  switch (vetState.etapa) {
+    case 'inicio':
+      vetState.animalNome = p;
+      vetState.etapa = 'idade';
+      return `Certo. Qual é a idade aproximada de ${vetState.animalNome}?`;
+
+    case 'idade':
+      vetState.idade = p;
+      vetState.etapa = 'sintoma';
+      return `Entendi. Qual é o sintoma principal que ${vetState.animalNome} está apresentando?`;
+
+    case 'sintoma':
+      vetState.sintoma = p;
+      vetState.etapa = 'tempo';
+      return `Há quanto tempo esse sintoma começou?`;
+
+    case 'tempo':
+      vetState.tempo = p;
+      vetState.etapa = 'come';
+      return `${vetState.animalNome} está comendo normalmente?`;
+
+    case 'come':
+      vetState.come = p;
+      vetState.etapa = 'bebeAgua';
+      return `E está bebendo água normalmente?`;
+
+    case 'bebeAgua':
+      vetState.bebeAgua = p;
+      vetState.etapa = 'febre';
+      return `Você notou febre ou temperatura alta?`;
+
+    case 'febre':
+      vetState.febre = p;
+      vetState.etapa = 'fezes';
+      return `Como estão as fezes? Pode me dizer cor e consistência?`;
+
+    case 'fezes':
+      vetState.fezes = p;
+      vetState.etapa = 'locomocao';
+      return `${vetState.animalNome} está se locomovendo normalmente?`;
+
+    case 'locomocao':
+      vetState.locomocao = p;
+      vetState.etapa = 'secrecao';
+      return `Você percebeu alguma secreção nasal, ocular ou vaginal?`;
+
+    case 'secrecao':
+      vetState.secrecao = p;
+      vetState.etapa = 'lactacao';
+      return `${vetState.animalNome} está em lactação?`;
+
+    case 'lactacao':
+      vetState.lactacao = p;
+      vetState.etapa = 'prenha';
+      return `${vetState.animalNome} está prenha?`;
+
+    case 'prenha':
+      vetState.prenha = p;
+      vetState.etapa = 'final';
+      return montarDiagnostico();
+
+    case 'final':
+      return `Se quiser iniciar outro atendimento, clique em <strong>↺ Nova</strong>.`;
+
+    default:
+      resetVetState();
+      return `Vamos recomeçar. Qual é o nome do animal que está apresentando sintomas?`;
+  }
+}
 function novaConsulta() {
   if (!confirm('Iniciar uma nova consulta? O histórico desta consulta será apagado.')) return;
+
+  resetVetState();
   chatHistory = [];
+
   document.getElementById('vet-msgs').innerHTML = `
     <div class="chat-bubble bubble-ai">
       Olá! Sou o assistente veterinário do <strong>IA Rural</strong>. 🩺<br><br>
-      Vou conduzir você por uma consulta passo a passo, fazendo uma pergunta de cada vez, até chegar a um diagnóstico e orientação de tratamento.<br><br>
+      Vou conduzir você por uma consulta passo a passo, fazendo <strong>uma pergunta por vez</strong>.<br><br>
       Para começar: <strong>qual é o nome do animal que está apresentando sintomas?</strong>
     </div>`;
 }
