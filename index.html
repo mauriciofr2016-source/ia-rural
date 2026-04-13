@@ -1330,15 +1330,47 @@ async function enviarVet() {
   vetLoading = false;
   msgsEl.scrollTop = msgsEl.scrollHeight;
 } 
-  function gerarRespostaLocal(pergunta) {
+function gerarRespostaLocal(pergunta) {
   pergunta = pergunta.toLowerCase();
 
-  if (pergunta.includes("não come")) return "Pode ser febre ou problema digestivo.";
-  if (pergunta.includes("febre")) return "Acima de 39.5°C é sinal de alerta.";
-  if (pergunta.includes("leite caiu")) return "Pode ser mastite ou alimentação.";
-  if (pergunta.includes("diarreia")) return "Pode ser infecção ou alimentação.";
+  // DIARREIA
+  if (
+    pergunta.includes("diarreia") ||
+    pergunta.includes("cagando mole") ||
+    pergunta.includes("fezes mole") ||
+    pergunta.includes("fezes líquidas")
+  ) {
+    return "Pode ser infecção, verminose ou alimentação inadequada. Observe se há desidratação.";
+  }
 
-  return "Descreva melhor os sintomas do animal.";
+  // FEBRE
+  if (
+    pergunta.includes("febre") ||
+    pergunta.includes("quente") ||
+    pergunta.includes("temperatura alta")
+  ) {
+    return "Temperatura acima de 39.5°C é sinal de alerta. Pode ser infecção.";
+  }
+
+  // NÃO COME
+  if (
+    pergunta.includes("não come") ||
+    pergunta.includes("sem comer") ||
+    pergunta.includes("parou de comer")
+  ) {
+    return "Falta de apetite pode indicar dor, febre ou problema digestivo.";
+  }
+
+  // LEITE CAIU
+  if (
+    pergunta.includes("leite caiu") ||
+    pergunta.includes("produçao caiu") ||
+    pergunta.includes("menos leite")
+  ) {
+    return "Queda na produção pode ser mastite, estresse ou alimentação.";
+  }
+
+  return "Me diga se o animal tem febre, diarreia, parou de comer ou caiu a produção de leite.";
 }
 
 function novaConsulta() {
