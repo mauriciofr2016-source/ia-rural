@@ -105,13 +105,13 @@ body{font-family:'DM Sans',sans-serif;background:#f3f4f6;min-height:100vh;color:
       <div class="card-title">➕ Criar novo usuário</div>
       <div class="form-row">
         <div class="field"><label>Nome / Fazenda</label><input type="text" id="n-nome" placeholder="Ex: João Silva / Fazenda Boa Vista"></div>
-        <div class="field"><label>Usuário (login)</label><input type="text" id="n-usuario" placeholder="Ex: joaosilva" oninput="this.value=this.value.toLowerCase().replace(/\s/g,'')"></div>
+        <div class="field"><label>Usuário (login)</label><input type="text" id="n-usuario" placeholder="Ex: joaosilva (sem espaços) oninput="this.value=this.value.toLowerCase().replace(/\s/g,'')"></div>
       </div>
       <div class="form-row">
         <div class="field">
           <label>Senha</label>
           <input type="text" id="n-senha" placeholder="Ex: rural2025">
-          <div class="senha-hint">Use algo fácil de lembrar para o produtor</div>
+          <div class="senha-hint">O login continua sendo um nome de usuário simples, sem precisar usar email</div>
         </div>
         <div class="field"><label>Status</label>
           <select id="n-status" style="width:100%;padding:10px 14px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;font-family:'DM Sans',sans-serif">
@@ -130,7 +130,7 @@ body{font-family:'DM Sans',sans-serif;background:#f3f4f6;min-height:100vh;color:
         <span>👥 Usuários cadastrados</span>
         <button class="btn btn-outline btn-sm" onclick="exportarUsuarios()">⬇ Exportar lista</button>
       </div>
-      <div id="lista-usuarios"></div>
+      <div style="font-size:11px;color:#6b7280;margin-bottom:10px">Os usuários novos já podem entrar em qualquer celular ou computador com o mesmo login e senha.</div><div id="lista-usuarios"></div>
     </div>
 
     <div class="card" style="background:#fafafa">
@@ -170,6 +170,7 @@ body{font-family:'DM Sans',sans-serif;background:#f3f4f6;min-height:100vh;color:
 <script>
 const ADMIN_KEY = 'ia_rural_admin_cfg';
 const USERS_KEY = 'ia_rural_usuarios';
+const FIREBASE_API_KEY = 'AIzaSyDs6njrUFchymlhcFHwdGSv6nPrKXoiLEc';
 
 function getAdminCfg() {
   const raw = localStorage.getItem(ADMIN_KEY);
@@ -209,28 +210,81 @@ function sairAdmin() {
   document.getElementById('adm-erro').style.display = 'none';
 }
 
-function criarUsuario() {
+function normalizarUsuario(usuario) {
+  return (usuario || '').trim().toLowerCase().replace(/\s+/g, '');
+}
+
+function usuarioParaEmail(usuario) {
+  return `${normalizarUsuario(usuario)}@ia-rural.app`;
+}
+
+async function criarUsuario() {
   const nome = document.getElementById('n-nome').value.trim();
-  const usuario = document.getElementById('n-usuario').value.trim();
+  const usuario = normalizarUsuario(document.getElementById('n-usuario').value);
   const senha = document.getElementById('n-senha').value.trim();
   const status = document.getElementById('n-status').value;
   const obs = document.getElementById('n-obs').value.trim();
+
   if (!nome) { alert('Informe o nome ou fazenda.'); return; }
   if (!usuario) { alert('Informe o nome de usuário.'); return; }
   if (!senha) { alert('Defina uma senha.'); return; }
+  if (senha.length < 6) { alert('A senha precisa ter pelo menos 6 caracteres.'); return; }
+
   const lista = getUsuarios();
   if (lista.find(u => u.usuario === usuario)) { alert('Esse nome de usuário já existe. Escolha outro.'); return; }
-  lista.push({ id: Date.now().toString(), nome, usuario, senha, status, obs, dataCriacao: new Date().toISOString() });
-  salvarUsuarios(lista);
-  document.getElementById('n-nome').value = '';
-  document.getElementById('n-usuario').value = '';
-  document.getElementById('n-senha').value = '';
-  document.getElementById('n-obs').value = '';
-  document.getElementById('n-status').value = 'ativo';
-  const msg = document.getElementById('sucesso-criar');
-  msg.style.display = 'block';
-  setTimeout(() => msg.style.display = 'none', 3000);
-  renderUsuarios();
+
+  try {
+    const resposta = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FIREBASE_API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: usuarioParaEmail(usuario),
+        password: senha,
+        returnSecureToken: true
+      })
+    });
+
+    const dados = await resposta.json();
+
+    if (!resposta.ok) {
+      if (dados.error && dados.error.message === 'EMAIL_EXISTS') {
+        alert('Esse nome de usuário já existe no Firebase. Escolha outro.');
+        return;
+      }
+      throw new Error((dados.error && dados.error.message) || 'Falha ao criar usuário no Firebase.');
+    }
+
+    lista.push({
+      id: (dados.localId || Date.now().toString()),
+      nome,
+      usuario,
+      senha,
+      status,
+      obs,
+      firebaseUid: dados.localId || '',
+      dataCriacao: new Date().toISOString()
+    });
+    salvarUsuarios(lista);
+
+    document.getElementById('n-nome').value = '';
+    document.getElementById('n-usuario').value = '';
+    document.getElementById('n-senha').value = '';
+    document.getElementById('n-obs').value = '';
+    document.getElementById('n-status').value = 'ativo';
+
+    const msg = document.getElementById('sucesso-criar');
+    msg.textContent = 'Usuário criado com sucesso no Firebase!';
+    msg.style.display = 'block';
+    setTimeout(() => {
+      msg.style.display = 'none';
+      msg.textContent = 'Usuário criado com sucesso!';
+    }, 3000);
+
+    renderUsuarios();
+  } catch (erro) {
+    console.error(erro);
+    alert('Erro ao criar usuário: ' + erro.message);
+  }
 }
 
 function renderUsuarios() {
@@ -358,3 +412,5 @@ document.getElementById('modal-editar').addEventListener('click', function(e) {
 </script>
 </body>
 </html>
+
+
