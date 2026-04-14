@@ -1,1964 +1,949 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>IA Rural — Gestão Inteligente do Campo</title>
-
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet" />
-
-  <style>
-    :root {
-      --bg: #000000;
-      --bg-soft: #0d0d0d;
-      --card: #000000;
-      --card-2: #101010;
-      --border: #2a2a2a;
-      --text: #ffffff;
-      --muted: #d1d5db;
-      --green: #2d6a2d;
-      --green-light: #3d8b3d;
-      --green-pale: #111111;
-      --green-mid: #222222;
-      --red: #ef4444;
-      --red-soft: #220d0d;
-      --amber: #f59e0b;
-      --amber-soft: #211606;
-      --blue: #60a5fa;
-      --blue-soft: #0b1220;
-      --white: #ffffff;
-      --black: #000000;
-      --radius: 12px;
-      --radius-lg: 18px;
-      --shadow: 0 8px 30px rgba(255,255,255,.04);
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    html, body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'DM Sans', sans-serif;
-      min-height: 100vh;
-    }
-
-    body {
-      background: var(--bg);
-      color: var(--text);
-    }
-
-    a { color: inherit; }
-
-    .hidden { display: none !important; }
-
-    /* LOGIN */
-    #tela-login {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      background: #000000;
-    }
-
-    .login-box {
-      width: 100%;
-      max-width: 390px;
-      background: #000000;
-      border: 1px solid var(--border);
-      border-radius: 22px;
-      padding: 34px 28px;
-      box-shadow: var(--shadow);
-    }
-
-    .login-logo {
-      font-family: 'DM Serif Display', serif;
-      font-size: 30px;
-      color: #ffffff;
-      margin-bottom: 6px;
-    }
-
-    .login-logo span { color: #6dd56d; }
-
-    .login-tagline {
-      color: var(--muted);
-      font-size: 13px;
-      margin-bottom: 24px;
-      line-height: 1.6;
-    }
-
-    .login-field { margin-bottom: 14px; }
-
-    .login-field label {
-      display: block;
-      font-size: 11px;
-      color: var(--muted);
-      margin-bottom: 5px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .35px;
-    }
-
-    .login-field input {
-      width: 100%;
-      padding: 12px 14px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      background: #ffffff;
-      color: #000000;
-      font-size: 14px;
-      font-family: 'DM Sans', sans-serif;
-    }
-
-    .login-field input:focus {
-      outline: none;
-      border-color: var(--green);
-    }
-
-    .login-btn {
-      width: 100%;
-      padding: 12px;
-      border: none;
-      border-radius: 10px;
-      background: #ffffff;
-      color: #000000;
-      font-weight: 700;
-      cursor: pointer;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 14px;
-      margin-top: 6px;
-    }
-
-    .login-btn:hover { opacity: .92; }
-
-    .login-error {
-      margin-top: 12px;
-      display: none;
-      background: var(--red-soft);
-      border: 1px solid #4b1111;
-      color: #fecaca;
-      padding: 11px 12px;
-      border-radius: 10px;
-      font-size: 13px;
-      line-height: 1.5;
-    }
-
-    .login-footer {
-      text-align: center;
-      font-size: 11px;
-      color: #9ca3af;
-      margin-top: 18px;
-    }
-
-    /* APP */
-    #app-wrapper { display: none; min-height: 100vh; background: #000000; }
-
-    nav {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      background: #000000;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .nav-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 12px 16px 8px;
-      flex-wrap: wrap;
-    }
-
-    .nav-logo {
-      font-family: 'DM Serif Display', serif;
-      font-size: 22px;
-      color: #ffffff;
-    }
-
-    .nav-logo span { color: #6dd56d; }
-
-    .nav-right {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .nav-user {
-      font-size: 12px;
-      color: var(--muted);
-      padding: 6px 10px;
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      background: #0f0f0f;
-    }
-
-    .nav-btn {
-      padding: 7px 12px;
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      background: #111111;
-      color: #ffffff;
-      cursor: pointer;
-      font-size: 12px;
-      font-family: 'DM Sans', sans-serif;
-    }
-
-    .nav-btn:hover { border-color: #555; }
-
-    .nav-tabs {
-      display: flex;
-      overflow-x: auto;
-      gap: 4px;
-      padding: 0 8px 8px;
-      scrollbar-width: none;
-    }
-
-    .nav-tabs::-webkit-scrollbar { display: none; }
-
-    .nav-tab {
-      padding: 10px 13px;
-      color: #b8b8b8;
-      font-size: 12px;
-      cursor: pointer;
-      white-space: nowrap;
-      border-bottom: 2px solid transparent;
-      transition: .2s;
-      font-weight: 600;
-    }
-
-    .nav-tab:hover { color: #ffffff; }
-    .nav-tab.active {
-      color: #ffffff;
-      border-bottom-color: #6dd56d;
-    }
-
-    .page {
-      display: none;
-      max-width: 980px;
-      margin: 0 auto;
-      padding: 18px 16px 30px;
-    }
-
-    .page.active { display: block; }
-
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 18px;
-      margin-bottom: 16px;
-      box-shadow: var(--shadow);
-    }
-
-    .section-title {
-      font-size: 16px;
-      font-weight: 700;
-      margin-bottom: 14px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: #ffffff;
-    }
-
-    .muted {
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.65;
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      padding: 10px 15px;
-      border-radius: 10px;
-      border: none;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 700;
-      font-family: 'DM Sans', sans-serif;
-    }
-
-    .btn-primary { background: #ffffff; color: #000000; }
-    .btn-primary:hover { opacity: .94; }
-
-    .btn-success { background: var(--green); color: #ffffff; }
-    .btn-success:hover { background: var(--green-light); }
-
-    .btn-danger { background: var(--red); color: #ffffff; }
-
-    .btn-outline {
-      background: transparent;
-      color: #ffffff;
-      border: 1px solid var(--border);
-    }
-
-    .btn-sm { padding: 6px 10px; font-size: 11px; }
-
-    .form-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-    .form-row-3 {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 10px;
-    }
-
-    .form-group { margin-bottom: 10px; }
-
-    .form-group label {
-      display: block;
-      font-size: 11px;
-      color: var(--muted);
-      margin-bottom: 5px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .35px;
-    }
-
-    .form-group input,
-    .form-group select,
-    .form-group textarea {
-      width: 100%;
-      padding: 10px 12px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: #ffffff;
-      color: #000000;
-      font-size: 14px;
-      font-family: 'DM Sans', sans-serif;
-    }
-
-    .form-group textarea {
-      min-height: 80px;
-      resize: vertical;
-    }
-
-    .form-group input:focus,
-    .form-group select:focus,
-    .form-group textarea:focus {
-      outline: none;
-      border-color: var(--green);
-    }
-
-    .info-box {
-      background: #0f0f0f;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 12px 14px;
-      color: #ffffff;
-      font-size: 13px;
-      line-height: 1.6;
-    }
-
-    .welcome-hero {
-      background: linear-gradient(180deg, #060606 0%, #0d0d0d 100%);
-      border: 1px solid var(--border);
-      border-radius: 22px;
-      padding: 28px 24px;
-      margin-bottom: 16px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .welcome-hero::before {
-      content: "";
-      position: absolute;
-      right: -50px;
-      top: -50px;
-      width: 180px;
-      height: 180px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(109,213,109,.18) 0%, transparent 70%);
-    }
-
-    .welcome-hero h1 {
-      font-family: 'DM Serif Display', serif;
-      font-size: 28px;
-      line-height: 1.25;
-      margin-bottom: 8px;
-    }
-
-    .welcome-hero h1 span { color: #6dd56d; }
-
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 12px;
-      margin-top: 20px;
-    }
-
-    .feat-card {
-      background: #111111;
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 14px;
-      cursor: pointer;
-    }
-
-    .feat-card:hover { border-color: #4b4b4b; }
-
-    .feat-icon { font-size: 22px; margin-bottom: 7px; }
-    .feat-label { font-size: 13px; font-weight: 700; color: #ffffff; }
-    .feat-desc { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
-
-    .animal-item,
-    .prod-card,
-    .event-item,
-    .delivery-item,
-    .vet-card {
-      background: #000000;
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 14px;
-      margin-bottom: 10px;
-    }
-
-    .animal-item {
-      display: flex;
-      gap: 12px;
-      align-items: flex-start;
-    }
-
-    .animal-avatar {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      background: #111111;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 22px;
-      flex-shrink: 0;
-      border: 1px solid var(--border);
-    }
-
-    .animal-body { flex: 1; }
-    .animal-name { font-size: 14px; font-weight: 700; color: #ffffff; }
-    .animal-meta { font-size: 12px; color: var(--muted); margin-top: 3px; }
-    .animal-obs { font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
-    .animal-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
-
-    .tag-wrap { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
-
-    .tag {
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-size: 11px;
-      font-weight: 700;
-      border: 1px solid var(--border);
-    }
-
-    .tag-vaca { background: #102210; color: #86efac; }
-    .tag-touro { background: #0b1220; color: #93c5fd; }
-    .tag-novilha { background: #211606; color: #fcd34d; }
-    .tag-garrote { background: #1b1233; color: #c4b5fd; }
-    .tag-bezerro { background: #111111; color: #e5e7eb; }
-    .tag-bezerra { background: #2a1021; color: #f9a8d4; }
-    .tag-prenha { background: #2a1021; color: #f9a8d4; }
-    .tag-lactacao { background: #0b1220; color: #93c5fd; }
-
-    .prod-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 10px;
-      flex-wrap: wrap;
-    }
-
-    .prod-name { font-size: 14px; font-weight: 700; }
-
-    .prod-inputs {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-
-    .prod-input-label {
-      font-size: 11px;
-      color: var(--muted);
-      margin-bottom: 4px;
-      text-align: center;
-      font-weight: 700;
-    }
-
-    .prod-input-field {
-      width: 100%;
-      padding: 10px 8px;
-      text-align: center;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: #ffffff;
-      color: #000000;
-      font-size: 14px;
-      font-weight: 700;
-    }
-
-    .prod-summary {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      flex-wrap: wrap;
-      font-size: 12px;
-      background: #111111;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 10px 12px;
-      color: #ffffff;
-    }
-
-    .total-bar {
-      background: #0f0f0f;
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 14px;
-      margin-top: 12px;
-    }
-
-    .total-big {
-      font-size: 30px;
-      font-weight: 800;
-      color: #ffffff;
-      margin: 5px 0;
-    }
-
-    .progress-track {
-      width: 100%;
-      height: 10px;
-      background: #111111;
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      overflow: hidden;
-    }
-
-    .progress-fill {
-      height: 100%;
-      background: #6dd56d;
-    }
-
-    .alert-strip {
-      background: var(--amber-soft);
-      border: 1px solid #5a4310;
-      color: #fde68a;
-      border-radius: 12px;
-      padding: 12px 14px;
-      margin-bottom: 14px;
-      font-size: 13px;
-      line-height: 1.6;
-    }
-
-    .empty-state {
-      text-align: center;
-      border: 1px dashed var(--border);
-      border-radius: 14px;
-      padding: 30px 20px;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.7;
-    }
-
-    .empty-icon {
-      font-size: 34px;
-      margin-bottom: 8px;
-    }
-
-    .modal-bg {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,.75);
-      z-index: 300;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-
-    .modal-bg.open { display: flex; }
-
-    .modal-box {
-      width: 100%;
-      max-width: 410px;
-      background: #000000;
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      padding: 22px;
-      box-shadow: var(--shadow);
-    }
-
-    .modal-box h3 {
-      font-size: 18px;
-      margin-bottom: 8px;
-    }
-
-    .modal-box p {
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.6;
-      margin-bottom: 16px;
-    }
-
-    .modal-actions {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .backup-notice {
-      background: #0f0f0f;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 12px 14px;
-      color: #e5e7eb;
-      font-size: 12px;
-      line-height: 1.6;
-      margin-bottom: 14px;
-    }
-
-    .event-item h4,
-    .delivery-item h4,
-    .vet-card h4 {
-      font-size: 14px;
-      margin-bottom: 6px;
-      color: #ffffff;
-    }
-
-    .event-item p,
-    .delivery-item p,
-    .vet-card p,
-    .vet-card li {
-      font-size: 13px;
-      color: var(--muted);
-      line-height: 1.65;
-    }
-
-    .vet-card ul {
-      padding-left: 18px;
-      margin-top: 6px;
-    }
-
-    .vet-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    .pill-filter {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 12px;
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      background: #111111;
-      color: #ffffff;
-      font-size: 12px;
-      cursor: pointer;
-      font-weight: 700;
-    }
-
-    .pill-filter.active {
-      background: #ffffff;
-      color: #000000;
-    }
-
-    .filter-row {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-bottom: 12px;
-    }
-
-    @media (max-width: 760px) {
-      .form-row,
-      .form-row-3,
-      .vet-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .prod-inputs {
-        grid-template-columns: 1fr;
-      }
-
-      .features-grid {
-        grid-template-columns: 1fr 1fr;
-      }
-
-      .welcome-hero h1 { font-size: 24px; }
-    }
-
-    @media (max-width: 520px) {
-      .features-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IA Rural — Painel do Administrador</title>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:#000;min-height:100vh;color:#111827}
+
+/* LOGIN ADMIN */
+#admin-login{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;background:#000}
+.login-card{background:#fff;border-radius:16px;padding:36px 32px;width:100%;max-width:360px;box-shadow:0 4px 24px rgba(0,0,0,.10)}
+.login-logo{font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:4px}
+.login-logo span{color:#2d6a2d}
+.login-sub{font-size:13px;color:#6b7280;margin-bottom:28px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:11px;color:#6b7280;margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+.field input,.field select{width:100%;padding:10px 14px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;font-family:'DM Sans',sans-serif;background:#fff}
+.field input:focus,.field select:focus{outline:none;border-color:#2d6a2d}
+.btn-full{width:100%;padding:11px;background:#0f0f0f;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:4px}
+.btn-full:hover{background:#333}
+.error-msg{background:#fee2e2;color:#b91c1c;padding:10px 14px;border-radius:8px;font-size:13px;margin-top:10px;display:none}
+
+/* PAINEL */
+#admin-painel{display:none;background:#000;min-height:100vh}
+.top-bar{background:#0f0f0f;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.top-logo{font-family:'DM Serif Display',serif;font-size:18px;color:#fff}
+.top-logo span{color:#6dd56d}
+.top-badge{background:#1a1a1a;border:1px solid #333;color:#aaa;padding:5px 14px;border-radius:20px;font-size:12px}
+.btn-sair{background:transparent;border:1px solid #444;color:#aaa;padding:6px 14px;border-radius:20px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif}
+.btn-sair:hover{border-color:#ef4444;color:#ef4444}
+
+.main{max-width:1000px;margin:0 auto;padding:24px 20px}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:20px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.card-title{font-size:15px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-row-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:10px;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .2s;font-family:'DM Sans',sans-serif}
+.btn-green{background:#2d6a2d;color:#fff}.btn-green:hover{background:#3d8b3d}
+.btn-red{background:#b91c1c;color:#fff}.btn-red:hover{background:#991b1b}
+.btn-outline{background:transparent;border:1px solid #e5e7eb;color:#374151}.btn-outline:hover{background:#f9fafb}
+.btn-sm{padding:5px 12px;font-size:12px}
+.btn-xs{padding:3px 8px;font-size:11px}
+.btn-blue{background:#1d4ed8;color:#fff}.btn-blue:hover{background:#1e40af}
+
+.user-row{display:flex;align-items:flex-start;gap:12px;padding:12px;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:10px;background:#fafafa}
+.user-avatar{width:38px;height:38px;border-radius:50%;background:#e8f5e9;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;color:#2d6a2d;font-family:'DM Serif Display',serif;flex-shrink:0}
+.user-info{flex:1;min-width:0}
+.user-name{font-size:13px;font-weight:700}
+.user-meta{font-size:11px;color:#6b7280;margin-top:3px;line-height:1.7}
+.user-actions{display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700}
+.badge-ativo{background:#dcfce7;color:#166534}
+.badge-inativo{background:#fee2e2;color:#991b1b}
+.badge-pago{background:#dcfce7;color:#166534}
+.badge-pendente{background:#fef3c7;color:#92400e}
+.badge-vencido{background:#fee2e2;color:#991b1b}
+
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat-card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;text-align:center}
+.stat-num{font-size:28px;font-weight:700;color:#111827}
+.stat-label{font-size:12px;color:#6b7280;margin-top:2px}
+
+.money-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.money-card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px}
+.money-label{font-size:12px;color:#6b7280;margin-bottom:6px}
+.money-value{font-size:22px;font-weight:700;color:#111827}
+
+.senha-hint{font-size:11px;color:#6b7280;margin-top:4px}
+.success-msg{background:#dcfce7;color:#166534;padding:10px 14px;border-radius:8px;font-size:13px;margin-top:10px;display:none}
+.copy-btn{background:#f3f4f6;border:1px solid #e5e7eb;color:#374151;padding:3px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif}
+.copy-btn:hover{background:#e5e7eb}
+.empty-users{text-align:center;padding:32px;color:#9ca3af;font-size:13px}
+.list-row{display:flex;justify-content:space-between;gap:12px;padding:12px;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:8px;background:#fafafa;align-items:center}
+.list-main{font-size:13px;font-weight:600}
+.list-sub{font-size:11px;color:#6b7280;margin-top:2px}
+.history-table{width:100%;border-collapse:collapse}
+.history-table th,.history-table td{padding:10px 8px;border-bottom:1px solid #e5e7eb;text-align:left;font-size:12px}
+.history-table th{font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.4px}
+.muted{font-size:11px;color:#6b7280}
+.section-space{margin-top:10px}
+
+@media(max-width:900px){
+  .stats-grid,.money-grid,.form-row-4{grid-template-columns:1fr 1fr}
+}
+@media(max-width:680px){
+  .form-row,.stats-grid,.money-grid,.form-row-4{grid-template-columns:1fr}
+  .user-row{flex-direction:column}
+  .list-row{flex-direction:column;align-items:flex-start}
+}
+</style>
 </head>
 <body>
-  <div id="tela-login">
-    <div class="login-box">
-      <div class="login-logo">IA <span>Rural</span></div>
-      <div class="login-tagline">Gestão inteligente do campo com rebanho, produção, despesas, veterinário e calendário em um só lugar.</div>
 
-      <div class="login-field">
-        <label>Usuário</label>
-        <input type="text" id="login-usuario" placeholder="Seu usuário" onkeydown="if(event.key==='Enter')fazerLogin()" />
+<!-- LOGIN ADMIN -->
+<div id="admin-login">
+  <div class="login-card">
+    <div class="login-logo">IA <span>Rural</span></div>
+    <div class="login-sub">Painel do Administrador</div>
+
+    <div class="field">
+      <label>Usuário admin</label>
+      <input type="text" id="adm-user" placeholder="admin@iarural.app" onkeydown="if(event.key==='Enter')loginAdmin()">
+    </div>
+
+    <div class="field">
+      <label>Senha admin</label>
+      <input type="password" id="adm-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')loginAdmin()">
+    </div>
+
+    <button class="btn-full" onclick="loginAdmin()">Entrar no painel</button>
+    <div class="error-msg" id="adm-erro">Usuário ou senha incorretos.</div>
+    <p style="font-size:11px;color:#9ca3af;margin-top:16px;text-align:center">Acesso restrito ao administrador do IA Rural</p>
+  </div>
+</div>
+
+<!-- PAINEL -->
+<div id="admin-painel">
+  <div class="top-bar">
+    <div class="top-logo">IA <span>Rural</span> <span style="font-family:'DM Sans',sans-serif;font-size:12px;color:#555;margin-left:6px">Admin</span></div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="top-badge" id="adm-nome-badge">admin@iarural.app</div>
+      <button class="btn-sair" onclick="sairAdmin()">Sair</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- cards topo -->
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-num" id="stat-total">0</div><div class="stat-label">Usuários</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-ativos">0</div><div class="stat-label">Ativos</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-inativos">0</div><div class="stat-label">Inativos</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-vencidos">0</div><div class="stat-label">Vencidos</div></div>
+    </div>
+
+    <!-- criar usuário -->
+    <div class="card">
+      <div class="card-title">➕ Criar novo usuário</div>
+
+      <div class="form-row">
+        <div class="field">
+          <label>Nome / Fazenda</label>
+          <input type="text" id="n-nome" placeholder="Ex: João Silva / Fazenda Boa Vista">
+        </div>
+        <div class="field">
+          <label>Usuário (login)</label>
+          <input type="text" id="n-usuario" placeholder="Ex: joaosilva (sem espaços)" oninput="this.value=this.value.toLowerCase().replace(/\s/g,'')">
+        </div>
       </div>
 
-      <div class="login-field">
+      <div class="form-row">
+        <div class="field">
+          <label>Senha</label>
+          <input type="text" id="n-senha" placeholder="Ex: rural2025">
+          <div class="senha-hint">O login continua sendo simples, sem precisar usar email.</div>
+        </div>
+        <div class="field">
+          <label>Status</label>
+          <select id="n-status">
+            <option value="ativo">Ativo</option>
+            <option value="inativo">Inativo</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Observação (opcional)</label>
+        <input type="text" id="n-obs" placeholder="Ex: pagamento via pix">
+      </div>
+
+      <div class="form-row-4">
+        <div class="field">
+          <label>Plano</label>
+          <select id="n-plano">
+            <option value="mensal">Mensal</option>
+            <option value="quinzenal">Quinzenal</option>
+            <option value="personalizado">Personalizado</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Valor mensal (R$)</label>
+          <input type="number" id="n-valor" placeholder="Ex: 70" step="0.01" min="0">
+        </div>
+        <div class="field">
+          <label>Dia do vencimento</label>
+          <input type="number" id="n-vencimento" placeholder="Ex: 25" min="1" max="31">
+        </div>
+        <div class="field">
+          <label>Forma de pagamento</label>
+          <select id="n-forma">
+            <option value="pix">Pix</option>
+            <option value="dinheiro">Dinheiro</option>
+            <option value="transferencia">Transferência</option>
+            <option value="boleto">Boleto</option>
+            <option value="cartao">Cartão</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="btn btn-green" onclick="criarUsuario()">✓ Criar usuário</button>
+      <div class="success-msg" id="sucesso-criar">Usuário criado com sucesso!</div>
+    </div>
+
+    <!-- usuários -->
+    <div class="card">
+      <div class="card-title" style="justify-content:space-between">
+        <span>👥 Usuários cadastrados</span>
+        <button class="btn btn-outline btn-sm" onclick="exportarUsuarios()">⬇ Exportar lista</button>
+      </div>
+      <div class="muted" style="margin-bottom:10px">Lista com login, senha, observação e financeiro de cada cliente.</div>
+      <div id="lista-usuarios"></div>
+    </div>
+
+    <!-- financeiro resumo -->
+    <div class="card">
+      <div class="card-title">💰 Painel financeiro</div>
+      <div class="money-grid">
+        <div class="money-card">
+          <div class="money-label">Recebido no mês</div>
+          <div class="money-value" id="fin-recebido">R$ 0,00</div>
+        </div>
+        <div class="money-card">
+          <div class="money-label">A receber</div>
+          <div class="money-value" id="fin-areceber">R$ 0,00</div>
+        </div>
+        <div class="money-card">
+          <div class="money-label">Vencidos</div>
+          <div class="money-value" id="fin-vencidos">0</div>
+        </div>
+        <div class="money-card">
+          <div class="money-label">Próx. vencimento</div>
+          <div class="money-value" id="fin-proximo" style="font-size:18px">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- próximos vencimentos -->
+    <div class="card">
+      <div class="card-title">📅 Próximos vencimentos</div>
+      <div id="lista-vencimentos"></div>
+    </div>
+
+    <!-- histórico -->
+    <div class="card">
+      <div class="card-title">📜 Histórico de pagamentos</div>
+      <div id="lista-historico"></div>
+    </div>
+
+    <!-- config admin -->
+    <div class="card" style="background:#fafafa">
+      <div class="card-title">⚙️ Configurações do administrador</div>
+      <div class="form-row">
+        <div class="field">
+          <label>Novo usuário admin</label>
+          <input type="text" id="cfg-usuario" placeholder="admin@iarural.app">
+        </div>
+        <div class="field">
+          <label>Nova senha admin</label>
+          <input type="text" id="cfg-senha" placeholder="Nova senha">
+        </div>
+      </div>
+      <button class="btn btn-outline" onclick="salvarConfigAdmin()">Salvar configurações</button>
+      <div class="success-msg" id="sucesso-cfg">Configurações salvas!</div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR -->
+<div id="modal-editar" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:16px;padding:24px;width:100%;max-width:520px">
+    <h3 style="font-size:16px;font-weight:600;margin-bottom:16px">Editar usuário</h3>
+
+    <input type="hidden" id="edit-id">
+
+    <div class="form-row">
+      <div class="field">
+        <label>Nome / Fazenda</label>
+        <input type="text" id="edit-nome">
+      </div>
+      <div class="field">
+        <label>Usuário (login)</label>
+        <input type="text" id="edit-usuario" oninput="this.value=this.value.toLowerCase().replace(/\s/g,'')">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="field">
         <label>Senha</label>
-        <input type="password" id="login-senha" placeholder="••••••••" onkeydown="if(event.key==='Enter')fazerLogin()" />
+        <input type="text" id="edit-senha">
       </div>
+      <div class="field">
+        <label>Status</label>
+        <select id="edit-status">
+          <option value="ativo">Ativo</option>
+          <option value="inativo">Inativo</option>
+        </select>
+      </div>
+    </div>
 
-      <button class="login-btn" onclick="fazerLogin()">Entrar</button>
+    <div class="field">
+      <label>Observação</label>
+      <input type="text" id="edit-obs">
+    </div>
 
-      <div class="login-error" id="login-erro">Não foi possível entrar. Verifique usuário, senha e se o domínio está autorizado no Firebase Authentication.</div>
-      <div class="login-footer">IA Rural · Sistema de gestão rural inteligente</div>
+    <div class="form-row-4">
+      <div class="field">
+        <label>Plano</label>
+        <select id="edit-plano">
+          <option value="mensal">Mensal</option>
+          <option value="quinzenal">Quinzenal</option>
+          <option value="personalizado">Personalizado</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Valor mensal (R$)</label>
+        <input type="number" id="edit-valor" step="0.01" min="0">
+      </div>
+      <div class="field">
+        <label>Dia do vencimento</label>
+        <input type="number" id="edit-vencimento" min="1" max="31">
+      </div>
+      <div class="field">
+        <label>Forma de pagamento</label>
+        <select id="edit-forma">
+          <option value="pix">Pix</option>
+          <option value="dinheiro">Dinheiro</option>
+          <option value="transferencia">Transferência</option>
+          <option value="boleto">Boleto</option>
+          <option value="cartao">Cartão</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn btn-green" onclick="salvarEdicao()" style="flex:1;justify-content:center">Salvar</button>
+      <button class="btn btn-outline" onclick="fecharModalEditar()" style="flex:1;justify-content:center">Cancelar</button>
     </div>
   </div>
+</div>
 
-  <div id="app-wrapper">
-    <nav>
-      <div class="nav-header">
-        <div class="nav-logo">IA <span>Rural</span></div>
+<script>
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDs6njrUFchymlhcFHwdGSv6nPrKXoiLEc",
+  authDomain: "ia-rural.firebaseapp.com",
+  projectId: "ia-rural",
+  storageBucket: "ia-rural.firebasestorage.app",
+  messagingSenderId: "889787646020",
+  appId: "1:889787646020:web:d4e1ef26bcf9ca3b1dbc11"
+};
 
-        <div class="nav-right">
-          <div class="nav-user" id="nav-usuario">Usuário</div>
-          <button class="nav-btn" onclick="openBackupModal()">☁ Backup</button>
-          <button class="nav-btn" onclick="fazerLogout()">Sair</button>
-        </div>
-      </div>
+const ADMIN_EMAIL = 'admin@iarural.app';
 
-      <div class="nav-tabs">
-        <div class="nav-tab active" onclick="showPage('inicio')">Início</div>
-        <div class="nav-tab" onclick="showPage('rebanho')">Meu Rebanho</div>
-        <div class="nav-tab" onclick="showPage('producao')">Produção</div>
-        <div class="nav-tab" onclick="showPage('despesas')">Despesas</div>
-        <div class="nav-tab" onclick="showPage('veterinario')">Veterinário</div>
-        <div class="nav-tab" onclick="showPage('calendario')">Calendário</div>
-        <div class="nav-tab" onclick="showPage('arquivados')">Arquivados</div>
-      </div>
-    </nav>
+if (!firebase.apps.length) {
+  firebase.initializeApp(FIREBASE_CONFIG);
+}
 
-    <div id="page-inicio" class="page active">
-      <div class="welcome-hero">
-        <h1>Bem-vindo ao<br /><span>IA Rural</span> 🌾</h1>
-        <p class="muted">Seu sistema para gerenciar o rebanho, controlar a produção de leite, acompanhar o estoque de ração, consultar informações veterinárias e visualizar eventos do calendário.</p>
+const auth = firebase.auth();
+const db = firebase.firestore();
 
-        <div class="features-grid">
-          <div class="feat-card" onclick="showPage('rebanho')">
-            <div class="feat-icon">🐄</div>
-            <div class="feat-label">Meu Rebanho</div>
-            <div class="feat-desc">Cadastre, organize e acompanhe seus animais.</div>
-          </div>
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch((e) => {
+  console.error('Erro ao definir persistência:', e);
+});
 
-          <div class="feat-card" onclick="showPage('producao')">
-            <div class="feat-icon">🥛</div>
-            <div class="feat-label">Produção</div>
-            <div class="feat-desc">Registre litros do dia e calcule ração automaticamente.</div>
-          </div>
+function normalizarUsuario(usuario) {
+  return (usuario || '').trim().toLowerCase().replace(/\s+/g, '');
+}
 
-          <div class="feat-card" onclick="showPage('despesas')">
-            <div class="feat-icon">📦</div>
-            <div class="feat-label">Despesas</div>
-            <div class="feat-desc">Controle estoque de ração e veja quando vai acabar.</div>
-          </div>
+function usuarioParaEmail(usuario) {
+  return `${normalizarUsuario(usuario)}@ia-rural.app`;
+}
 
-          <div class="feat-card" onclick="showPage('veterinario')">
-            <div class="feat-icon">🩺</div>
-            <div class="feat-label">Veterinário</div>
-            <div class="feat-desc">Biblioteca prática com causas, sintomas e medidas iniciais.</div>
-          </div>
+function formatData(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('pt-BR');
+}
 
-          <div class="feat-card" onclick="showPage('calendario')">
-            <div class="feat-icon">📅</div>
-            <div class="feat-label">Calendário</div>
-            <div class="feat-desc">Secagem, pré-parto, parto e protocolos fixos.</div>
-          </div>
+function formatDateTime(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleString('pt-BR');
+}
 
-          <div class="feat-card" onclick="openBackupModal()">
-            <div class="feat-icon">☁️</div>
-            <div class="feat-label">Backup</div>
-            <div class="feat-desc">Exporte ou importe seu banco do app quando quiser.</div>
-          </div>
-        </div>
-      </div>
+function formatMoney(value) {
+  const num = Number(value || 0);
+  return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
 
-      <div class="card">
-        <div class="section-title">📘 Como usar o IA Rural</div>
-        <div class="muted">
-          <p style="margin-bottom:8px;"><strong>1.</strong> Vá em <strong>Meu Rebanho</strong> e cadastre seus animais com nome, brinco, sexo e idade em meses.</p>
-          <p style="margin-bottom:8px;"><strong>2.</strong> Em <strong>Produção</strong>, registre os litros da manhã, tarde e noite. O sistema calcula a ração com a fórmula <strong>1 kg para cada 3 litros</strong>.</p>
-          <p style="margin-bottom:8px;"><strong>3.</strong> Em <strong>Despesas</strong>, registre entregas de ração e acompanhe quantos dias restam de estoque.</p>
-          <p style="margin-bottom:8px;"><strong>4.</strong> Em <strong>Veterinário</strong>, consulte fichas prontas com doenças comuns em bezerros e vacas.</p>
-          <p><strong>5.</strong> Seus dados ficam salvos no navegador e também na nuvem do usuário logado.</p>
-        </div>
-      </div>
-    </div>
+function toggleSenha(id, senha) {
+  const el = document.getElementById('senha-' + id);
+  if (!el) return;
+  el.textContent = el.textContent === '••••••' ? senha : '••••••';
+}
 
-    <div id="page-rebanho" class="page">
-      <div class="backup-notice">💾 Dados salvos localmente e sincronizados na nuvem para o usuário logado.</div>
+function copiarSenha(senha) {
+  navigator.clipboard.writeText(senha).then(() => {
+    alert('Senha copiada!');
+  }).catch(() => {
+    const t = document.createElement('textarea');
+    t.value = senha;
+    document.body.appendChild(t);
+    t.select();
+    document.execCommand('copy');
+    document.body.removeChild(t);
+    alert('Senha copiada!');
+  });
+}
 
-      <div class="card">
-        <div class="section-title">🐄 Meu Rebanho</div>
-        <button class="btn btn-primary" onclick="toggleForm('form-animal')">+ Cadastrar Animal</button>
+function mostrarErroLogin(msg) {
+  const erroEl = document.getElementById('adm-erro');
+  erroEl.textContent = msg;
+  erroEl.style.display = 'block';
+}
 
-        <div id="form-animal" class="hidden" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);">
-          <div class="form-row">
-            <div class="form-group">
-              <label>Nome do animal</label>
-              <input type="text" id="a-nome" placeholder="Ex: Mimosa" />
-            </div>
-            <div class="form-group">
-              <label>Nº do brinco</label>
-              <input type="text" id="a-brinco" placeholder="Ex: 001" />
-            </div>
-          </div>
+function getLastDayOfMonth(year, monthIndex) {
+  return new Date(year, monthIndex + 1, 0).getDate();
+}
 
-          <div class="form-row">
-            <div class="form-group">
-              <label>Sexo</label>
-              <select id="a-sexo" onchange="atualizarCategoria()">
-                <option value="">Selecione</option>
-                <option>Fêmea</option>
-                <option>Macho</option>
-              </select>
-            </div>
+function getDueDateForCurrentMonth(day) {
+  const now = new Date();
+  const safeDay = Math.max(1, Math.min(31, parseInt(day || 1, 10)));
+  const maxDay = getLastDayOfMonth(now.getFullYear(), now.getMonth());
+  return new Date(now.getFullYear(), now.getMonth(), Math.min(safeDay, maxDay), 12, 0, 0);
+}
 
-            <div class="form-group">
-              <label>Idade (em meses)</label>
-              <input type="number" id="a-idade" placeholder="Ex: 36" oninput="atualizarCategoria()" />
-            </div>
-          </div>
+function getDueDateLabel(day) {
+  if (!day) return '—';
+  return formatData(getDueDateForCurrentMonth(day).toISOString());
+}
 
-          <div class="form-group">
-            <label>Categoria (calculada automaticamente)</label>
-            <div id="a-categoria-box" class="info-box">Preencha sexo e idade acima</div>
-          </div>
+function isPaidThisMonth(iso) {
+  if (!iso) return false;
+  const d = new Date(iso);
+  const now = new Date();
+  return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+}
 
-          <div class="form-row">
-            <div class="form-group">
-              <label>Está prenha?</label>
-              <select id="a-prenha" onchange="togglePrenha()">
-                <option value="nao">Não</option>
-                <option value="sim">Sim</option>
-              </select>
-            </div>
+function getStatusPagamento(user) {
+  const valor = Number(user.valorMensal || 0);
+  const vencimento = Number(user.diaVencimento || 0);
+  if (!valor || !vencimento) return 'pendente';
+  if (isPaidThisMonth(user.ultimoPagamento)) return 'pago';
+  const due = getDueDateForCurrentMonth(vencimento);
+  const now = new Date();
+  if (now > due) return 'vencido';
+  return 'pendente';
+}
 
-            <div class="form-group hidden" id="campo-data-prenha">
-              <label>Data de confirmação da prenhez</label>
-              <input type="date" id="a-data-prenha" />
-            </div>
-          </div>
+function getStatusBadgeClass(status) {
+  if (status === 'pago') return 'badge-pago';
+  if (status === 'vencido') return 'badge-vencido';
+  return 'badge-pendente';
+}
 
-          <div class="form-group">
-            <label>Em lactação?</label>
-            <select id="a-lactacao">
-              <option value="nao">Não</option>
-              <option value="sim">Sim</option>
-            </select>
-          </div>
+async function loginAdmin() {
+  const u = document.getElementById('adm-user').value.trim().toLowerCase();
+  const s = document.getElementById('adm-pass').value;
+  const erroEl = document.getElementById('adm-erro');
 
-          <div class="form-group">
-            <label>Observações (opcional)</label>
-            <textarea id="a-obs" placeholder="Raça, histórico, lote, observações..."></textarea>
-          </div>
+  erroEl.style.display = 'none';
 
-          <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <button class="btn btn-success" onclick="salvarAnimal()">✓ Salvar Animal</button>
-            <button class="btn btn-outline" onclick="toggleForm('form-animal')">Cancelar</button>
-          </div>
-        </div>
-      </div>
+  if (!u || !s) {
+    mostrarErroLogin('Informe usuário e senha.');
+    return;
+  }
 
-      <div class="section-title">Lista do Rebanho (<span id="count-rebanho">0</span>)</div>
-      <div id="lista-rebanho"></div>
-    </div>
+  let email = u;
+  if (u === 'admin') email = ADMIN_EMAIL;
 
-    <div id="page-producao" class="page">
-      <div class="card">
-        <div class="section-title">🥛 Produção de Leite</div>
-        <p class="muted" style="margin-bottom:14px;">Registre os litros por período. A ração é calculada automaticamente com base em <strong>1 kg para cada 3 litros</strong>.</p>
+  try {
+    const cred = await auth.signInWithEmailAndPassword(email, s);
+    const emailLogado = (cred.user?.email || '').toLowerCase();
 
-        <div id="lista-producao"></div>
+    if (emailLogado !== ADMIN_EMAIL) {
+      await auth.signOut();
+      mostrarErroLogin('Este usuário não tem permissão de administrador.');
+      return;
+    }
 
-        <div class="total-bar hidden" id="bloco-total-prod">
-          <div style="font-size:12px; color:var(--muted); font-weight:700;">Total geral do dia</div>
-          <div class="total-big" id="total-litros-dia">0,0 L</div>
-          <div class="muted">Ração total necessária: <strong id="total-racao-dia">0,0 kg</strong></div>
-        </div>
+    document.getElementById('admin-login').style.display = 'none';
+    document.getElementById('admin-painel').style.display = 'block';
+    document.getElementById('adm-nome-badge').textContent = emailLogado;
 
-        <div id="empty-prod" class="empty-state">
-          <div class="empty-icon">🥛</div>
-          Nenhuma vaca em lactação cadastrada.<br />
-          Vá em <strong>Meu Rebanho</strong> e marque o animal como em lactação.
-        </div>
-      </div>
-    </div>
+    await carregarTudoAdmin();
+  } catch (e) {
+    console.error(e);
+    mostrarErroLogin('Usuário ou senha incorretos.');
+  }
+}
 
-    <div id="page-despesas" class="page">
-      <div id="alerta-racao"></div>
+async function sairAdmin() {
+  try {
+    await auth.signOut();
+  } catch (e) {
+    console.error(e);
+  }
 
-      <div class="card">
-        <div class="section-title">📦 Registrar Entrega de Ração</div>
+  document.getElementById('admin-painel').style.display = 'none';
+  document.getElementById('admin-login').style.display = 'flex';
+  document.getElementById('adm-user').value = '';
+  document.getElementById('adm-pass').value = '';
+  document.getElementById('adm-erro').style.display = 'none';
+}
 
-        <div class="form-row">
-          <div class="form-group">
-            <label>Data da entrega</label>
-            <input type="date" id="d-data" />
-          </div>
+async function criarUsuario() {
+  const nome = document.getElementById('n-nome').value.trim();
+  const usuario = normalizarUsuario(document.getElementById('n-usuario').value);
+  const senha = document.getElementById('n-senha').value.trim();
+  const status = document.getElementById('n-status').value;
+  const obs = document.getElementById('n-obs').value.trim();
+  const plano = document.getElementById('n-plano').value;
+  const valorMensal = Number(document.getElementById('n-valor').value || 0);
+  const diaVencimento = Number(document.getElementById('n-vencimento').value || 0);
+  const formaPagamento = document.getElementById('n-forma').value;
 
-          <div class="form-group">
-            <label>Quantidade de sacos</label>
-            <input type="number" id="d-sacos" placeholder="Ex: 10" oninput="calcEntregaRacao()" />
-          </div>
-        </div>
+  if (!nome) { alert('Informe o nome ou fazenda.'); return; }
+  if (!usuario) { alert('Informe o nome de usuário.'); return; }
+  if (!senha) { alert('Defina uma senha.'); return; }
+  if (senha.length < 6) { alert('A senha precisa ter pelo menos 6 caracteres.'); return; }
+  if (!diaVencimento || diaVencimento < 1 || diaVencimento > 31) { alert('Informe um dia de vencimento entre 1 e 31.'); return; }
 
-        <div class="form-row">
-          <div class="form-group">
-            <label>Tipo de saco</label>
-            <select id="d-tipo" onchange="calcEntregaRacao()">
-              <option value="40">40 kg</option>
-              <option value="50">50 kg</option>
-            </select>
-          </div>
+  try {
+    const jaExiste = await db.collection('admin_usuarios')
+      .where('usuario', '==', usuario)
+      .limit(1)
+      .get();
 
-          <div class="form-group">
-            <label>Total calculado</label>
-            <div id="d-total-calc" class="info-box">—</div>
-          </div>
-        </div>
+    if (!jaExiste.empty) {
+      alert('Esse nome de usuário já existe. Escolha outro.');
+      return;
+    }
 
-        <button class="btn btn-success" onclick="salvarEntregaRacao()">+ Registrar Entrega</button>
-      </div>
+    const resposta = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FIREBASE_CONFIG.apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: usuarioParaEmail(usuario),
+        password: senha,
+        returnSecureToken: true
+      })
+    });
 
-      <div class="card">
-        <div class="section-title">📊 Estoque Atual de Ração</div>
-        <div id="painel-estoque"></div>
-      </div>
+    const dados = await resposta.json();
 
-      <div class="card">
-        <div class="section-title">📋 Histórico de Entregas</div>
-        <div id="historico-racao"></div>
-      </div>
-    </div>
+    if (!resposta.ok) {
+      if (dados?.error?.message === 'EMAIL_EXISTS') {
+        alert('Esse nome de usuário já existe no Firebase. Escolha outro.');
+        return;
+      }
+      throw new Error(dados?.error?.message || 'Falha ao criar usuário no Firebase.');
+    }
 
-    <div id="page-veterinario" class="page">
-      <div class="card">
-        <div class="section-title">🩺 Veterinário</div>
-        <p class="muted" style="margin-bottom:12px;">Biblioteca prática com doenças comuns em bezerros e vacas. Use a busca e os filtros para localizar mais rápido.</p>
-
-        <div class="form-group" style="margin-bottom:12px;">
-          <label>Buscar doença</label>
-          <input type="text" id="vet-busca" placeholder="Ex: mastite, diarreia, pneumonia..." oninput="renderVet()" />
-        </div>
-
-        <div class="filter-row">
-          <button class="pill-filter active" id="vet-filter-todos" onclick="setVetFilter('todos')">Todos</button>
-          <button class="pill-filter" id="vet-filter-bezerros" onclick="setVetFilter('bezerros')">Bezerros</button>
-          <button class="pill-filter" id="vet-filter-vacas" onclick="setVetFilter('vacas')">Vacas</button>
-        </div>
-
-        <div id="vet-lista" class="vet-grid"></div>
-      </div>
-    </div>
-
-    <div id="page-calendario" class="page">
-      <div class="card">
-        <div class="section-title">📅 Calendário Inteligente</div>
-        <p class="muted" style="margin-bottom:14px;">Eventos calculados automaticamente com base nos animais prenhes e protocolos fixos.</p>
-        <div id="lista-calendario"></div>
-      </div>
-
-      <div class="card">
-        <div class="section-title">💉 Protocolos Fixos</div>
-        <div id="lista-vacinas"></div>
-      </div>
-    </div>
-
-    <div id="page-arquivados" class="page">
-      <div class="card">
-        <div class="section-title">🗂 Animais Arquivados</div>
-        <div id="lista-arquivados"></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal-bg" id="modal-excluir">
-    <div class="modal-box">
-      <h3 id="modal-excluir-titulo">O que aconteceu com o animal?</h3>
-      <p>Selecione o motivo. O animal irá para a aba <strong>Arquivados</strong>, sem ser perdido.</p>
-
-      <div class="modal-actions">
-        <button class="btn btn-primary" onclick="confirmarExclusao('vendido')">💰 Foi vendido</button>
-        <button class="btn btn-danger" onclick="confirmarExclusao('faleceu')">🕊 Faleceu</button>
-        <button class="btn btn-outline" onclick="fecharModal('modal-excluir')">Cancelar</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal-bg" id="modal-backup">
-    <div class="modal-box">
-      <h3>☁ Backup e Restauração</h3>
-      <p>Exporte ou importe um arquivo de backup do seu banco do app.</p>
-
-      <div class="modal-actions">
-        <button class="btn btn-success" onclick="exportarDados()">⬇ Exportar backup (.json)</button>
-
-        <label class="btn btn-outline" style="cursor:pointer;">
-          ⬆ Importar backup
-          <input type="file" accept=".json" onchange="importarDados(event)" style="display:none;" />
-        </label>
-
-        <button class="btn btn-outline" onclick="fecharModal('modal-backup')">Fechar</button>
-      </div>
-
-      <p style="margin-top:12px; font-size:11px; color:var(--muted);">Última atualização: <span id="ultimo-backup">—</span></p>
-    </div>
-  </div>
-
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDs6njrUFchymlhcFHwdGSv6nPrKXoiLEc",
-      authDomain: "ia-rural.firebaseapp.com",
-      projectId: "ia-rural",
-      storageBucket: "ia-rural.firebasestorage.app",
-      messagingSenderId: "889787646020",
-      appId: "1:889787646020:web:d4e1ef26bcf9ca3b1dbc11"
+    const docData = {
+      id: dados.localId || Date.now().toString(),
+      nome,
+      usuario,
+      senha,
+      status,
+      obs,
+      firebaseUid: dados.localId || '',
+      dataCriacao: new Date().toISOString(),
+      plano,
+      valorMensal,
+      diaVencimento,
+      formaPagamento,
+      ultimoPagamento: '',
+      ultimoValorPago: 0
     };
 
-    if (!firebase.apps.length) {
-      firebase.initializeApp(firebaseConfig);
+    await db.collection('admin_usuarios').doc(docData.id).set(docData);
+
+    document.getElementById('n-nome').value = '';
+    document.getElementById('n-usuario').value = '';
+    document.getElementById('n-senha').value = '';
+    document.getElementById('n-obs').value = '';
+    document.getElementById('n-status').value = 'ativo';
+    document.getElementById('n-plano').value = 'mensal';
+    document.getElementById('n-valor').value = '';
+    document.getElementById('n-vencimento').value = '';
+    document.getElementById('n-forma').value = 'pix';
+
+    const msg = document.getElementById('sucesso-criar');
+    msg.textContent = 'Usuário criado com sucesso!';
+    msg.style.display = 'block';
+    setTimeout(() => {
+      msg.style.display = 'none';
+    }, 3000);
+
+    await carregarTudoAdmin();
+  } catch (erro) {
+    console.error(erro);
+    alert('Erro ao criar usuário: ' + erro.message);
+  }
+}
+
+async function marcarPago(id) {
+  try {
+    const ref = db.collection('admin_usuarios').doc(id);
+    const doc = await ref.get();
+    if (!doc.exists) {
+      alert('Usuário não encontrado.');
+      return;
     }
 
-    const db = firebase.firestore();
-    const auth = firebase.auth();
+    const u = doc.data();
+    const valor = Number(u.valorMensal || 0);
+    const agora = new Date().toISOString();
 
-    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch((e) => {
-      console.log("Erro ao definir persistência:", e);
+    await ref.update({
+      ultimoPagamento: agora,
+      ultimoValorPago: valor
     });
 
-    const DB_PADRAO = () => ({
-      animais: [],
-      arquivados: [],
-      producao: {},
-      entregas: [],
-      estoqueRacao: 0,
-      ultimoBackup: null
+    await db.collection('admin_pagamentos').add({
+      userId: u.id,
+      nome: u.nome || '',
+      usuario: u.usuario || '',
+      valor: valor,
+      formaPagamento: u.formaPagamento || '',
+      dataPagamento: agora,
+      referenciaMes: `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`
     });
 
-    let DB = DB_PADRAO();
-    let usuarioFirebase = null;
-    let usuarioLogado = null;
-    let animalParaExcluir = null;
-    let vetFilter = 'todos';
+    await carregarTudoAdmin();
+  } catch (erro) {
+    console.error(erro);
+    alert('Erro ao marcar pagamento: ' + erro.message);
+  }
+}
 
-    const VET_DB = [
-      {
-        grupo: 'bezerros',
-        nome: 'Diarreia neonatal',
-        causas: 'Falha de colostragem, infecção por vírus, bactérias, protozoários e manejo inadequado.',
-        sintomas: 'Fezes líquidas, fraqueza, desidratação, olhos fundos, apatia.',
-        medidas: 'Isolar, ofertar água e eletrólitos, manter aquecido e observar desidratação.',
-        medicacao: 'Eletrólitos orais, suporte e tratamento prescrito pelo veterinário conforme a causa.',
-        urgencia: 'Urgente se houver prostração forte ou desidratação intensa.'
-      },
-      {
-        grupo: 'bezerros',
-        nome: 'Pneumonia',
-        causas: 'Mudança brusca de temperatura, ventilação ruim, lotação e infecções respiratórias.',
-        sintomas: 'Tosse, secreção nasal, febre, respiração acelerada, orelhas caídas.',
-        medidas: 'Separar o animal, manter em local seco e ventilado, monitorar febre.',
-        medicacao: 'Antibióticos e anti-inflamatórios somente com orientação veterinária.',
-        urgencia: 'Alta urgência se houver esforço respiratório.'
-      },
-      {
-        grupo: 'bezerros',
-        nome: 'Tristeza parasitária',
-        causas: 'Carrapatos transmitindo babesiose e anaplasmose.',
-        sintomas: 'Febre, mucosas pálidas, urina escura, apatia, perda de apetite.',
-        medidas: 'Acionar veterinário rápido e revisar controle de carrapatos.',
-        medicacao: 'Terapia específica conforme o agente, prescrita por veterinário.',
-        urgencia: 'Muito urgente.'
-      },
-      {
-        grupo: 'bezerros',
-        nome: 'Umbigo inflamado',
-        causas: 'Falha na cura do umbigo e contaminação após o nascimento.',
-        sintomas: 'Umbigo quente, inchado, dolorido, secreção e febre.',
-        medidas: 'Higienizar, avaliar dor e chamar veterinário cedo.',
-        medicacao: 'Antissépticos e antibióticos conforme avaliação profissional.',
-        urgencia: 'Urgente para evitar infecção generalizada.'
-      },
-      {
-        grupo: 'bezerros',
-        nome: 'Verminose',
-        causas: 'Alta carga parasitária no ambiente e pasto contaminado.',
-        sintomas: 'Pelo ruim, barriga inchada, diarreia, emagrecimento, anemia.',
-        medidas: 'Separar os mais fracos, revisar pastagem e cronograma sanitário.',
-        medicacao: 'Vermífugo conforme protocolo e orientação técnica.',
-        urgencia: 'Moderada, mas pode ficar grave.'
-      },
-      {
-        grupo: 'vacas',
-        nome: 'Mastite',
-        causas: 'Infecção da glândula mamária, falha de higiene ou manejo de ordenha.',
-        sintomas: 'Leite alterado, grumos, quarto quente, inchado e dolorido.',
-        medidas: 'Separar leite do quarto afetado, reforçar higiene e observar febre.',
-        medicacao: 'Tratamento intramamário e/ou sistêmico prescrito pelo veterinário.',
-        urgencia: 'Alta se houver febre ou queda forte na produção.'
-      },
-      {
-        grupo: 'vacas',
-        nome: 'Febre do leite',
-        causas: 'Queda do cálcio no pós-parto.',
-        sintomas: 'Fraqueza, tremores, dificuldade para levantar, pescoço dobrado.',
-        medidas: 'Manter a vaca confortável e chamar veterinário imediatamente.',
-        medicacao: 'Cálcio via tratamento profissional.',
-        urgencia: 'Emergência.'
-      },
-      {
-        grupo: 'vacas',
-        nome: 'Retenção de placenta',
-        causas: 'Problemas de parto, deficiência mineral, infecções e distúrbios metabólicos.',
-        sintomas: 'Placenta não eliminada após o parto, secreção, queda de apetite.',
-        medidas: 'Observar odor, temperatura e condição geral.',
-        medicacao: 'Conduta veterinária conforme exame; não puxar a placenta.',
-        urgencia: 'Urgente.'
-      },
-      {
-        grupo: 'vacas',
-        nome: 'Metrite',
-        causas: 'Infecção uterina no pós-parto.',
-        sintomas: 'Secreção com mau cheiro, febre, apatia, queda no consumo.',
-        medidas: 'Separar, monitorar temperatura e chamar veterinário.',
-        medicacao: 'Antibióticos e anti-inflamatórios conforme avaliação.',
-        urgencia: 'Alta.'
-      },
-      {
-        grupo: 'vacas',
-        nome: 'Cetose',
-        causas: 'Déficit energético no pós-parto.',
-        sintomas: 'Queda na produção, perda de apetite, emagrecimento, hálito alterado.',
-        medidas: 'Revisar dieta e chamar assistência técnica.',
-        medicacao: 'Suporte energético e tratamento indicado por veterinário.',
-        urgencia: 'Moderada a alta.'
-      },
-      {
-        grupo: 'vacas',
-        nome: 'Acidose ruminal',
-        causas: 'Excesso de concentrado e adaptação ruim da dieta.',
-        sintomas: 'Diarreia, queda do apetite, timpanismo, dor abdominal, apatia.',
-        medidas: 'Suspender excesso de concentrado e acionar veterinário.',
-        medicacao: 'Correção de dieta e suporte clínico profissional.',
-        urgencia: 'Alta.'
-      },
-      {
-        grupo: 'vacas',
-        nome: 'Problemas de casco',
-        causas: 'Ambiente úmido, piso ruim, falta de casqueamento e infecções.',
-        sintomas: 'Manqueira, dor, ferida, dificuldade de locomoção.',
-        medidas: 'Separar, deixar em local seco e avaliar o casco.',
-        medicacao: 'Tratamento local e sistêmico conforme causa.',
-        urgencia: 'Moderada a alta.'
+async function carregarUsuarios() {
+  const el = document.getElementById('lista-usuarios');
+
+  try {
+    const snapshot = await db.collection('admin_usuarios').get();
+    const lista = snapshot.docs
+      .map(doc => doc.data())
+      .sort((a, b) => new Date(b.dataCriacao || 0) - new Date(a.dataCriacao || 0));
+
+    const ativos = lista.filter(u => u.status === 'ativo').length;
+    const inativos = lista.length - ativos;
+    const vencidos = lista.filter(u => getStatusPagamento(u) === 'vencido').length;
+
+    document.getElementById('stat-total').textContent = lista.length;
+    document.getElementById('stat-ativos').textContent = ativos;
+    document.getElementById('stat-inativos').textContent = inativos;
+    document.getElementById('stat-vencidos').textContent = vencidos;
+
+    if (!lista.length) {
+      el.innerHTML = '<div class="empty-users">Nenhum usuário cadastrado ainda.<br>Crie o primeiro usuário acima.</div>';
+      return [];
+    }
+
+    el.innerHTML = lista.map(u => {
+      const statusPg = getStatusPagamento(u);
+      return `
+        <div class="user-row">
+          <div class="user-avatar">${(u.nome || '?').charAt(0).toUpperCase()}</div>
+          <div class="user-info">
+            <div class="user-name">${u.nome} <span class="badge ${u.status === 'ativo' ? 'badge-ativo' : 'badge-inativo'}">${u.status}</span></div>
+            <div class="user-meta">
+              Login: <strong>${u.usuario}</strong> &nbsp;·&nbsp;
+              Senha: <span id="senha-${u.id}" style="font-family:monospace">••••••</span>
+              <button class="copy-btn" onclick="toggleSenha('${u.id}','${u.senha}')">ver</button>
+              <button class="copy-btn" onclick="copiarSenha('${u.senha}')">copiar</button>
+              ${u.obs ? '&nbsp;·&nbsp; ' + u.obs : ''}
+            </div>
+            <div class="user-meta section-space">
+              Plano: <strong>${u.plano || 'mensal'}</strong> &nbsp;·&nbsp;
+              Valor: <strong>${formatMoney(u.valorMensal || 0)}</strong> &nbsp;·&nbsp;
+              Vencimento: <strong>dia ${u.diaVencimento || '—'}</strong> &nbsp;·&nbsp;
+              Situação: <span class="badge ${getStatusBadgeClass(statusPg)}">${statusPg}</span>
+            </div>
+            <div class="user-meta">
+              Último pagamento: <strong>${u.ultimoPagamento ? formatData(u.ultimoPagamento) : '—'}</strong> &nbsp;·&nbsp;
+              Forma: <strong>${u.formaPagamento || '—'}</strong>
+            </div>
+            <div style="font-size:10px;color:#9ca3af;margin-top:3px">Criado em ${formatData(u.dataCriacao)}</div>
+          </div>
+          <div class="user-actions">
+            <button class="btn btn-blue btn-xs" onclick="marcarPago('${u.id}')">Marcar pago</button>
+            <button class="btn btn-outline btn-xs" onclick="abrirEditar('${u.id}')">Editar</button>
+            <button class="btn btn-red btn-xs" onclick="excluirUsuario('${u.id}','${(u.nome || '').replace(/'/g, "\\'")}')">Excluir</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    return lista;
+  } catch (erro) {
+    console.error(erro);
+    el.innerHTML = '<div class="empty-users">Erro ao carregar usuários da nuvem.</div>';
+    return [];
+  }
+}
+
+async function carregarFinanceiro(listaUsuarios) {
+  const recebidosEl = document.getElementById('fin-recebido');
+  const aReceberEl = document.getElementById('fin-areceber');
+  const vencidosEl = document.getElementById('fin-vencidos');
+  const proximoEl = document.getElementById('fin-proximo');
+  const listaVencimentosEl = document.getElementById('lista-vencimentos');
+
+  let recebidoMes = 0;
+  let aReceber = 0;
+  let vencidos = 0;
+
+  const proximos = listaUsuarios
+    .filter(u => Number(u.valorMensal || 0) > 0 && Number(u.diaVencimento || 0) > 0)
+    .map(u => {
+      const statusPg = getStatusPagamento(u);
+      if (statusPg === 'pago') {
+        recebidoMes += Number(u.valorMensal || 0);
+      } else {
+        aReceber += Number(u.valorMensal || 0);
       }
-    ];
+      if (statusPg === 'vencido') vencidos += 1;
 
-    function normalizarUsuario(usuario) {
-      return (usuario || '').trim().toLowerCase().replace(/\s+/g, '');
-    }
-
-    function usuarioParaEmail(usuario) {
-      return `${normalizarUsuario(usuario)}@ia-rural.app`;
-    }
-
-    function getLocalKey() {
-      const ref = usuarioLogado || 'anonimo';
-      return `ia_rural_db_${ref}`;
-    }
-
-    function formatarDataHora(iso) {
-      if (!iso) return '—';
-      const data = new Date(iso);
-      if (isNaN(data.getTime())) return '—';
-      return data.toLocaleString('pt-BR');
-    }
-
-    function abrirAppLogado(usuario) {
-      usuarioLogado = usuario;
-      document.getElementById('nav-usuario').textContent = usuario;
-      document.getElementById('tela-login').style.display = 'none';
-      document.getElementById('app-wrapper').style.display = 'block';
-      showPage('inicio');
-    }
-
-    function salvarLocal() {
-      try {
-        localStorage.setItem(getLocalKey(), JSON.stringify(DB));
-      } catch (e) {
-        console.log('Erro localStorage:', e);
-      }
-    }
-
-    function carregarLocalPorUsuario(usuario) {
-      try {
-        const raw = localStorage.getItem(`ia_rural_db_${usuario}`);
-        if (!raw) return DB_PADRAO();
-        const parsed = JSON.parse(raw);
-        return normalizarDB(parsed);
-      } catch (e) {
-        return DB_PADRAO();
-      }
-    }
-
-    function normalizarDB(obj) {
-      const base = DB_PADRAO();
       return {
-        animais: Array.isArray(obj?.animais) ? obj.animais : base.animais,
-        arquivados: Array.isArray(obj?.arquivados) ? obj.arquivados : base.arquivados,
-        producao: obj?.producao && typeof obj.producao === 'object' ? obj.producao : base.producao,
-        entregas: Array.isArray(obj?.entregas) ? obj.entregas : base.entregas,
-        estoqueRacao: typeof obj?.estoqueRacao === 'number' ? obj.estoqueRacao : base.estoqueRacao,
-        ultimoBackup: obj?.ultimoBackup || base.ultimoBackup
+        ...u,
+        statusPagamentoCalc: statusPg,
+        dueDate: getDueDateForCurrentMonth(u.diaVencimento)
       };
+    })
+    .sort((a, b) => a.dueDate - b.dueDate);
+
+  recebidosEl.textContent = formatMoney(recebidoMes);
+  aReceberEl.textContent = formatMoney(aReceber);
+  vencidosEl.textContent = String(vencidos);
+
+  const proximo = proximos.find(item => item.statusPagamentoCalc !== 'pago');
+  proximoEl.textContent = proximo ? formatData(proximo.dueDate.toISOString()) : '—';
+
+  if (!proximos.length) {
+    listaVencimentosEl.innerHTML = '<div class="empty-users">Nenhum vencimento cadastrado ainda.</div>';
+    return;
+  }
+
+  listaVencimentosEl.innerHTML = proximos.slice(0, 10).map(u => `
+    <div class="list-row">
+      <div>
+        <div class="list-main">${u.nome}</div>
+        <div class="list-sub">${formatMoney(u.valorMensal || 0)} · vence em ${formatData(u.dueDate.toISOString())}</div>
+      </div>
+      <div><span class="badge ${getStatusBadgeClass(u.statusPagamentoCalc)}">${u.statusPagamentoCalc}</span></div>
+    </div>
+  `).join('');
+}
+
+async function carregarHistorico() {
+  const el = document.getElementById('lista-historico');
+
+  try {
+    const snapshot = await db.collection('admin_pagamentos').get();
+    const lista = snapshot.docs
+      .map(doc => doc.data())
+      .sort((a, b) => new Date(b.dataPagamento || 0) - new Date(a.dataPagamento || 0));
+
+    if (!lista.length) {
+      el.innerHTML = '<div class="empty-users">Nenhum pagamento registrado ainda.</div>';
+      return;
     }
 
-    async function salvarNuvem() {
-      if (!usuarioFirebase) return;
-      try {
-        await db.collection('users').doc(usuarioFirebase.uid).set({
-          username: usuarioLogado,
-          appData: DB,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
-      } catch (e) {
-        console.log('Erro ao salvar na nuvem:', e);
-      }
-    }
+    el.innerHTML = `
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Nome</th>
+            <th>Valor</th>
+            <th>Forma</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${lista.map(item => `
+            <tr>
+              <td>${formatDateTime(item.dataPagamento)}</td>
+              <td>${item.nome || '—'}</td>
+              <td>${formatMoney(item.valor || 0)}</td>
+              <td>${item.formaPagamento || '—'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  } catch (erro) {
+    console.error(erro);
+    el.innerHTML = '<div class="empty-users">Erro ao carregar histórico de pagamentos.</div>';
+  }
+}
 
-    async function salvarDB() {
-      salvarLocal();
-      await salvarNuvem();
-    }
+async function carregarTudoAdmin() {
+  const lista = await carregarUsuarios();
+  await carregarFinanceiro(lista);
+  await carregarHistorico();
+}
 
-    async function carregarFirestore() {
-      if (!usuarioFirebase) return;
+async function excluirUsuario(id, nome) {
+  if (!confirm('Excluir o usuário "' + nome + '" da lista do painel?')) return;
 
-      try {
-        const docRef = await db.collection('users').doc(usuarioFirebase.uid).get();
+  try {
+    await db.collection('admin_usuarios').doc(id).delete();
+    await carregarTudoAdmin();
+  } catch (erro) {
+    console.error(erro);
+    alert('Erro ao excluir usuário: ' + erro.message);
+  }
+}
 
-        if (docRef.exists && docRef.data() && docRef.data().appData) {
-          DB = normalizarDB(docRef.data().appData);
-          salvarLocal();
-        } else {
-          DB = carregarLocalPorUsuario(usuarioLogado || '');
-          await db.collection('users').doc(usuarioFirebase.uid).set({
-            username: usuarioLogado,
-            appData: DB,
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-          }, { merge: true });
-        }
+async function abrirEditar(id) {
+  try {
+    const doc = await db.collection('admin_usuarios').doc(id).get();
+    if (!doc.exists) return;
 
-        renderTudo();
-      } catch (e) {
-        console.log('Erro ao carregar Firestore:', e);
-        DB = carregarLocalPorUsuario(usuarioLogado || '');
-        renderTudo();
-      }
-    }
+    const u = doc.data();
+    document.getElementById('edit-id').value = u.id;
+    document.getElementById('edit-nome').value = u.nome || '';
+    document.getElementById('edit-usuario').value = u.usuario || '';
+    document.getElementById('edit-senha').value = u.senha || '';
+    document.getElementById('edit-status').value = u.status || 'ativo';
+    document.getElementById('edit-obs').value = u.obs || '';
+    document.getElementById('edit-plano').value = u.plano || 'mensal';
+    document.getElementById('edit-valor').value = Number(u.valorMensal || 0);
+    document.getElementById('edit-vencimento').value = Number(u.diaVencimento || 0) || '';
+    document.getElementById('edit-forma').value = u.formaPagamento || 'pix';
+    document.getElementById('modal-editar').style.display = 'flex';
+  } catch (erro) {
+    console.error(erro);
+    alert('Erro ao abrir edição: ' + erro.message);
+  }
+}
 
-    async function fazerLogin() {
-      const usuario = normalizarUsuario(document.getElementById('login-usuario').value);
-      const senha = document.getElementById('login-senha').value;
-      const erroBox = document.getElementById('login-erro');
+function fecharModalEditar() {
+  document.getElementById('modal-editar').style.display = 'none';
+}
 
-      erroBox.style.display = 'none';
+async function salvarEdicao() {
+  const id = document.getElementById('edit-id').value;
+  const nome = document.getElementById('edit-nome').value.trim();
+  const usuario = normalizarUsuario(document.getElementById('edit-usuario').value.trim());
+  const senha = document.getElementById('edit-senha').value.trim();
+  const status = document.getElementById('edit-status').value;
+  const obs = document.getElementById('edit-obs').value.trim();
+  const plano = document.getElementById('edit-plano').value;
+  const valorMensal = Number(document.getElementById('edit-valor').value || 0);
+  const diaVencimento = Number(document.getElementById('edit-vencimento').value || 0);
+  const formaPagamento = document.getElementById('edit-forma').value;
 
-      if (!usuario || !senha) {
-        erroBox.textContent = 'Informe usuário e senha.';
-        erroBox.style.display = 'block';
-        return;
-      }
+  if (!nome || !usuario || !senha) {
+    alert('Preencha todos os campos obrigatórios.');
+    return;
+  }
+  if (!diaVencimento || diaVencimento < 1 || diaVencimento > 31) {
+    alert('Informe um dia de vencimento entre 1 e 31.');
+    return;
+  }
 
-      try {
-        await auth.signInWithEmailAndPassword(usuarioParaEmail(usuario), senha);
-        usuarioLogado = usuario;
-        DB = carregarLocalPorUsuario(usuario);
-        abrirAppLogado(usuario);
-        await carregarFirestore();
-      } catch (erro) {
-        console.error(erro);
-        let msg = 'Não foi possível entrar. Verifique usuário e senha.';
-        const code = erro?.code || '';
-
-        if (code.includes('wrong-password')) msg = 'Senha incorreta.';
-        else if (code.includes('user-not-found')) msg = 'Usuário não encontrado.';
-        else if (code.includes('invalid-login-credentials')) msg = 'Usuário ou senha inválidos.';
-        else if (code.includes('network-request-failed')) msg = 'Falha de conexão com a internet.';
-        else if (code.includes('too-many-requests')) msg = 'Muitas tentativas. Aguarde um pouco.';
-        else if (code.includes('operation-not-allowed')) msg = 'Login por senha não habilitado no Firebase.';
-        else if (code.includes('invalid-api-key')) msg = 'Configuração do Firebase inválida.';
-        else if (erro?.message) msg = erro.message;
-
-        erroBox.textContent = msg;
-        erroBox.style.display = 'block';
-      }
-    }
-
-    async function fazerLogout() {
-      if (!confirm('Deseja sair do IA Rural?')) return;
-
-      try {
-        await auth.signOut();
-      } catch (e) {
-        console.log(e);
-      }
-
-      usuarioFirebase = null;
-      usuarioLogado = null;
-      DB = DB_PADRAO();
-
-      document.getElementById('app-wrapper').style.display = 'none';
-      document.getElementById('tela-login').style.display = 'flex';
-      document.getElementById('login-usuario').value = '';
-      document.getElementById('login-senha').value = '';
-      document.getElementById('login-erro').style.display = 'none';
-    }
-
-    auth.onAuthStateChanged(async (user) => {
-      usuarioFirebase = user || null;
-
-      if (user) {
-        const email = user.email || '';
-        const usuario = email.split('@')[0] || 'usuario';
-        usuarioLogado = usuario;
-        DB = carregarLocalPorUsuario(usuario);
-        abrirAppLogado(usuario);
-        await carregarFirestore();
-      }
+  try {
+    await db.collection('admin_usuarios').doc(id).update({
+      nome,
+      usuario,
+      senha,
+      status,
+      obs,
+      plano,
+      valorMensal,
+      diaVencimento,
+      formaPagamento
     });
 
-    function showPage(id) {
-      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    fecharModalEditar();
+    await carregarTudoAdmin();
+  } catch (erro) {
+    console.error(erro);
+    alert('Erro ao salvar edição: ' + erro.message);
+  }
+}
 
-      const page = document.getElementById('page-' + id);
-      if (page) page.classList.add('active');
+function salvarConfigAdmin() {
+  const usuario = document.getElementById('cfg-usuario').value.trim();
+  const senha = document.getElementById('cfg-senha').value.trim();
 
-      const pages = ['inicio','rebanho','producao','despesas','veterinario','calendario','arquivados'];
-      const idx = pages.indexOf(id);
-      if (idx >= 0) document.querySelectorAll('.nav-tab')[idx].classList.add('active');
+  if (!usuario || !senha) {
+    alert('Preencha usuário e senha.');
+    return;
+  }
 
-      if (id === 'rebanho') renderRebanho();
-      if (id === 'producao') renderProducao();
-      if (id === 'despesas') renderDespesas();
-      if (id === 'veterinario') renderVet();
-      if (id === 'calendario') renderCalendario();
-      if (id === 'arquivados') renderArquivados();
+  const msg = document.getElementById('sucesso-cfg');
+  msg.textContent = 'O login admin é controlado no Firebase Authentication. Para trocar, altere o admin no Firebase.';
+  msg.style.display = 'block';
+  setTimeout(() => {
+    msg.style.display = 'none';
+    msg.textContent = 'Configurações salvas!';
+  }, 4000);
+}
+
+async function exportarUsuarios() {
+  try {
+    const snapshot = await db.collection('admin_usuarios').get();
+    const lista = snapshot.docs.map(doc => doc.data());
+
+    if (!lista.length) {
+      alert('Nenhum usuário para exportar.');
+      return;
     }
 
-    function renderTudo() {
-      renderRebanho();
-      renderProducao();
-      renderDespesas();
-      renderVet();
-      renderCalendario();
-      renderArquivados();
-      atualizarUltimoBackup();
-    }
-
-    function toggleForm(id) {
-      const el = document.getElementById(id);
-      el.classList.toggle('hidden');
-    }
-
-    function togglePrenha() {
-      const v = document.getElementById('a-prenha').value;
-      const campo = document.getElementById('campo-data-prenha');
-      if (v === 'sim') campo.classList.remove('hidden');
-      else campo.classList.add('hidden');
-    }
-
-    function getCategoria(sexo, idadeMeses) {
-      if (sexo === 'Fêmea') {
-        if (idadeMeses <= 8) return 'Bezerra';
-        if (idadeMeses <= 30) return 'Novilha';
-        return 'Vaca';
-      } else {
-        if (idadeMeses <= 8) return 'Bezerro';
-        if (idadeMeses <= 30) return 'Garrote';
-        return 'Touro';
-      }
-    }
-
-    function atualizarCategoria() {
-      const sexo = document.getElementById('a-sexo').value;
-      const idade = parseInt(document.getElementById('a-idade').value) || 0;
-      const box = document.getElementById('a-categoria-box');
-
-      if (!sexo || !idade) {
-        box.textContent = 'Preencha sexo e idade acima';
-        return;
-      }
-
-      const cat = getCategoria(sexo, idade);
-      box.textContent = cat;
-    }
-
-    function tagClass(cat) {
-      const map = {
-        'Vaca': 'tag-vaca',
-        'Touro': 'tag-touro',
-        'Novilha': 'tag-novilha',
-        'Garrote': 'tag-garrote',
-        'Bezerro': 'tag-bezerro',
-        'Bezerra': 'tag-bezerra'
-      };
-      return map[cat] || 'tag-bezerro';
-    }
-
-    function emojiAnimal(cat) {
-      if (cat === 'Touro') return '🐂';
-      if (cat === 'Bezerro' || cat === 'Bezerra') return '🐮';
-      return '🐄';
-    }
-
-    async function salvarAnimal() {
-      const nome = document.getElementById('a-nome').value.trim();
-      const brinco = document.getElementById('a-brinco').value.trim();
-      const sexo = document.getElementById('a-sexo').value;
-      const idade = parseInt(document.getElementById('a-idade').value);
-      const prenha = document.getElementById('a-prenha').value === 'sim';
-      const dataPrenha = document.getElementById('a-data-prenha').value;
-      const lactacao = document.getElementById('a-lactacao').value === 'sim';
-      const obs = document.getElementById('a-obs').value.trim();
-
-      if (!nome) return alert('Informe o nome do animal.');
-      if (!sexo) return alert('Selecione o sexo.');
-      if (!idade || idade < 0) return alert('Informe a idade em meses.');
-
-      const categoria = getCategoria(sexo, idade);
-
-      const animal = {
-        id: Date.now().toString(),
-        nome,
-        brinco,
-        sexo,
-        idadeMeses: idade,
-        categoria,
-        prenha,
-        dataPrenha: prenha ? dataPrenha : '',
-        lactacao,
-        obs,
-        dataCadastro: new Date().toISOString()
-      };
-
-      DB.animais.push(animal);
-      await salvarDB();
-
-      document.getElementById('a-nome').value = '';
-      document.getElementById('a-brinco').value = '';
-      document.getElementById('a-sexo').value = '';
-      document.getElementById('a-idade').value = '';
-      document.getElementById('a-prenha').value = 'nao';
-      document.getElementById('a-data-prenha').value = '';
-      document.getElementById('a-lactacao').value = 'nao';
-      document.getElementById('a-obs').value = '';
-      document.getElementById('a-categoria-box').textContent = 'Preencha sexo e idade acima';
-      document.getElementById('campo-data-prenha').classList.add('hidden');
-      document.getElementById('form-animal').classList.add('hidden');
-
-      renderTudo();
-      showPage('rebanho');
-    }
-
-    function renderRebanho() {
-      const lista = document.getElementById('lista-rebanho');
-      document.getElementById('count-rebanho').textContent = DB.animais.length;
-
-      if (!DB.animais.length) {
-        lista.innerHTML = `
-          <div class="empty-state">
-            <div class="empty-icon">🐄</div>
-            Nenhum animal cadastrado ainda.<br />
-            Clique em <strong>+ Cadastrar Animal</strong> para começar.
-          </div>
-        `;
-        return;
-      }
-
-      lista.innerHTML = DB.animais.map(a => `
-        <div class="animal-item">
-          <div class="animal-avatar">${emojiAnimal(a.categoria)}</div>
-
-          <div class="animal-body">
-            <div class="animal-name">
-              ${a.nome}
-              ${a.brinco ? `<span style="font-size:11px;color:var(--muted);font-weight:400;">· Brinco ${a.brinco}</span>` : ''}
-            </div>
-
-            <div class="animal-meta">${a.sexo} · ${a.idadeMeses} meses</div>
-
-            <div class="tag-wrap">
-              <span class="tag ${tagClass(a.categoria)}">${a.categoria}</span>
-              ${a.prenha ? `<span class="tag tag-prenha">🤰 Prenha</span>` : ''}
-              ${a.lactacao ? `<span class="tag tag-lactacao">🥛 Lactação</span>` : ''}
-            </div>
-
-            ${a.obs ? `<div class="animal-obs">${a.obs}</div>` : ''}
-
-            <div class="animal-actions">
-              <button class="btn btn-outline btn-sm" onclick="abrirExcluir('${a.id}', '${a.nome.replace(/'/g, "\\'")}')">Excluir</button>
-            </div>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    function abrirExcluir(id, nome) {
-      animalParaExcluir = id;
-      document.getElementById('modal-excluir-titulo').textContent = 'O que aconteceu com ' + nome + '?';
-      document.getElementById('modal-excluir').classList.add('open');
-    }
-
-    async function confirmarExclusao(motivo) {
-      const idx = DB.animais.findIndex(a => a.id === animalParaExcluir);
-      if (idx >= 0) {
-        const animal = DB.animais.splice(idx, 1)[0];
-        animal.motivoArquivo = motivo;
-        animal.dataArquivo = new Date().toISOString();
-        DB.arquivados.push(animal);
-
-        delete DB.producao[animal.id];
-        await salvarDB();
-      }
-
-      fecharModal('modal-excluir');
-      renderTudo();
-    }
-
-    function fecharModal(id) {
-      document.getElementById(id).classList.remove('open');
-    }
-
-    function renderProducao() {
-      const lista = document.getElementById('lista-producao');
-      const emptyEl = document.getElementById('empty-prod');
-      const totalBloco = document.getElementById('bloco-total-prod');
-
-      const emLactacao = DB.animais.filter(a => a.lactacao);
-
-      if (!emLactacao.length) {
-        lista.innerHTML = '';
-        emptyEl.classList.remove('hidden');
-        totalBloco.classList.add('hidden');
-        return;
-      }
-
-      emptyEl.classList.add('hidden');
-      totalBloco.classList.remove('hidden');
-
-      lista.innerHTML = emLactacao.map(a => {
-        const p = DB.producao[a.id] || { manha: '', tarde: '', noite: '' };
-        const total = (parseFloat(p.manha) || 0) + (parseFloat(p.tarde) || 0) + (parseFloat(p.noite) || 0);
-        const racao = (total / 3).toFixed(1);
-
-        return `
-          <div class="prod-card">
-            <div class="prod-header">
-              <div class="prod-name">${a.nome} <span class="tag tag-vaca">${a.categoria}</span></div>
-            </div>
-
-            <div class="prod-inputs">
-              <div>
-                <div class="prod-input-label">Manhã (L)</div>
-                <input class="prod-input-field" type="number" min="0" step="0.1" placeholder="0" value="${p.manha}" onchange="salvarProducao('${a.id}','manha',this.value)" />
-              </div>
-
-              <div>
-                <div class="prod-input-label">Tarde (L)</div>
-                <input class="prod-input-field" type="number" min="0" step="0.1" placeholder="0" value="${p.tarde}" onchange="salvarProducao('${a.id}','tarde',this.value)" />
-              </div>
-
-              <div>
-                <div class="prod-input-label">Noite (L)</div>
-                <input class="prod-input-field" type="number" min="0" step="0.1" placeholder="0" value="${p.noite}" onchange="salvarProducao('${a.id}','noite',this.value)" />
-              </div>
-            </div>
-
-            <div class="prod-summary">
-              <span>Total do dia: <strong>${total.toFixed(1)} L</strong></span>
-              <span>Ração: <strong>${racao} kg</strong></span>
-            </div>
-          </div>
-        `;
-      }).join('');
-
-      atualizarTotalProducao();
-    }
-
-    async function salvarProducao(animalId, periodo, valor) {
-      if (!DB.producao[animalId]) DB.producao[animalId] = {};
-      DB.producao[animalId][periodo] = parseFloat(valor) || 0;
-      await salvarDB();
-      atualizarTotalProducao();
-      renderDespesas();
-    }
-
-    function atualizarTotalProducao() {
-      let totalL = 0;
-
-      DB.animais.filter(a => a.lactacao).forEach(a => {
-        const p = DB.producao[a.id] || {};
-        totalL += (parseFloat(p.manha) || 0) + (parseFloat(p.tarde) || 0) + (parseFloat(p.noite) || 0);
-      });
-
-      document.getElementById('total-litros-dia').textContent = totalL.toFixed(1) + ' L';
-      document.getElementById('total-racao-dia').textContent = (totalL / 3).toFixed(1) + ' kg';
-    }
-
-    function calcEntregaRacao() {
-      const sacos = parseInt(document.getElementById('d-sacos').value) || 0;
-      const tipo = parseInt(document.getElementById('d-tipo').value) || 40;
-      const total = sacos * tipo;
-      const el = document.getElementById('d-total-calc');
-
-      if (sacos > 0) {
-        el.textContent = `${total} kg (${sacos} sacos de ${tipo} kg)`;
-      } else {
-        el.textContent = '—';
-      }
-    }
-
-    async function salvarEntregaRacao() {
-      const data = document.getElementById('d-data').value;
-      const sacos = parseInt(document.getElementById('d-sacos').value);
-      const tipo = parseInt(document.getElementById('d-tipo').value);
-
-      if (!data) return alert('Informe a data da entrega.');
-      if (!sacos || sacos <= 0) return alert('Informe a quantidade de sacos.');
-
-      const totalKg = sacos * tipo;
-
-      DB.entregas.push({
-        id: Date.now().toString(),
-        data,
-        sacos,
-        tipoKg: tipo,
-        totalKg
-      });
-
-      DB.estoqueRacao += totalKg;
-      await salvarDB();
-
-      document.getElementById('d-data').value = '';
-      document.getElementById('d-sacos').value = '';
-      document.getElementById('d-tipo').value = '40';
-      document.getElementById('d-total-calc').textContent = '—';
-
-      renderDespesas();
-    }
-
-    function getConsumoDiario() {
-      let total = 0;
-      DB.animais.filter(a => a.lactacao).forEach(a => {
-        const p = DB.producao[a.id] || {};
-        const litros = (parseFloat(p.manha) || 0) + (parseFloat(p.tarde) || 0) + (parseFloat(p.noite) || 0);
-        total += litros / 3;
-      });
-      return parseFloat(total.toFixed(2));
-    }
-
-    function renderDespesas() {
-      const consumo = getConsumoDiario();
-      const estoque = DB.estoqueRacao || 0;
-      const diasRestantes = consumo > 0 ? Math.floor(estoque / consumo) : null;
-
-      const alertEl = document.getElementById('alerta-racao');
-      if (diasRestantes !== null && diasRestantes <= 5) {
-        alertEl.innerHTML = `
-          <div class="alert-strip">
-            <strong>⚠ Atenção:</strong> com o consumo atual, a ração deve durar aproximadamente <strong>${diasRestantes} dia(s)</strong>.
-          </div>
-        `;
-      } else {
-        alertEl.innerHTML = '';
-      }
-
-      const painel = document.getElementById('painel-estoque');
-      const historico = document.getElementById('historico-racao');
-
-      const perc = estoque > 0 ? Math.min(100, Math.max(0, (estoque / Math.max(estoque, 1000)) * 100)) : 0;
-
-      painel.innerHTML = `
-        <div class="delivery-item">
-          <h4>Estoque atual</h4>
-          <p><strong>${estoque.toFixed(1)} kg</strong></p>
-          <div style="margin:10px 0 8px;">
-            <div class="progress-track"><div class="progress-fill" style="width:${perc}%"></div></div>
-          </div>
-          <p>Consumo diário estimado: <strong>${consumo.toFixed(1)} kg</strong></p>
-          <p>Dias restantes estimados: <strong>${diasRestantes === null ? '—' : diasRestantes}</strong></p>
-        </div>
-      `;
-
-      if (!DB.entregas.length) {
-        historico.innerHTML = `
-          <div class="empty-state">
-            <div class="empty-icon">📦</div>
-            Nenhuma entrega registrada ainda.
-          </div>
-        `;
-        return;
-      }
-
-      historico.innerHTML = DB.entregas
-        .slice()
-        .sort((a, b) => new Date(b.data) - new Date(a.data))
-        .map(e => `
-          <div class="delivery-item">
-            <h4>${new Date(e.data + 'T12:00:00').toLocaleDateString('pt-BR')}</h4>
-            <p>${e.sacos} saco(s) de ${e.tipoKg} kg</p>
-            <p>Total: <strong>${e.totalKg} kg</strong></p>
-          </div>
-        `).join('');
-    }
-
-    function setVetFilter(tipo) {
-      vetFilter = tipo;
-      document.getElementById('vet-filter-todos').classList.toggle('active', tipo === 'todos');
-      document.getElementById('vet-filter-bezerros').classList.toggle('active', tipo === 'bezerros');
-      document.getElementById('vet-filter-vacas').classList.toggle('active', tipo === 'vacas');
-      renderVet();
-    }
-
-    function renderVet() {
-      const busca = (document.getElementById('vet-busca')?.value || '').trim().toLowerCase();
-      const lista = document.getElementById('vet-lista');
-
-      let itens = [...VET_DB];
-
-      if (vetFilter !== 'todos') {
-        itens = itens.filter(i => i.grupo === vetFilter);
-      }
-
-      if (busca) {
-        itens = itens.filter(i =>
-          i.nome.toLowerCase().includes(busca) ||
-          i.causas.toLowerCase().includes(busca) ||
-          i.sintomas.toLowerCase().includes(busca)
-        );
-      }
-
-      if (!itens.length) {
-        lista.innerHTML = `
-          <div class="empty-state" style="grid-column:1/-1;">
-            <div class="empty-icon">🩺</div>
-            Nenhum resultado encontrado.
-          </div>
-        `;
-        return;
-      }
-
-      lista.innerHTML = itens.map(item => `
-        <div class="vet-card">
-          <h4>${item.nome}</h4>
-          <p><strong>Grupo:</strong> ${item.grupo === 'bezerros' ? 'Bezerros' : 'Vacas'}</p>
-          <p><strong>Causas:</strong> ${item.causas}</p>
-          <p><strong>Sintomas:</strong> ${item.sintomas}</p>
-          <p><strong>Medidas imediatas:</strong> ${item.medidas}</p>
-          <p><strong>Medicação comum:</strong> ${item.medicacao}</p>
-          <p><strong>Urgência:</strong> ${item.urgencia}</p>
-        </div>
-      `).join('');
-    }
-
-    function addDias(data, dias) {
-      const nova = new Date(data);
-      nova.setDate(nova.getDate() + dias);
-      return nova;
-    }
-
-    function formatarData(d) {
-      if (!(d instanceof Date) || isNaN(d.getTime())) return '—';
-      return d.toLocaleDateString('pt-BR');
-    }
-
-    function renderCalendario() {
-      const lista = document.getElementById('lista-calendario');
-      const vacinas = document.getElementById('lista-vacinas');
-
-      let eventos = [];
-
-      DB.animais.forEach(a => {
-        if (a.prenha && a.dataPrenha) {
-          const base = new Date(a.dataPrenha + 'T12:00:00');
-          if (!isNaN(base.getTime())) {
-            const parto = addDias(base, 280);
-            const secagem = addDias(parto, -60);
-            const preParto = addDias(parto, -20);
-
-            eventos.push({
-              titulo: `Secagem de ${a.nome}`,
-              sub: `Início recomendado do período seco.`,
-              data: secagem
-            });
-
-            eventos.push({
-              titulo: `Pré-parto de ${a.nome}`,
-              sub: `Separação e observação intensiva.`,
-              data: preParto
-            });
-
-            eventos.push({
-              titulo: `Previsão de parto de ${a.nome}`,
-              sub: `Data estimada com base na confirmação da prenhez.`,
-              data: parto
-            });
-          }
-        }
-      });
-
-      eventos = eventos.sort((a, b) => a.data - b.data);
-
-      if (!eventos.length) {
-        lista.innerHTML = `
-          <div class="empty-state">
-            <div class="empty-icon">📅</div>
-            Nenhum evento calculado ainda.<br />
-            Marque animais prenhes com data de confirmação.
-          </div>
-        `;
-      } else {
-        lista.innerHTML = eventos.map(ev => `
-          <div class="event-item">
-            <h4>${ev.titulo}</h4>
-            <p>${ev.sub}</p>
-            <p><strong>Data:</strong> ${formatarData(ev.data)}</p>
-          </div>
-        `).join('');
-      }
-
-      vacinas.innerHTML = `
-        <div class="event-item">
-          <h4>🧴 Cura de umbigo</h4>
-          <p>Realizar logo após o nascimento, conforme protocolo da fazenda.</p>
-        </div>
-        <div class="event-item">
-          <h4>💉 Vacinação clostridioses</h4>
-          <p>Seguir calendário regional e reforços conforme orientação técnica.</p>
-        </div>
-        <div class="event-item">
-          <h4>🪱 Controle parasitário</h4>
-          <p>Definir com apoio veterinário conforme categoria, peso e manejo da fazenda.</p>
-        </div>
-        <div class="event-item">
-          <h4>🐜 Controle de carrapatos</h4>
-          <p>Manter rotina preventiva e revisar resistência de princípios ativos.</p>
-        </div>
-      `;
-    }
-
-    function renderArquivados() {
-      const lista = document.getElementById('lista-arquivados');
-
-      if (!DB.arquivados.length) {
-        lista.innerHTML = `
-          <div class="empty-state">
-            <div class="empty-icon">🗂</div>
-            Nenhum animal arquivado.
-          </div>
-        `;
-        return;
-      }
-
-      lista.innerHTML = DB.arquivados
-        .slice()
-        .sort((a, b) => new Date(b.dataArquivo || 0) - new Date(a.dataArquivo || 0))
-        .map(a => `
-          <div class="animal-item">
-            <div class="animal-avatar">${emojiAnimal(a.categoria)}</div>
-
-            <div class="animal-body">
-              <div class="animal-name">
-                ${a.nome}
-                ${a.brinco ? `<span style="font-size:11px;color:var(--muted);font-weight:400;">· Brinco ${a.brinco}</span>` : ''}
-              </div>
-
-              <div class="animal-meta">${a.sexo} · ${a.idadeMeses} meses</div>
-
-              <div class="tag-wrap">
-                <span class="tag ${tagClass(a.categoria)}">${a.categoria}</span>
-                <span class="tag" style="background:#111111;color:#ffffff;">${a.motivoArquivo === 'vendido' ? '💰 Vendido' : '🕊 Faleceu'}</span>
-              </div>
-
-              <div class="animal-obs">Arquivado em: ${formatarDataHora(a.dataArquivo)}</div>
-            </div>
-          </div>
-        `).join('');
-    }
-
-    function openBackupModal() {
-      document.getElementById('modal-backup').classList.add('open');
-      atualizarUltimoBackup();
-    }
-
-    function atualizarUltimoBackup() {
-      document.getElementById('ultimo-backup').textContent = DB.ultimoBackup ? formatarDataHora(DB.ultimoBackup) : '—';
-    }
-
-    function exportarDados() {
-      DB.ultimoBackup = new Date().toISOString();
-      salvarLocal();
-      atualizarUltimoBackup();
-
-      const blob = new Blob([JSON.stringify(DB, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `ia-rural-backup-${new Date().toISOString().slice(0, 10)}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-
-    async function importarDados(event) {
-      const file = event.target.files?.[0];
-      if (!file) return;
-
-      try {
-        const texto = await file.text();
-        const dados = JSON.parse(texto);
-        DB = normalizarDB(dados);
-        DB.ultimoBackup = new Date().toISOString();
-        await salvarDB();
-        renderTudo();
-        fecharModal('modal-backup');
-        alert('Backup importado com sucesso.');
-      } catch (e) {
-        alert('Não foi possível importar este arquivo.');
-      }
-
-      event.target.value = '';
-    }
-
-    window.addEventListener('click', (e) => {
-      if (e.target.classList.contains('modal-bg')) {
-        e.target.classList.remove('open');
-      }
+    let csv = 'Nome,Usuário,Senha,Status,Observação,Plano,Valor Mensal,Dia Vencimento,Forma Pagamento,Último Pagamento\n';
+    lista.forEach(u => {
+      csv += `"${u.nome || ''}","${u.usuario || ''}","${u.senha || ''}","${u.status || ''}","${u.obs || ''}","${u.plano || ''}","${u.valorMensal || 0}","${u.diaVencimento || ''}","${u.formaPagamento || ''}","${u.ultimoPagamento ? formatData(u.ultimoPagamento) : ''}"\n`;
     });
 
-    renderTudo();
-  </script>
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'ia-rural-usuarios-' + new Date().toISOString().split('T')[0] + '.csv';
+    a.click();
+  } catch (erro) {
+    console.error(erro);
+    alert('Erro ao exportar usuários: ' + erro.message);
+  }
+}
+
+document.getElementById('modal-editar').addEventListener('click', function(e) {
+  if (e.target === this) fecharModalEditar();
+});
+
+auth.onAuthStateChanged(async (user) => {
+  const email = (user?.email || '').toLowerCase();
+
+  if (user && email === ADMIN_EMAIL) {
+    document.getElementById('admin-login').style.display = 'none';
+    document.getElementById('admin-painel').style.display = 'block';
+    document.getElementById('adm-nome-badge').textContent = email;
+    await carregarTudoAdmin();
+  }
+});
+</script>
 </body>
 </html>
