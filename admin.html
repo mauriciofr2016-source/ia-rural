@@ -552,14 +552,16 @@ async function criarUsuario() {
       throw new Error(dados?.error?.message || 'Falha ao criar usuário no Firebase.');
     }
 
+    const uid = dados.localId || Date.now().toString();
+
     const docData = {
-      id: dados.localId || Date.now().toString(),
+      id: uid,
       nome,
       usuario,
       senha,
       status,
       obs,
-      firebaseUid: dados.localId || '',
+      firebaseUid: uid,
       dataCriacao: new Date().toISOString(),
       plano,
       valorMensal,
@@ -569,7 +571,22 @@ async function criarUsuario() {
       ultimoValorPago: 0
     };
 
-    await db.collection('admin_usuarios').doc(docData.id).set(docData);
+    await db.collection('admin_usuarios').doc(uid).set(docData);
+
+    await db.collection('users').doc(uid).set({
+      username: usuario,
+      accountStatus: status,
+      billing: {
+        plano,
+        valorMensal,
+        diaVencimento,
+        formaPagamento,
+        ultimoPagamento: '',
+        ultimoValorPago: 0
+      },
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+
     document.getElementById('n-nome').value = '';
     document.getElementById('n-usuario').value = '';
     document.getElementById('n-senha').value = '';
@@ -601,12 +618,25 @@ async function marcarPago(id) {
     const u = doc.data();
     const valor = Number(u.valorMensal || 0);
     const agora = new Date().toISOString();
+    const novoStatus = u.status === 'bloqueado' ? 'ativo' : u.status;
 
     await ref.update({
       ultimoPagamento: agora,
       ultimoValorPago: valor,
-      status: u.status === 'bloqueado' ? 'ativo' : u.status
+      status: novoStatus
     });
+
+    await db.collection('users').doc(u.firebaseUid).set({
+      accountStatus: novoStatus,
+      billing: {
+        plano: u.plano || 'mensal',
+        valorMensal: valor,
+        diaVencimento: Number(u.diaVencimento || 0),
+        formaPagamento: u.formaPagamento || '',
+        ultimoPagamento: agora,
+        ultimoValorPago: valor
+      }
+    }, { merge: true });
 
     await db.collection('admin_pagamentos').add({
       userId: u.id,
@@ -627,7 +657,18 @@ async function marcarPago(id) {
 
 async function bloquearUsuario(id) {
   try {
-    await db.collection('admin_usuarios').doc(id).update({ status: 'bloqueado' });
+    const ref = db.collection('admin_usuarios').doc(id);
+    const doc = await ref.get();
+    if (!doc.exists) return alert('Usuário não encontrado.');
+
+    const u = doc.data();
+
+    await ref.update({ status: 'bloqueado' });
+
+    await db.collection('users').doc(u.firebaseUid).set({
+      accountStatus: 'bloqueado'
+    }, { merge: true });
+
     await carregarTudoAdmin();
   } catch (erro) {
     console.error(erro);
@@ -637,7 +678,18 @@ async function bloquearUsuario(id) {
 
 async function desbloquearUsuario(id) {
   try {
-    await db.collection('admin_usuarios').doc(id).update({ status: 'ativo' });
+    const ref = db.collection('admin_usuarios').doc(id);
+    const doc = await ref.get();
+    if (!doc.exists) return alert('Usuário não encontrado.');
+
+    const u = doc.data();
+
+    await ref.update({ status: 'ativo' });
+
+    await db.collection('users').doc(u.firebaseUid).set({
+      accountStatus: 'ativo'
+    }, { merge: true });
+
     await carregarTudoAdmin();
   } catch (erro) {
     console.error(erro);
