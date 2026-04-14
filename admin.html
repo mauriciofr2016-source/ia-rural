@@ -15,15 +15,12 @@
     :root {
       --bg: #000000;
       --card: #000000;
-      --card-soft: #101010;
       --border: #2a2a2a;
       --text: #ffffff;
       --muted: #d1d5db;
       --green: #2d6a2d;
       --green-light: #3d8b3d;
       --red: #ef4444;
-      --amber: #f59e0b;
-      --blue: #60a5fa;
       --radius: 12px;
       --radius-lg: 18px;
       --shadow: 0 8px 30px rgba(255,255,255,.04);
@@ -37,8 +34,6 @@
       font-family: 'DM Sans', sans-serif;
       min-height: 100vh;
     }
-
-    body { background: var(--bg); color: var(--text); }
 
     #admin-login {
       min-height: 100vh;
@@ -133,7 +128,6 @@
 
     .btn-green { background: var(--green); color: #ffffff; }
     .btn-green:hover { background: var(--green-light); }
-    .btn-red { background: var(--red); color: #ffffff; }
     .btn-outline {
       background: transparent;
       color: #ffffff;
@@ -498,7 +492,313 @@
     const auth = firebase.auth();
 
     const ADMIN_KEY = 'ia_rural_admin_cfg';
-    const FIREBASE_API_KEY = 'AIzaSyDs6njrUFchymlhcFHwdGSv6nPrKXoiLEc';
+    const FIREBASE_API_KEY = firebaseConfig.apiKey;
 
     let usuariosCache = [];
-    let
+
+    function getAdminCfg() {
+      const raw = localStorage.getItem(ADMIN_KEY);
+      if (raw) {
+        try { return JSON.parse(raw); } catch (e) {}
+      }
+      return { usuario: 'admin', senha: 'admin123' };
+    }
+
+    function salvarAdminCfg(cfg) {
+      localStorage.setItem(ADMIN_KEY, JSON.stringify(cfg));
+    }
+
+    function normalizarUsuario(usuario) {
+      return (usuario || '').trim().toLowerCase().replace(/\s+/g, '');
+    }
+
+    function usuarioParaEmail(usuario) {
+      return `${normalizarUsuario(usuario)}@ia-rural.app`;
+    }
+
+    async function garantirAuthAdmin() {
+      try {
+        if (auth.currentUser) return true;
+        await auth.signInAnonymously();
+        return true;
+      } catch (e) {
+        console.error('Erro auth admin:', e);
+        return false;
+      }
+    }
+
+    async function loginAdmin() {
+      const u = document.getElementById('adm-user').value.trim();
+      const s = document.getElementById('adm-pass').value;
+      const cfg = getAdminCfg();
+
+      if (u === cfg.usuario && s === cfg.senha) {
+        const ok = await garantirAuthAdmin();
+
+        if (!ok) {
+          document.getElementById('adm-erro').textContent = 'O Firebase bloqueou o admin. Ative o login anônimo em Authentication > Sign-in method > Anonymous.';
+          document.getElementById('adm-erro').style.display = 'block';
+          return;
+        }
+
+        document.getElementById('adm-erro').style.display = 'none';
+        document.getElementById('admin-login').style.display = 'none';
+        document.getElementById('admin-painel').style.display = 'block';
+        document.getElementById('adm-nome-badge').textContent = u;
+        await carregarUsuarios();
+      } else {
+        document.getElementById('adm-erro').textContent = 'Usuário ou senha incorretos.';
+        document.getElementById('adm-erro').style.display = 'block';
+      }
+    }
+
+    function sairAdmin() {
+      document.getElementById('admin-painel').style.display = 'none';
+      document.getElementById('admin-login').style.display = 'flex';
+      document.getElementById('adm-user').value = '';
+      document.getElementById('adm-pass').value = '';
+      document.getElementById('adm-erro').style.display = 'none';
+    }
+
+    async function carregarUsuarios() {
+      try {
+        const ok = await garantirAuthAdmin();
+        if (!ok) {
+          document.getElementById('lista-usuarios').innerHTML = `
+            <div class="empty-users">O Firebase bloqueou o acesso do admin. Ative o login anônimo.</div>
+          `;
+          return;
+        }
+
+        const snap = await db.collection('admin_users').get();
+
+        usuariosCache = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+          .sort((a, b) => {
+            const da = getTimeValue(a.createdAt);
+            const dbb = getTimeValue(b.createdAt);
+            return dbb - da;
+          });
+
+        renderUsuarios();
+      } catch (e) {
+        console.error(e);
+        document.getElementById('lista-usuarios').innerHTML = `
+          <div class="empty-users">Não foi possível carregar os usuários da nuvem.</div>
+        `;
+      }
+    }
+
+    function getTimeValue(value) {
+      if (!value) return 0;
+      if (typeof value.toDate === 'function') return value.toDate().getTime();
+      const d = new Date(value);
+      if (isNaN(d.getTime())) return 0;
+      return d.getTime();
+    }
+
+    function renderUsuarios() {
+      const lista = usuariosCache || [];
+      const ativos = lista.filter(u => u.status === 'ativo').length;
+      const inativos = lista.length - ativos;
+
+      document.getElementById('stat-total').textContent = lista.length;
+      document.getElementById('stat-ativos').textContent = ativos;
+      document.getElementById('stat-inativos').textContent = inativos;
+
+      const el = document.getElementById('lista-usuarios');
+
+      if (!lista.length) {
+        el.innerHTML = `<div class="empty-users">Nenhum usuário salvo na nuvem ainda.</div>`;
+        return;
+      }
+
+      el.innerHTML = lista.map(u => `
+        <div class="user-row">
+          <div class="user-avatar">${(u.usuario || '?').slice(0,1).toUpperCase()}</div>
+
+          <div class="user-info">
+            <div class="user-name">
+              ${escapeHtml(u.nome || 'Sem nome')}
+              <span class="badge ${u.status === 'ativo' ? 'badge-ativo' : 'badge-inativo'}">
+                ${u.status === 'ativo' ? 'Ativo' : 'Inativo'}
+              </span>
+            </div>
+
+            <div class="user-meta">
+              <div><strong>Usuário:</strong> ${escapeHtml(u.usuario || '')}</div>
+              <div><strong>Email interno:</strong> ${escapeHtml(usuarioParaEmail(u.usuario || ''))}</div>
+              <div><strong>UID Firebase:</strong> ${escapeHtml(u.firebaseUid || '—')}</div>
+              <div><strong>Criado em:</strong> ${formatarDataHora(u.createdAt)}</div>
+              ${u.obs ? `<div><strong>Obs:</strong> ${escapeHtml(u.obs)}</div>` : ''}
+            </div>
+          </div>
+
+          <div class="user-actions">
+            <button class="btn btn-outline btn-xs" onclick="alternarStatus('${u.id}', '${u.status}')">
+              ${u.status === 'ativo' ? 'Desativar' : 'Ativar'}
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    function formatarDataHora(value) {
+      if (!value) return '—';
+
+      let data = value;
+      if (typeof value.toDate === 'function') data = value.toDate();
+      else if (!(value instanceof Date)) data = new Date(value);
+
+      if (!data || isNaN(data.getTime())) return '—';
+      return data.toLocaleString('pt-BR');
+    }
+
+    async function criarUsuario() {
+      const nome = document.getElementById('n-nome').value.trim();
+      const usuario = normalizarUsuario(document.getElementById('n-usuario').value);
+      const senha = document.getElementById('n-senha').value.trim();
+      const status = document.getElementById('n-status').value;
+      const obs = document.getElementById('n-obs').value.trim();
+
+      const ok = document.getElementById('sucesso-criar');
+      const err = document.getElementById('erro-criar');
+      ok.style.display = 'none';
+      err.style.display = 'none';
+
+      const okAuth = await garantirAuthAdmin();
+      if (!okAuth) {
+        err.textContent = 'Ative o login anônimo no Firebase Authentication.';
+        err.style.display = 'block';
+        return;
+      }
+
+      if (!nome) {
+        err.textContent = 'Informe o nome ou fazenda.';
+        err.style.display = 'block';
+        return;
+      }
+
+      if (!usuario) {
+        err.textContent = 'Informe o nome de usuário.';
+        err.style.display = 'block';
+        return;
+      }
+
+      if (!senha || senha.length < 6) {
+        err.textContent = 'A senha precisa ter pelo menos 6 caracteres.';
+        err.style.display = 'block';
+        return;
+      }
+
+      try {
+        const docExistente = await db.collection('admin_users').doc(usuario).get();
+        if (docExistente.exists) {
+          err.textContent = 'Esse usuário já existe no admin.';
+          err.style.display = 'block';
+          return;
+        }
+
+        const resposta = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FIREBASE_API_KEY}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: usuarioParaEmail(usuario),
+            password: senha,
+            returnSecureToken: true
+          })
+        });
+
+        const dados = await resposta.json();
+
+        if (!resposta.ok) {
+          if (dados?.error?.message === 'EMAIL_EXISTS') {
+            err.textContent = 'Esse nome de usuário já existe.';
+          } else if (dados?.error?.message === 'OPERATION_NOT_ALLOWED') {
+            err.textContent = 'Email/senha não está habilitado no Firebase Authentication.';
+          } else {
+            err.textContent = 'Erro ao criar usuário: ' + (dados?.error?.message || 'falha desconhecida');
+          }
+          err.style.display = 'block';
+          return;
+        }
+
+        await db.collection('admin_users').doc(usuario).set({
+          nome,
+          usuario,
+          status,
+          obs,
+          firebaseUid: dados.localId || '',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        document.getElementById('n-nome').value = '';
+        document.getElementById('n-usuario').value = '';
+        document.getElementById('n-senha').value = '';
+        document.getElementById('n-obs').value = '';
+        document.getElementById('n-status').value = 'ativo';
+
+        ok.textContent = 'Usuário criado com sucesso!';
+        ok.style.display = 'block';
+
+        await carregarUsuarios();
+      } catch (e) {
+        console.error(e);
+        err.textContent = 'Erro ao criar usuário.';
+        err.style.display = 'block';
+      }
+    }
+
+    async function alternarStatus(id, statusAtual) {
+      try {
+        await db.collection('admin_users').doc(id).set({
+          status: statusAtual === 'ativo' ? 'inativo' : 'ativo',
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+
+        await carregarUsuarios();
+      } catch (e) {
+        alert('Não foi possível alterar o status.');
+      }
+    }
+
+    function exportarUsuarios() {
+      const blob = new Blob([JSON.stringify(usuariosCache, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ia-rural-admin-usuarios-${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function salvarConfigAdmin() {
+      const usuario = document.getElementById('cfg-usuario').value.trim();
+      const senha = document.getElementById('cfg-senha').value.trim();
+
+      if (!usuario || !senha) {
+        alert('Preencha novo usuário e nova senha do admin.');
+        return;
+      }
+
+      salvarAdminCfg({ usuario, senha });
+
+      const ok = document.getElementById('sucesso-cfg');
+      ok.style.display = 'block';
+
+      setTimeout(() => {
+        ok.style.display = 'none';
+      }, 2500);
+    }
+  </script>
+</body>
+</html>
