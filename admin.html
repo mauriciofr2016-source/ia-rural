@@ -1,417 +1,504 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IA Rural — Painel do Administrador</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'DM Sans',sans-serif;background:#f3f4f6;min-height:100vh;color:#111827}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IA Rural — Painel do Administrador</title>
 
-/* LOGIN ADMIN */
-#admin-login{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
-.login-card{background:#fff;border-radius:16px;padding:36px 32px;width:100%;max-width:360px;box-shadow:0 4px 24px rgba(0,0,0,.10)}
-.login-logo{font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:4px}
-.login-logo span{color:#2d6a2d}
-.login-sub{font-size:13px;color:#6b7280;margin-bottom:28px}
-.field{margin-bottom:14px}
-.field label{display:block;font-size:11px;color:#6b7280;margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
-.field input{width:100%;padding:10px 14px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;font-family:'DM Sans',sans-serif;transition:border .2s}
-.field input:focus{outline:none;border-color:#2d6a2d}
-.btn-full{width:100%;padding:11px;background:#0f0f0f;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:4px}
-.btn-full:hover{background:#333}
-.error-msg{background:#fee2e2;color:#b91c1c;padding:10px 14px;border-radius:8px;font-size:13px;margin-top:10px;display:none}
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
-/* PAINEL */
-#admin-painel{display:none}
-.top-bar{background:#0f0f0f;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
-.top-logo{font-family:'DM Serif Display',serif;font-size:18px;color:#fff}
-.top-logo span{color:#6dd56d}
-.top-badge{background:#1a1a1a;border:1px solid #333;color:#aaa;padding:5px 14px;border-radius:20px;font-size:12px}
-.btn-sair{background:transparent;border:1px solid #444;color:#aaa;padding:6px 14px;border-radius:20px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif}
-.btn-sair:hover{border-color:#ef4444;color:#ef4444}
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet" />
 
-.main{max-width:860px;margin:0 auto;padding:24px 20px}
-.card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:20px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
-.card-title{font-size:15px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:10px;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .2s;font-family:'DM Sans',sans-serif}
-.btn-green{background:#2d6a2d;color:#fff}.btn-green:hover{background:#3d8b3d}
-.btn-red{background:#b91c1c;color:#fff}.btn-red:hover{background:#991b1b}
-.btn-outline{background:transparent;border:1px solid #e5e7eb;color:#374151}.btn-outline:hover{background:#f9fafb}
-.btn-sm{padding:5px 12px;font-size:12px}
-.btn-xs{padding:3px 8px;font-size:11px}
-
-.user-row{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:8px;background:#fafafa}
-.user-avatar{width:38px;height:38px;border-radius:50%;background:#e8f5e9;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;color:#2d6a2d;font-family:'DM Serif Display',serif;flex-shrink:0}
-.user-info{flex:1;min-width:0}
-.user-name{font-size:13px;font-weight:600}
-.user-meta{font-size:11px;color:#6b7280;margin-top:2px}
-.user-actions{display:flex;gap:6px;flex-shrink:0}
-.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600}
-.badge-ativo{background:#dcfce7;color:#166534}
-.badge-inativo{background:#fee2e2;color:#991b1b}
-
-.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
-.stat-card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;text-align:center}
-.stat-num{font-size:28px;font-weight:700;color:#111827}
-.stat-label{font-size:12px;color:#6b7280;margin-top:2px}
-
-.senha-hint{font-size:11px;color:#6b7280;margin-top:4px}
-.success-msg{background:#dcfce7;color:#166534;padding:10px 14px;border-radius:8px;font-size:13px;margin-top:10px;display:none}
-.toggle-senha{display:flex;align-items:center;gap:8px;margin-top:5px;font-size:12px;color:#6b7280;cursor:pointer;user-select:none}
-.copy-btn{background:#f3f4f6;border:1px solid #e5e7eb;color:#374151;padding:3px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif}
-.copy-btn:hover{background:#e5e7eb}
-
-.empty-users{text-align:center;padding:32px;color:#9ca3af;font-size:13px}
-
-@media(max-width:560px){.form-row{grid-template-columns:1fr}.stats-grid{grid-template-columns:1fr 1fr}}
-</style>
-</head>
-<body>
-
-<!-- LOGIN ADMIN -->
-<div id="admin-login">
-  <div class="login-card">
-    <div class="login-logo">IA <span>Rural</span></div>
-    <div class="login-sub">Painel do Administrador</div>
-    <div class="field"><label>Usuário admin</label><input type="text" id="adm-user" placeholder="admin" onkeydown="if(event.key==='Enter')loginAdmin()"></div>
-    <div class="field"><label>Senha admin</label><input type="password" id="adm-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')loginAdmin()"></div>
-    <button class="btn-full" onclick="loginAdmin()">Entrar no painel</button>
-    <div class="error-msg" id="adm-erro">Usuário ou senha incorretos.</div>
-    <p style="font-size:11px;color:#9ca3af;margin-top:16px;text-align:center">Acesso restrito ao administrador do IA Rural</p>
-  </div>
-</div>
-
-<!-- PAINEL ADMIN -->
-<div id="admin-painel">
-  <div class="top-bar">
-    <div class="top-logo">IA <span>Rural</span> <span style="font-family:'DM Sans',sans-serif;font-size:12px;color:#555;margin-left:6px">Admin</span></div>
-    <div style="display:flex;align-items:center;gap:10px">
-      <div class="top-badge" id="adm-nome-badge">admin</div>
-      <button class="btn-sair" onclick="sairAdmin()">Sair</button>
-    </div>
-  </div>
-
-  <div class="main">
-    <div class="stats-grid">
-      <div class="stat-card"><div class="stat-num" id="stat-total">0</div><div class="stat-label">Usuários cadastrados</div></div>
-      <div class="stat-card"><div class="stat-num" id="stat-ativos">0</div><div class="stat-label">Ativos</div></div>
-      <div class="stat-card"><div class="stat-num" id="stat-inativos">0</div><div class="stat-label">Inativos</div></div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">➕ Criar novo usuário</div>
-      <div class="form-row">
-        <div class="field"><label>Nome / Fazenda</label><input type="text" id="n-nome" placeholder="Ex: João Silva / Fazenda Boa Vista"></div>
-        <div class="field"><label>Usuário (login)</label><input type="text" id="n-usuario" placeholder="Ex: joaosilva (sem espaços) oninput="this.value=this.value.toLowerCase().replace(/\s/g,'')"></div>
-      </div>
-      <div class="form-row">
-        <div class="field">
-          <label>Senha</label>
-          <input type="text" id="n-senha" placeholder="Ex: rural2025">
-          <div class="senha-hint">O login continua sendo um nome de usuário simples, sem precisar usar email</div>
-        </div>
-        <div class="field"><label>Status</label>
-          <select id="n-status" style="width:100%;padding:10px 14px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;font-family:'DM Sans',sans-serif">
-            <option value="ativo">Ativo</option>
-            <option value="inativo">Inativo</option>
-          </select>
-        </div>
-      </div>
-      <div class="field"><label>Observação (opcional)</label><input type="text" id="n-obs" placeholder="Ex: plano mensal, pagamento via pix"></div>
-      <button class="btn btn-green" onclick="criarUsuario()">✓ Criar usuário</button>
-      <div class="success-msg" id="sucesso-criar">Usuário criado com sucesso!</div>
-    </div>
-
-    <div class="card">
-      <div class="card-title" style="justify-content:space-between">
-        <span>👥 Usuários cadastrados</span>
-        <button class="btn btn-outline btn-sm" onclick="exportarUsuarios()">⬇ Exportar lista</button>
-      </div>
-      <div style="font-size:11px;color:#6b7280;margin-bottom:10px">Os usuários novos já podem entrar em qualquer celular ou computador com o mesmo login e senha.</div><div id="lista-usuarios"></div>
-    </div>
-
-    <div class="card" style="background:#fafafa">
-      <div class="card-title">⚙️ Configurações do administrador</div>
-      <div class="form-row">
-        <div class="field"><label>Novo usuário admin</label><input type="text" id="cfg-usuario" placeholder="admin"></div>
-        <div class="field"><label>Nova senha admin</label><input type="text" id="cfg-senha" placeholder="Nova senha"></div>
-      </div>
-      <button class="btn btn-outline" onclick="salvarConfigAdmin()">Salvar configurações</button>
-      <div class="success-msg" id="sucesso-cfg">Configurações salvas!</div>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL EDITAR -->
-<div id="modal-editar" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;padding:20px">
-  <div style="background:#fff;border-radius:16px;padding:24px;width:100%;max-width:400px">
-    <h3 style="font-size:16px;font-weight:600;margin-bottom:16px">Editar usuário</h3>
-    <input type="hidden" id="edit-id">
-    <div class="field"><label>Nome / Fazenda</label><input type="text" id="edit-nome"></div>
-    <div class="field"><label>Usuário (login)</label><input type="text" id="edit-usuario"></div>
-    <div class="field"><label>Senha</label><input type="text" id="edit-senha"></div>
-    <div class="field"><label>Status</label>
-      <select id="edit-status" style="width:100%;padding:10px 14px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;font-family:'DM Sans',sans-serif">
-        <option value="ativo">Ativo</option>
-        <option value="inativo">Inativo</option>
-      </select>
-    </div>
-    <div class="field"><label>Observação</label><input type="text" id="edit-obs"></div>
-    <div style="display:flex;gap:8px;margin-top:8px">
-      <button class="btn btn-green" onclick="salvarEdicao()" style="flex:1;justify-content:center">Salvar</button>
-      <button class="btn btn-outline" onclick="fecharModalEditar()" style="flex:1;justify-content:center">Cancelar</button>
-    </div>
-  </div>
-</div>
-
-<script>
-const ADMIN_KEY = 'ia_rural_admin_cfg';
-const USERS_KEY = 'ia_rural_usuarios';
-const FIREBASE_API_KEY = 'AIzaSyDs6njrUFchymlhcFHwdGSv6nPrKXoiLEc';
-
-function getAdminCfg() {
-  const raw = localStorage.getItem(ADMIN_KEY);
-  if (raw) return JSON.parse(raw);
-  return { usuario: 'admin', senha: 'admin123' };
-}
-
-function getUsuarios() {
-  const raw = localStorage.getItem(USERS_KEY);
-  if (raw) return JSON.parse(raw);
-  return [];
-}
-
-function salvarUsuarios(lista) {
-  localStorage.setItem(USERS_KEY, JSON.stringify(lista));
-}
-
-function loginAdmin() {
-  const u = document.getElementById('adm-user').value.trim();
-  const s = document.getElementById('adm-pass').value;
-  const cfg = getAdminCfg();
-  if (u === cfg.usuario && s === cfg.senha) {
-    document.getElementById('admin-login').style.display = 'none';
-    document.getElementById('admin-painel').style.display = 'block';
-    document.getElementById('adm-nome-badge').textContent = u;
-    renderUsuarios();
-  } else {
-    document.getElementById('adm-erro').style.display = 'block';
-  }
-}
-
-function sairAdmin() {
-  document.getElementById('admin-painel').style.display = 'none';
-  document.getElementById('admin-login').style.display = 'flex';
-  document.getElementById('adm-user').value = '';
-  document.getElementById('adm-pass').value = '';
-  document.getElementById('adm-erro').style.display = 'none';
-}
-
-function normalizarUsuario(usuario) {
-  return (usuario || '').trim().toLowerCase().replace(/\s+/g, '');
-}
-
-function usuarioParaEmail(usuario) {
-  return `${normalizarUsuario(usuario)}@ia-rural.app`;
-}
-
-async function criarUsuario() {
-  const nome = document.getElementById('n-nome').value.trim();
-  const usuario = normalizarUsuario(document.getElementById('n-usuario').value);
-  const senha = document.getElementById('n-senha').value.trim();
-  const status = document.getElementById('n-status').value;
-  const obs = document.getElementById('n-obs').value.trim();
-
-  if (!nome) { alert('Informe o nome ou fazenda.'); return; }
-  if (!usuario) { alert('Informe o nome de usuário.'); return; }
-  if (!senha) { alert('Defina uma senha.'); return; }
-  if (senha.length < 6) { alert('A senha precisa ter pelo menos 6 caracteres.'); return; }
-
-  const lista = getUsuarios();
-  if (lista.find(u => u.usuario === usuario)) { alert('Esse nome de usuário já existe. Escolha outro.'); return; }
-
-  try {
-    const resposta = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FIREBASE_API_KEY}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: usuarioParaEmail(usuario),
-        password: senha,
-        returnSecureToken: true
-      })
-    });
-
-    const dados = await resposta.json();
-
-    if (!resposta.ok) {
-      if (dados.error && dados.error.message === 'EMAIL_EXISTS') {
-        alert('Esse nome de usuário já existe no Firebase. Escolha outro.');
-        return;
-      }
-      throw new Error((dados.error && dados.error.message) || 'Falha ao criar usuário no Firebase.');
+  <style>
+    :root {
+      --bg: #000000;
+      --card: #000000;
+      --card-soft: #101010;
+      --border: #2a2a2a;
+      --text: #ffffff;
+      --muted: #d1d5db;
+      --green: #2d6a2d;
+      --green-light: #3d8b3d;
+      --red: #ef4444;
+      --amber: #f59e0b;
+      --blue: #60a5fa;
+      --radius: 12px;
+      --radius-lg: 18px;
+      --shadow: 0 8px 30px rgba(255,255,255,.04);
     }
 
-    lista.push({
-      id: (dados.localId || Date.now().toString()),
-      nome,
-      usuario,
-      senha,
-      status,
-      obs,
-      firebaseUid: dados.localId || '',
-      dataCriacao: new Date().toISOString()
-    });
-    salvarUsuarios(lista);
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    document.getElementById('n-nome').value = '';
-    document.getElementById('n-usuario').value = '';
-    document.getElementById('n-senha').value = '';
-    document.getElementById('n-obs').value = '';
-    document.getElementById('n-status').value = 'ativo';
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+    }
 
-    const msg = document.getElementById('sucesso-criar');
-    msg.textContent = 'Usuário criado com sucesso no Firebase!';
-    msg.style.display = 'block';
-    setTimeout(() => {
-      msg.style.display = 'none';
-      msg.textContent = 'Usuário criado com sucesso!';
-    }, 3000);
+    body { background: var(--bg); color: var(--text); }
 
-    renderUsuarios();
-  } catch (erro) {
-    console.error(erro);
-    alert('Erro ao criar usuário: ' + erro.message);
-  }
-}
+    #admin-login {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: #000000;
+    }
 
-function renderUsuarios() {
-  const lista = getUsuarios();
-  const ativos = lista.filter(u => u.status === 'ativo').length;
-  const inativos = lista.length - ativos;
-  document.getElementById('stat-total').textContent = lista.length;
-  document.getElementById('stat-ativos').textContent = ativos;
-  document.getElementById('stat-inativos').textContent = inativos;
-  const el = document.getElementById('lista-usuarios');
-  if (!lista.length) {
-    el.innerHTML = '<div class="empty-users">Nenhum usuário cadastrado ainda.<br>Crie o primeiro usuário acima.</div>';
-    return;
-  }
-  el.innerHTML = lista.map(u => `
-    <div class="user-row">
-      <div class="user-avatar">${u.nome.charAt(0).toUpperCase()}</div>
-      <div class="user-info">
-        <div class="user-name">${u.nome} <span class="badge ${u.status === 'ativo' ? 'badge-ativo' : 'badge-inativo'}">${u.status}</span></div>
-        <div class="user-meta">
-          Login: <strong>${u.usuario}</strong> &nbsp;·&nbsp;
-          Senha: <span id="senha-${u.id}" style="font-family:monospace">••••••</span>
-          <button class="copy-btn" onclick="toggleSenha('${u.id}','${u.senha}')">ver</button>
-          <button class="copy-btn" onclick="copiarSenha('${u.senha}')">copiar</button>
-          ${u.obs ? '&nbsp;·&nbsp; ' + u.obs : ''}
+    .login-card {
+      width: 100%;
+      max-width: 380px;
+      background: #000000;
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 34px 28px;
+      box-shadow: var(--shadow);
+    }
+
+    .login-logo {
+      font-family: 'DM Serif Display', serif;
+      font-size: 28px;
+      color: #ffffff;
+      margin-bottom: 6px;
+    }
+
+    .login-logo span { color: #6dd56d; }
+
+    .login-sub {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+
+    .field { margin-bottom: 14px; }
+
+    .field label {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .35px;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #ffffff;
+      color: #000000;
+      font-size: 14px;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    .field input:focus,
+    .field select:focus {
+      outline: none;
+      border-color: var(--green);
+    }
+
+    .btn-full,
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border: none;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 700;
+      border-radius: 10px;
+    }
+
+    .btn-full {
+      width: 100%;
+      padding: 12px;
+      background: #ffffff;
+      color: #000000;
+      font-size: 14px;
+    }
+
+    .btn {
+      padding: 10px 15px;
+      font-size: 13px;
+    }
+
+    .btn-green { background: var(--green); color: #ffffff; }
+    .btn-green:hover { background: var(--green-light); }
+    .btn-red { background: var(--red); color: #ffffff; }
+    .btn-outline {
+      background: transparent;
+      color: #ffffff;
+      border: 1px solid var(--border);
+    }
+    .btn-sm { padding: 6px 10px; font-size: 11px; }
+    .btn-xs { padding: 5px 8px; font-size: 11px; }
+
+    .error-msg,
+    .success-msg {
+      padding: 11px 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      line-height: 1.5;
+      margin-top: 12px;
+      display: none;
+    }
+
+    .error-msg {
+      background: #220d0d;
+      border: 1px solid #4b1111;
+      color: #fecaca;
+    }
+
+    .success-msg {
+      background: #102210;
+      border: 1px solid #1f4b1f;
+      color: #bbf7d0;
+    }
+
+    #admin-painel { display: none; min-height: 100vh; }
+
+    .top-bar {
+      background: #000000;
+      border-bottom: 1px solid var(--border);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .top-logo {
+      font-family: 'DM Serif Display', serif;
+      font-size: 20px;
+      color: #ffffff;
+    }
+
+    .top-logo span { color: #6dd56d; }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .top-badge {
+      background: #111111;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+    }
+
+    .main {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 22px 16px 30px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .stat-card {
+      background: #000000;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .stat-num {
+      font-size: 30px;
+      font-weight: 800;
+      color: #ffffff;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .user-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      margin-bottom: 10px;
+      background: #000000;
+    }
+
+    .user-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: #111111;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .user-info { flex: 1; min-width: 0; }
+    .user-name { font-size: 14px; font-weight: 700; color: #ffffff; }
+    .user-meta { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.55; }
+    .user-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 700;
+      margin-left: 6px;
+    }
+
+    .badge-ativo {
+      background: #102210;
+      color: #bbf7d0;
+      border: 1px solid #1f4b1f;
+    }
+
+    .badge-inativo {
+      background: #220d0d;
+      color: #fecaca;
+      border: 1px solid #4b1111;
+    }
+
+    .senha-hint {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 5px;
+      line-height: 1.5;
+    }
+
+    .empty-users {
+      text-align: center;
+      padding: 30px 20px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+      border: 1px dashed var(--border);
+      border-radius: 14px;
+    }
+
+    @media (max-width: 760px) {
+      .form-row,
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .user-row {
+        flex-direction: column;
+      }
+
+      .user-actions {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="admin-login">
+    <div class="login-card">
+      <div class="login-logo">IA <span>Rural</span></div>
+      <div class="login-sub">Painel do Administrador</div>
+
+      <div class="field">
+        <label>Usuário admin</label>
+        <input type="text" id="adm-user" placeholder="admin" onkeydown="if(event.key==='Enter')loginAdmin()" />
+      </div>
+
+      <div class="field">
+        <label>Senha admin</label>
+        <input type="password" id="adm-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')loginAdmin()" />
+      </div>
+
+      <button class="btn-full" onclick="loginAdmin()">Entrar no painel</button>
+
+      <div class="error-msg" id="adm-erro">Usuário ou senha incorretos.</div>
+      <div class="login-sub" style="margin-top:16px; margin-bottom:0; font-size:11px; text-align:center;">
+        Acesso restrito ao administrador do IA Rural
+      </div>
+    </div>
+  </div>
+
+  <div id="admin-painel">
+    <div class="top-bar">
+      <div class="top-logo">IA <span>Rural</span> <span style="font-family:'DM Sans',sans-serif;font-size:12px;color:#888;margin-left:6px;">Admin</span></div>
+
+      <div class="top-actions">
+        <div class="top-badge" id="adm-nome-badge">admin</div>
+        <button class="btn btn-outline btn-sm" onclick="carregarUsuarios()">🔄 Atualizar</button>
+        <button class="btn btn-outline btn-sm" onclick="exportarUsuarios()">⬇ Exportar lista</button>
+        <button class="btn btn-outline btn-sm" onclick="sairAdmin()">Sair</button>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-num" id="stat-total">0</div>
+          <div class="stat-label">Usuários cadastrados</div>
         </div>
-        <div style="font-size:10px;color:#9ca3af;margin-top:2px">Criado em ${formatData(u.dataCriacao)}</div>
+
+        <div class="stat-card">
+          <div class="stat-num" id="stat-ativos">0</div>
+          <div class="stat-label">Ativos</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-num" id="stat-inativos">0</div>
+          <div class="stat-label">Inativos</div>
+        </div>
       </div>
-      <div class="user-actions">
-        <button class="btn btn-outline btn-xs" onclick="abrirEditar('${u.id}')">Editar</button>
-        <button class="btn btn-red btn-xs" onclick="excluirUsuario('${u.id}','${u.nome}')">Excluir</button>
+
+      <div class="card">
+        <div class="card-title">➕ Criar novo usuário</div>
+
+        <div class="form-row">
+          <div class="field">
+            <label>Nome / Fazenda</label>
+            <input type="text" id="n-nome" placeholder="Ex: Fazenda Boa Vista" />
+          </div>
+
+          <div class="field">
+            <label>Usuário (login)</label>
+            <input type="text" id="n-usuario" placeholder="Ex: joaosilva" oninput="this.value=this.value.toLowerCase().replace(/\s/g,'')" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="field">
+            <label>Senha</label>
+            <input type="text" id="n-senha" placeholder="Ex: rural2025" />
+            <div class="senha-hint">O usuário final continua entrando só com <strong>usuário + senha</strong>, sem precisar digitar email.</div>
+          </div>
+
+          <div class="field">
+            <label>Status</label>
+            <select id="n-status">
+              <option value="ativo">Ativo</option>
+              <option value="inativo">Inativo</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Observação (opcional)</label>
+          <input type="text" id="n-obs" placeholder="Ex: mensal, teste, observação interna..." />
+        </div>
+
+        <button class="btn btn-green" onclick="criarUsuario()">✓ Criar usuário</button>
+
+        <div class="success-msg" id="sucesso-criar">Usuário criado com sucesso!</div>
+        <div class="error-msg" id="erro-criar">Erro ao criar usuário.</div>
       </div>
-    </div>`).join('');
-}
 
-function toggleSenha(id, senha) {
-  const el = document.getElementById('senha-' + id);
-  el.textContent = el.textContent === '••••••' ? senha : '••••••';
-}
+      <div class="card">
+        <div class="card-title">👥 Usuários cadastrados</div>
+        <div class="muted" style="margin-bottom:12px;">
+          Os usuários listados abaixo ficam salvos na nuvem. O login deles continua funcionando normalmente no app.
+        </div>
 
-function copiarSenha(senha) {
-  navigator.clipboard.writeText(senha).then(() => alert('Senha copiada!')).catch(() => {
-    const t = document.createElement('textarea');
-    t.value = senha;
-    document.body.appendChild(t);
-    t.select();
-    document.execCommand('copy');
-    document.body.removeChild(t);
-    alert('Senha copiada!');
-  });
-}
+        <div id="lista-usuarios"></div>
+      </div>
 
-function excluirUsuario(id, nome) {
-  if (!confirm('Excluir o usuário "' + nome + '"? Esta ação não pode ser desfeita.')) return;
-  let lista = getUsuarios();
-  lista = lista.filter(u => u.id !== id);
-  salvarUsuarios(lista);
-  renderUsuarios();
-}
+      <div class="card">
+        <div class="card-title">⚙️ Configurações do administrador</div>
 
-function abrirEditar(id) {
-  const lista = getUsuarios();
-  const u = lista.find(u => u.id === id);
-  if (!u) return;
-  document.getElementById('edit-id').value = u.id;
-  document.getElementById('edit-nome').value = u.nome;
-  document.getElementById('edit-usuario').value = u.usuario;
-  document.getElementById('edit-senha').value = u.senha;
-  document.getElementById('edit-status').value = u.status;
-  document.getElementById('edit-obs').value = u.obs || '';
-  document.getElementById('modal-editar').style.display = 'flex';
-}
+        <div class="form-row">
+          <div class="field">
+            <label>Novo usuário admin</label>
+            <input type="text" id="cfg-usuario" placeholder="admin" />
+          </div>
 
-function fecharModalEditar() {
-  document.getElementById('modal-editar').style.display = 'none';
-}
+          <div class="field">
+            <label>Nova senha admin</label>
+            <input type="text" id="cfg-senha" placeholder="Nova senha" />
+          </div>
+        </div>
 
-function salvarEdicao() {
-  const id = document.getElementById('edit-id').value;
-  const nome = document.getElementById('edit-nome').value.trim();
-  const usuario = document.getElementById('edit-usuario').value.trim();
-  const senha = document.getElementById('edit-senha').value.trim();
-  const status = document.getElementById('edit-status').value;
-  const obs = document.getElementById('edit-obs').value.trim();
-  if (!nome || !usuario || !senha) { alert('Preencha todos os campos obrigatórios.'); return; }
-  let lista = getUsuarios();
-  const idx = lista.findIndex(u => u.id === id);
-  if (idx >= 0) lista[idx] = { ...lista[idx], nome, usuario, senha, status, obs };
-  salvarUsuarios(lista);
-  fecharModalEditar();
-  renderUsuarios();
-}
+        <button class="btn btn-outline" onclick="salvarConfigAdmin()">Salvar configurações</button>
+        <div class="success-msg" id="sucesso-cfg">Configurações salvas!</div>
+      </div>
+    </div>
+  </div>
 
-function salvarConfigAdmin() {
-  const usuario = document.getElementById('cfg-usuario').value.trim();
-  const senha = document.getElementById('cfg-senha').value.trim();
-  if (!usuario || !senha) { alert('Preencha usuário e senha.'); return; }
-  localStorage.setItem(ADMIN_KEY, JSON.stringify({ usuario, senha }));
-  const msg = document.getElementById('sucesso-cfg');
-  msg.style.display = 'block';
-  setTimeout(() => msg.style.display = 'none', 3000);
-}
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDs6njrUFchymlhcFHwdGSv6nPrKXoiLEc",
+      authDomain: "ia-rural.firebaseapp.com",
+      projectId: "ia-rural",
+      storageBucket: "ia-rural.firebasestorage.app",
+      messagingSenderId: "889787646020",
+      appId: "1:889787646020:web:d4e1ef26bcf9ca3b1dbc11"
+    };
 
-function exportarUsuarios() {
-  const lista = getUsuarios();
-  if (!lista.length) { alert('Nenhum usuário para exportar.'); return; }
-  let csv = 'Nome,Usuário,Senha,Status,Observação,Data de criação\n';
-  lista.forEach(u => { csv += `"${u.nome}","${u.usuario}","${u.senha}","${u.status}","${u.obs || ''}","${formatData(u.dataCriacao)}"\n`; });
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'ia-rural-usuarios-' + new Date().toISOString().split('T')[0] + '.csv';
-  a.click();
-}
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
 
-function formatData(iso) {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  return d.toLocaleDateString('pt-BR');
-}
+    const db = firebase.firestore();
+    const auth = firebase.auth();
 
-document.getElementById('modal-editar').addEventListener('click', function(e) {
-  if (e.target === this) fecharModalEditar();
-});
-</script>
-</body>
-</html>
+    const ADMIN_KEY = 'ia_rural_admin_cfg';
+    const FIREBASE_API_KEY = 'AIzaSyDs6njrUFchymlhcFHwdGSv6nPrKXoiLEc';
 
-
-
+    let usuariosCache = [];
+    let
