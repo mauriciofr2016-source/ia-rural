@@ -1183,6 +1183,21 @@
       return `${normalizarUsuario(usuario)}@ia-rural.app`;
     }
 
+    async function usuarioEstaBloqueadoPorUid(uid) {
+  try {
+    const adminDoc = await db.collection('admin_usuarios').where('firebaseUid', '==', uid).limit(1).get();
+    if (adminDoc.empty) return false;
+    const dados = adminDoc.docs[0].data();
+    return dados.status === 'bloqueado';
+  } catch (erro) {
+    console.error('Erro ao consultar bloqueio:', erro);
+    return false;
+  }
+}
+
+async function fazerLogin() {
+  ...
+}
     function getLocalKey() {
       const ref = usuarioLogado || 'anonimo';
       return `ia_rural_db_${ref}`;
@@ -1278,44 +1293,58 @@
       }
     }
 
-    async function fazerLogin() {
-      const usuario = normalizarUsuario(document.getElementById('login-usuario').value);
-      const senha = document.getElementById('login-senha').value;
-      const erroBox = document.getElementById('login-erro');
+   async function fazerLogin() {
+  const usuario = normalizarUsuario(document.getElementById('login-usuario').value);
+  const senha = document.getElementById('login-senha').value;
+  const erroBox = document.getElementById('login-erro');
 
-      erroBox.style.display = 'none';
+  erroBox.style.display = 'none';
 
-      if (!usuario || !senha) {
-        erroBox.textContent = 'Informe usuário e senha.';
+  if (!usuario || !senha) {
+    erroBox.textContent = 'Informe usuário e senha.';
+    erroBox.style.display = 'block';
+    return;
+  }
+
+  try {
+    const cred = await auth.signInWithEmailAndPassword(usuarioParaEmail(usuario), senha);
+    const uid = cred.user.uid;
+
+    const adminDoc = await db.collection('admin_usuarios').where('firebaseUid', '==', uid).limit(1).get();
+
+    if (!adminDoc.empty) {
+      const dadosAdmin = adminDoc.docs[0].data();
+
+      if (dadosAdmin.status === 'bloqueado') {
+        await auth.signOut();
+        erroBox.textContent = 'Seu acesso está bloqueado. Procure o administrador.';
         erroBox.style.display = 'block';
         return;
       }
-
-      try {
-        await auth.signInWithEmailAndPassword(usuarioParaEmail(usuario), senha);
-        usuarioLogado = usuario;
-        DB = carregarLocalPorUsuario(usuario);
-        abrirAppLogado(usuario);
-        await carregarFirestore();
-      } catch (erro) {
-        console.error(erro);
-        let msg = 'Não foi possível entrar. Verifique usuário e senha.';
-        const code = erro?.code || '';
-
-        if (code.includes('wrong-password')) msg = 'Senha incorreta.';
-        else if (code.includes('user-not-found')) msg = 'Usuário não encontrado.';
-        else if (code.includes('invalid-login-credentials')) msg = 'Usuário ou senha inválidos.';
-        else if (code.includes('network-request-failed')) msg = 'Falha de conexão com a internet.';
-        else if (code.includes('too-many-requests')) msg = 'Muitas tentativas. Aguarde um pouco.';
-        else if (code.includes('operation-not-allowed')) msg = 'Login por senha não habilitado no Firebase.';
-        else if (code.includes('invalid-api-key')) msg = 'Configuração do Firebase inválida.';
-        else if (erro?.message) msg = erro.message;
-
-        erroBox.textContent = msg;
-        erroBox.style.display = 'block';
-      }
     }
 
+    usuarioLogado = usuario;
+    DB = carregarLocalPorUsuario(usuario);
+    abrirAppLogado(usuario);
+    await carregarFirestore();
+  } catch (erro) {
+    console.error(erro);
+    let msg = 'Não foi possível entrar. Verifique usuário e senha.';
+    const code = erro?.code || '';
+
+    if (code.includes('wrong-password')) msg = 'Senha incorreta.';
+    else if (code.includes('user-not-found')) msg = 'Usuário não encontrado.';
+    else if (code.includes('invalid-login-credentials')) msg = 'Usuário ou senha inválidos.';
+    else if (code.includes('network-request-failed')) msg = 'Falha de conexão com a internet.';
+    else if (code.includes('too-many-requests')) msg = 'Muitas tentativas. Aguarde um pouco.';
+    else if (code.includes('operation-not-allowed')) msg = 'Login por senha não habilitado no Firebase.';
+    else if (code.includes('invalid-api-key')) msg = 'Configuração do Firebase inválida.';
+    else if (erro?.message) msg = erro.message;
+
+    erroBox.textContent = msg;
+    erroBox.style.display = 'block';
+  }
+}
     async function fazerLogout() {
       if (!confirm('Deseja sair do IA Rural?')) return;
 
@@ -1336,18 +1365,36 @@
       document.getElementById('login-erro').style.display = 'none';
     }
 
-    auth.onAuthStateChanged(async (user) => {
-      usuarioFirebase = user || null;
+   auth.onAuthStateChanged(async (user) => {
+  usuarioFirebase = user || null;
 
-      if (user) {
-        const email = user.email || '';
-        const usuario = email.split('@')[0] || 'usuario';
-        usuarioLogado = usuario;
-        DB = carregarLocalPorUsuario(usuario);
-        abrirAppLogado(usuario);
-        await carregarFirestore();
+  if (user) {
+    try {
+      const uid = user.uid;
+      const adminDoc = await db.collection('admin_usuarios').where('firebaseUid', '==', uid).limit(1).get();
+
+      if (!adminDoc.empty) {
+        const dadosAdmin = adminDoc.docs[0].data();
+
+        if (dadosAdmin.status === 'bloqueado') {
+          await auth.signOut();
+          document.getElementById('login-erro').textContent = 'Seu acesso está bloqueado. Procure o administrador.';
+          document.getElementById('login-erro').style.display = 'block';
+          return;
+        }
       }
-    });
+
+      const email = user.email || '';
+      const usuario = email.split('@')[0] || 'usuario';
+      usuarioLogado = usuario;
+      DB = carregarLocalPorUsuario(usuario);
+      abrirAppLogado(usuario);
+      await carregarFirestore();
+    } catch (erro) {
+      console.error('Erro ao validar bloqueio do usuário:', erro);
+    }
+  }
+});
 
     function showPage(id) {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
