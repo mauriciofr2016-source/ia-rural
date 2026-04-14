@@ -1183,10 +1183,10 @@
       return `${normalizarUsuario(usuario)}@ia-rural.app`;
     }
     
-    async function buscarRegistroAdminPorUid(uid) {
+    async function buscarRegistroAdminPorUsuario(usuario) {
   try {
     const snapshot = await db.collection('admin_usuarios')
-      .where('firebaseUid', '==', uid)
+      .where('usuario', '==', normalizarUsuario(usuario))
       .limit(1)
       .get();
 
@@ -1224,17 +1224,15 @@ async function fazerLogin() {
   }
 
   try {
-    const cred = await auth.signInWithEmailAndPassword(usuarioParaEmail(usuario), senha);
-    const uid = cred.user.uid;
-
-    const registroAdmin = await buscarRegistroAdminPorUid(uid);
+    const registroAdmin = await buscarRegistroAdminPorUsuario(usuario);
 
     if (registroAdmin && registroAdmin.status === 'bloqueado') {
-      await auth.signOut();
       erroBox.textContent = 'Seu acesso está bloqueado. Procure o administrador.';
       erroBox.style.display = 'block';
       return;
     }
+
+    await auth.signInWithEmailAndPassword(usuarioParaEmail(usuario), senha);
 
     usuarioLogado = usuario;
     DB = carregarLocalPorUsuario(usuario);
@@ -1422,13 +1420,16 @@ async function fazerLogin() {
       document.getElementById('login-erro').style.display = 'none';
     }
 
- auth.onAuthStateChanged(async (user) => {
+auth.onAuthStateChanged(async (user) => {
   usuarioFirebase = user || null;
 
   if (!user) return;
 
   try {
-    const registroAdmin = await buscarRegistroAdminPorUid(user.uid);
+    const email = user.email || '';
+    const usuario = email.split('@')[0] || 'usuario';
+
+    const registroAdmin = await buscarRegistroAdminPorUsuario(usuario);
 
     if (registroAdmin && registroAdmin.status === 'bloqueado') {
       await auth.signOut();
@@ -1438,8 +1439,6 @@ async function fazerLogin() {
       return;
     }
 
-    const email = user.email || '';
-    const usuario = email.split('@')[0] || 'usuario';
     usuarioLogado = usuario;
     DB = carregarLocalPorUsuario(usuario);
     abrirAppLogado(usuario);
@@ -1448,7 +1447,6 @@ async function fazerLogin() {
     console.error('Erro ao validar login do usuário:', erro);
   }
 });
-
     function showPage(id) {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
       document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
