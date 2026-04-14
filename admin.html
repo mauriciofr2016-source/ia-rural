@@ -16,7 +16,7 @@
 body{font-family:'DM Sans',sans-serif;background:#f3f4f6;min-height:100vh;color:#111827}
 
 /* LOGIN ADMIN */
-#admin-login{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;background:#000}
+#admin-login{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
 .login-card{background:#fff;border-radius:16px;padding:36px 32px;width:100%;max-width:360px;box-shadow:0 4px 24px rgba(0,0,0,.10)}
 .login-logo{font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:4px}
 .login-logo span{color:#2d6a2d}
@@ -31,7 +31,7 @@ body{font-family:'DM Sans',sans-serif;background:#f3f4f6;min-height:100vh;color:
 .error-msg{background:#fee2e2;color:#b91c1c;padding:10px 14px;border-radius:8px;font-size:13px;margin-top:10px;display:none}
 
 /* PAINEL */
-#admin-painel{display:none;background:#000;min-height:100vh}
+#admin-painel{display:none}
 .top-bar{background:#0f0f0f;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
 .top-logo{font-family:'DM Serif Display',serif;font-size:18px;color:#fff}
 .top-logo span{color:#6dd56d}
@@ -79,7 +79,6 @@ body{font-family:'DM Sans',sans-serif;background:#f3f4f6;min-height:100vh;color:
 </head>
 <body>
 
-<!-- LOGIN ADMIN -->
 <div id="admin-login">
   <div class="login-card">
     <div class="login-logo">IA <span>Rural</span></div>
@@ -101,7 +100,6 @@ body{font-family:'DM Sans',sans-serif;background:#f3f4f6;min-height:100vh;color:
   </div>
 </div>
 
-<!-- PAINEL ADMIN -->
 <div id="admin-painel">
   <div class="top-bar">
     <div class="top-logo">IA <span>Rural</span> <span style="font-family:'DM Sans',sans-serif;font-size:12px;color:#555;margin-left:6px">Admin</span></div>
@@ -169,23 +167,25 @@ body{font-family:'DM Sans',sans-serif;background:#f3f4f6;min-height:100vh;color:
 
     <div class="card" style="background:#fafafa">
       <div class="card-title">⚙️ Configurações do administrador</div>
+
       <div class="form-row">
         <div class="field">
           <label>Novo usuário admin</label>
           <input type="text" id="cfg-usuario" placeholder="admin@iarural.app">
         </div>
+
         <div class="field">
           <label>Nova senha admin</label>
           <input type="text" id="cfg-senha" placeholder="Nova senha">
         </div>
       </div>
+
       <button class="btn btn-outline" onclick="salvarConfigAdmin()">Salvar configurações</button>
       <div class="success-msg" id="sucesso-cfg">Configurações salvas!</div>
     </div>
   </div>
 </div>
 
-<!-- MODAL EDITAR -->
 <div id="modal-editar" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;padding:20px">
   <div style="background:#fff;border-radius:16px;padding:24px;width:100%;max-width:400px">
     <h3 style="font-size:16px;font-weight:600;margin-bottom:16px">Editar usuário</h3>
@@ -237,10 +237,7 @@ const FIREBASE_CONFIG = {
   appId: "1:889787646020:web:d4e1ef26bcf9ca3b1dbc11"
 };
 
-const ADMIN_EMAILS = [
-  'admin@iarural.app',
-  'admin@ia-rural.app'
-];
+const ADMIN_EMAILS = ['admin@iarural.app', 'admin@ia-rural.app'];
 
 if (!firebase.apps.length) {
   firebase.initializeApp(FIREBASE_CONFIG);
@@ -288,6 +285,14 @@ function copiarSenha(senha) {
   });
 }
 
+function loginParaEmail(valor) {
+  const v = (valor || '').trim().toLowerCase();
+  if (!v) return '';
+  if (v === 'admin') return 'admin@iarural.app';
+  if (v.includes('@')) return v;
+  return `${normalizarUsuario(v)}@ia-rural.app`;
+}
+
 async function loginAdmin() {
   const u = document.getElementById('adm-user').value.trim();
   const s = document.getElementById('adm-pass').value;
@@ -301,7 +306,7 @@ async function loginAdmin() {
     return;
   }
 
-  const email = u.includes('@') ? u.trim().toLowerCase() : `${normalizarUsuario(u)}@ia-rural.app`;
+  const email = loginParaEmail(u);
 
   try {
     const cred = await auth.signInWithEmailAndPassword(email, s);
@@ -353,10 +358,7 @@ async function criarUsuario() {
   if (senha.length < 6) { alert('A senha precisa ter pelo menos 6 caracteres.'); return; }
 
   try {
-    const jaExiste = await db.collection('admin_usuarios')
-      .where('usuario', '==', usuario)
-      .limit(1)
-      .get();
+    const jaExiste = await db.collection('admin_usuarios').where('usuario', '==', usuario).limit(1).get();
 
     if (!jaExiste.empty) {
       alert('Esse nome de usuário já existe. Escolha outro.');
@@ -538,8 +540,9 @@ function salvarConfigAdmin() {
   }
 
   const msg = document.getElementById('sucesso-cfg');
-  msg.textContent = 'Agora o admin é controlado no Firebase Authentication. Para trocar o login ou senha, altere direto no Firebase.';
+  msg.textContent = 'O admin agora é controlado pelo Firebase Authentication. Para trocar login ou senha admin, altere no Firebase.';
   msg.style.display = 'block';
+
   setTimeout(() => {
     msg.style.display = 'none';
     msg.textContent = 'Configurações salvas!';
@@ -558,34 +561,4 @@ async function exportarUsuarios() {
 
     let csv = 'Nome,Usuário,Senha,Status,Observação,Data de criação\n';
     lista.forEach(u => {
-      csv += `"${u.nome || ''}","${u.usuario || ''}","${u.senha || ''}","${u.status || ''}","${u.obs || ''}","${formatData(u.dataCriacao)}"\n`;
-    });
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'ia-rural-usuarios-' + new Date().toISOString().split('T')[0] + '.csv';
-    a.click();
-  } catch (erro) {
-    console.error(erro);
-    alert('Erro ao exportar usuários: ' + erro.message);
-  }
-}
-
-document.getElementById('modal-editar').addEventListener('click', function(e) {
-  if (e.target === this) fecharModalEditar();
-});
-
-auth.onAuthStateChanged(async (user) => {
-  const email = (user?.email || '').toLowerCase();
-
-  if (user && ADMIN_EMAILS.includes(email)) {
-    document.getElementById('admin-login').style.display = 'none';
-    document.getElementById('admin-painel').style.display = 'block';
-    document.getElementById('adm-nome-badge').textContent = email;
-    await carregarUsuarios();
-  }
-});
-</script>
-</body>
-</html>
+      csv += `"${u.nome || ''}","${u.usuario || ''}","${u.s
