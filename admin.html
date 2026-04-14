@@ -13,10 +13,10 @@
 
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'DM Sans',sans-serif;background:#f3f4f6;min-height:100vh;color:#111827}
+body{font-family:'DM Sans',sans-serif;background:#000;min-height:100vh;color:#111827}
 
 /* LOGIN ADMIN */
-#admin-login{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+#admin-login{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;background:#000}
 .login-card{background:#fff;border-radius:16px;padding:36px 32px;width:100%;max-width:360px;box-shadow:0 4px 24px rgba(0,0,0,.10)}
 .login-logo{font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:4px}
 .login-logo span{color:#2d6a2d}
@@ -31,7 +31,7 @@ body{font-family:'DM Sans',sans-serif;background:#f3f4f6;min-height:100vh;color:
 .error-msg{background:#fee2e2;color:#b91c1c;padding:10px 14px;border-radius:8px;font-size:13px;margin-top:10px;display:none}
 
 /* PAINEL */
-#admin-painel{display:none}
+#admin-painel{display:none;background:#000;min-height:100vh}
 .top-bar{background:#0f0f0f;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
 .top-logo{font-family:'DM Serif Display',serif;font-size:18px;color:#fff}
 .top-logo span{color:#6dd56d}
@@ -86,7 +86,7 @@ body{font-family:'DM Sans',sans-serif;background:#f3f4f6;min-height:100vh;color:
 
     <div class="field">
       <label>Usuário admin</label>
-      <input type="text" id="adm-user" placeholder="admin ou admin@iarural.app" onkeydown="if(event.key==='Enter')loginAdmin()">
+      <input type="text" id="adm-user" placeholder="admin@iarural.app" onkeydown="if(event.key==='Enter')loginAdmin()">
     </div>
 
     <div class="field">
@@ -167,19 +167,16 @@ body{font-family:'DM Sans',sans-serif;background:#f3f4f6;min-height:100vh;color:
 
     <div class="card" style="background:#fafafa">
       <div class="card-title">⚙️ Configurações do administrador</div>
-
       <div class="form-row">
         <div class="field">
           <label>Novo usuário admin</label>
           <input type="text" id="cfg-usuario" placeholder="admin@iarural.app">
         </div>
-
         <div class="field">
           <label>Nova senha admin</label>
           <input type="text" id="cfg-senha" placeholder="Nova senha">
         </div>
       </div>
-
       <button class="btn btn-outline" onclick="salvarConfigAdmin()">Salvar configurações</button>
       <div class="success-msg" id="sucesso-cfg">Configurações salvas!</div>
     </div>
@@ -237,7 +234,7 @@ const FIREBASE_CONFIG = {
   appId: "1:889787646020:web:d4e1ef26bcf9ca3b1dbc11"
 };
 
-const ADMIN_EMAILS = ['admin@iarural.app', 'admin@ia-rural.app'];
+const ADMIN_EMAIL = 'admin@iarural.app';
 
 if (!firebase.apps.length) {
   firebase.initializeApp(FIREBASE_CONFIG);
@@ -285,37 +282,36 @@ function copiarSenha(senha) {
   });
 }
 
-function loginParaEmail(valor) {
-  const v = (valor || '').trim().toLowerCase();
-  if (!v) return '';
-  if (v === 'admin') return 'admin@iarural.app';
-  if (v.includes('@')) return v;
-  return `${normalizarUsuario(v)}@ia-rural.app`;
+function mostrarErroLogin(msg) {
+  const erroEl = document.getElementById('adm-erro');
+  erroEl.textContent = msg;
+  erroEl.style.display = 'block';
 }
 
 async function loginAdmin() {
-  const u = document.getElementById('adm-user').value.trim();
+  const u = document.getElementById('adm-user').value.trim().toLowerCase();
   const s = document.getElementById('adm-pass').value;
   const erroEl = document.getElementById('adm-erro');
 
   erroEl.style.display = 'none';
 
   if (!u || !s) {
-    erroEl.textContent = 'Informe usuário e senha.';
-    erroEl.style.display = 'block';
+    mostrarErroLogin('Informe usuário e senha.');
     return;
   }
 
-  const email = loginParaEmail(u);
+  let email = u;
+  if (u === 'admin') {
+    email = ADMIN_EMAIL;
+  }
 
   try {
     const cred = await auth.signInWithEmailAndPassword(email, s);
     const emailLogado = (cred.user?.email || '').toLowerCase();
 
-    if (!ADMIN_EMAILS.includes(emailLogado)) {
+    if (emailLogado !== ADMIN_EMAIL) {
       await auth.signOut();
-      erroEl.textContent = 'Este usuário não tem permissão de administrador.';
-      erroEl.style.display = 'block';
+      mostrarErroLogin('Este usuário não tem permissão de administrador.');
       return;
     }
 
@@ -326,8 +322,7 @@ async function loginAdmin() {
     await carregarUsuarios();
   } catch (e) {
     console.error(e);
-    erroEl.textContent = 'Usuário ou senha incorretos.';
-    erroEl.style.display = 'block';
+    mostrarErroLogin('Usuário ou senha incorretos.');
   }
 }
 
@@ -358,7 +353,10 @@ async function criarUsuario() {
   if (senha.length < 6) { alert('A senha precisa ter pelo menos 6 caracteres.'); return; }
 
   try {
-    const jaExiste = await db.collection('admin_usuarios').where('usuario', '==', usuario).limit(1).get();
+    const jaExiste = await db.collection('admin_usuarios')
+      .where('usuario', '==', usuario)
+      .limit(1)
+      .get();
 
     if (!jaExiste.empty) {
       alert('Esse nome de usuário já existe. Escolha outro.');
@@ -540,9 +538,8 @@ function salvarConfigAdmin() {
   }
 
   const msg = document.getElementById('sucesso-cfg');
-  msg.textContent = 'O admin agora é controlado pelo Firebase Authentication. Para trocar login ou senha admin, altere no Firebase.';
+  msg.textContent = 'O login admin é controlado no Firebase. Para trocar, altere o usuário admin no Firebase Authentication.';
   msg.style.display = 'block';
-
   setTimeout(() => {
     msg.style.display = 'none';
     msg.textContent = 'Configurações salvas!';
@@ -561,4 +558,34 @@ async function exportarUsuarios() {
 
     let csv = 'Nome,Usuário,Senha,Status,Observação,Data de criação\n';
     lista.forEach(u => {
-      csv += `"${u.nome || ''}","${u.usuario || ''}","${u.s
+      csv += `"${u.nome || ''}","${u.usuario || ''}","${u.senha || ''}","${u.status || ''}","${u.obs || ''}","${formatData(u.dataCriacao)}"\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'ia-rural-usuarios-' + new Date().toISOString().split('T')[0] + '.csv';
+    a.click();
+  } catch (erro) {
+    console.error(erro);
+    alert('Erro ao exportar usuários: ' + erro.message);
+  }
+}
+
+document.getElementById('modal-editar').addEventListener('click', function(e) {
+  if (e.target === this) fecharModalEditar();
+});
+
+auth.onAuthStateChanged(async (user) => {
+  const email = (user?.email || '').toLowerCase();
+
+  if (user && email === ADMIN_EMAIL) {
+    document.getElementById('admin-login').style.display = 'none';
+    document.getElementById('admin-painel').style.display = 'block';
+    document.getElementById('adm-nome-badge').textContent = email;
+    await carregarUsuarios();
+  }
+});
+</script>
+</body>
+</html>
