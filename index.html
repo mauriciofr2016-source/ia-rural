@@ -1182,6 +1182,19 @@
     function usuarioParaEmail(usuario) {
       return `${normalizarUsuario(usuario)}@ia-rural.app`;
     }
+
+    async function obterStatusDaConta(uid) {
+  try {
+    const docRef = await db.collection('users').doc(uid).get();
+    if (!docRef.exists) return 'ativo';
+
+    const dados = docRef.data() || {};
+    return dados.accountStatus || 'ativo';
+  } catch (erro) {
+    console.error('Erro ao verificar status da conta:', erro);
+    return 'ativo';
+  }
+}
     
     async function buscarRegistroAdminPorUsuario(usuario) {
   try {
@@ -1224,15 +1237,15 @@ async function fazerLogin() {
   }
 
   try {
-    const registroAdmin = await buscarRegistroAdminPorUsuario(usuario);
+    const cred = await auth.signInWithEmailAndPassword(usuarioParaEmail(usuario), senha);
+    const statusConta = await obterStatusDaConta(cred.user.uid);
 
-    if (registroAdmin && registroAdmin.status === 'bloqueado') {
+    if (statusConta === 'bloqueado') {
+      await auth.signOut();
       erroBox.textContent = 'Seu acesso está bloqueado. Procure o administrador.';
       erroBox.style.display = 'block';
       return;
     }
-
-    await auth.signInWithEmailAndPassword(usuarioParaEmail(usuario), senha);
 
     usuarioLogado = usuario;
     DB = carregarLocalPorUsuario(usuario);
@@ -1240,7 +1253,6 @@ async function fazerLogin() {
     await carregarFirestore();
   } catch (erro) {
     console.error(erro);
-
     let msg = 'Não foi possível entrar. Verifique usuário e senha.';
     const code = erro?.code || '';
 
@@ -1257,7 +1269,6 @@ async function fazerLogin() {
     erroBox.style.display = 'block';
   }
 }
-
     function formatarDataHora(iso) {
       if (!iso) return '—';
       const data = new Date(iso);
@@ -1426,12 +1437,9 @@ auth.onAuthStateChanged(async (user) => {
   if (!user) return;
 
   try {
-    const email = user.email || '';
-    const usuario = email.split('@')[0] || 'usuario';
+    const statusConta = await obterStatusDaConta(user.uid);
 
-    const registroAdmin = await buscarRegistroAdminPorUsuario(usuario);
-
-    if (registroAdmin && registroAdmin.status === 'bloqueado') {
+    if (statusConta === 'bloqueado') {
       await auth.signOut();
       const erroBox = document.getElementById('login-erro');
       erroBox.textContent = 'Seu acesso está bloqueado. Procure o administrador.';
@@ -1439,6 +1447,8 @@ auth.onAuthStateChanged(async (user) => {
       return;
     }
 
+    const email = user.email || '';
+    const usuario = email.split('@')[0] || 'usuario';
     usuarioLogado = usuario;
     DB = carregarLocalPorUsuario(usuario);
     abrirAppLogado(usuario);
@@ -1447,6 +1457,7 @@ auth.onAuthStateChanged(async (user) => {
     console.error('Erro ao validar login do usuário:', erro);
   }
 });
+    
     function showPage(id) {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
       document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
