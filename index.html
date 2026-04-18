@@ -8,6 +8,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet"/>
 <style>
     :root {
@@ -1003,6 +1005,7 @@
 <div class="nav-tab hidden" data-area="corte" data-page="despesas-corte" onclick="showPage('despesas-corte')">Registrar Entregas/Calculo de Gastos</div>
 <div class="nav-tab hidden" data-area="corte" data-page="vendidos-corte" onclick="showPage('vendidos-corte')">Animais Vendidos</div>
 <div class="nav-tab" data-page="veterinario" onclick="showPage('veterinario')">Veterinário</div>
+<div class="nav-tab" data-page="genealogia" onclick="showPage('genealogia')">Árvore Genealógica</div>
 <div class="nav-tab" data-area="leiteiro" data-page="calendario" onclick="showPage('calendario')">Calendário</div>
 <div class="nav-tab" data-page="arquivados" onclick="showPage('arquivados')">Arquivados</div>
 </div>
@@ -1139,6 +1142,16 @@
 </div>
 <div class="form-row">
 <div class="form-group">
+<label>Peso inicial para cálculo (opcional)</label>
+<input id="a-peso-inicial" placeholder="Ex: 250" type="number"/>
+</div>
+<div class="form-group">
+<label>Data do peso inicial (opcional)</label>
+<input id="a-data-peso-inicial" type="date"/>
+</div>
+</div>
+<div class="form-row">
+<div class="form-group">
 <label>Sistema alimentar (opcional)</label>
 <select id="a-sistema-alimentar">
 <option value="">Selecione</option>
@@ -1163,6 +1176,38 @@
 </div>
 </div>
 </div>
+<div class="card" style="padding:14px;margin:12px 0;background:#0f0f0f;">
+<div class="section-title" style="font-size:14px;margin-bottom:10px;">🌳 Dados da árvore genealógica</div>
+<div class="form-row">
+<div class="form-group">
+<label>Nome da mãe (opcional)</label>
+<input id="a-mae" type="text" placeholder="Ex: Estrela" />
+</div>
+<div class="form-group">
+<label>Nome do pai (opcional)</label>
+<input id="a-pai" type="text" placeholder="Ex: Touro Imperial" />
+</div>
+</div>
+<div class="form-row-3">
+<div class="form-group">
+<label>Avó materna (opcional)</label>
+<input id="a-avo-materna" type="text" placeholder="Ex: Aurora" />
+</div>
+<div class="form-group">
+<label>Avô materno (opcional)</label>
+<input id="a-avo-materno" type="text" placeholder="Ex: Astro" />
+</div>
+<div class="form-group">
+<label>Avó paterna (opcional)</label>
+<input id="a-avo-paterna" type="text" placeholder="Ex: Safira" />
+</div>
+</div>
+<div class="form-group">
+<label>Avô paterno (opcional)</label>
+<input id="a-avo-paterno" type="text" placeholder="Ex: Sultão" />
+</div>
+</div>
+
 <div class="form-group">
 <label>Observações (opcional)</label>
 <textarea id="a-obs" placeholder="Raça, histórico, lote, observações..."></textarea>
@@ -1458,6 +1503,24 @@
 <div id="lista-vacinas"></div>
 </div>
 </div>
+<div class="page" id="page-genealogia">
+<div class="card">
+<div class="section-title">🌳 Árvore Genealógica</div>
+<p class="muted" style="margin-bottom:14px;">Digite o nome do animal da área atual para visualizar os dados completos já registrados no sistema, incluindo genealogia, produção, gastos e indicadores disponíveis.</p>
+<div class="form-row">
+<div class="form-group">
+<label>Nome do animal</label>
+<input id="genealogia-busca" type="text" placeholder="Ex: Mimosa" onkeydown="if(event.key==='Enter') buscarAnimalGenealogia()" />
+</div>
+<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;">
+<button class="btn btn-primary" onclick="buscarAnimalGenealogia()">Buscar animal</button>
+<button class="btn btn-outline" onclick="limparBuscaGenealogia()">Limpar</button>
+</div>
+</div>
+<div id="genealogia-resultado"></div>
+</div>
+</div>
+
 <div class="page" id="page-arquivados">
 <div class="card">
 <div class="section-title">🗂 Animais Arquivados</div>
@@ -1905,7 +1968,17 @@ async function fazerLogin() {
         precoVenda: typeof a?.precoVenda === 'number' ? a.precoVenda : (parseFloat(a?.precoVenda) || 0),
         dataVenda: a?.dataVenda || '',
         obsVenda: a?.obsVenda || '',
-        resumoVenda: a?.resumoVenda || null
+        resumoVenda: a?.resumoVenda || null,
+        genealogia: typeof a?.genealogia === 'object' && a?.genealogia ? {
+          mae: a.genealogia.mae || '',
+          pai: a.genealogia.pai || '',
+          avoMaterna: a.genealogia.avoMaterna || '',
+          avoMaterno: a.genealogia.avoMaterno || '',
+          avoPaterna: a.genealogia.avoPaterna || '',
+          avoPaterno: a.genealogia.avoPaterno || ''
+        } : { mae: '', pai: '', avoMaterna: '', avoMaterno: '', avoPaterna: '', avoPaterno: '' },
+        pesoInicial: typeof a?.pesoInicial === 'number' ? a.pesoInicial : (parseFloat(a?.pesoInicial) || 0),
+        dataPesoInicial: a?.dataPesoInicial || ''
       };
     }
 
@@ -2029,7 +2102,15 @@ async function fazerLogin() {
       document.getElementById('a-lactacao').value = 'nao';
       document.getElementById('a-fase-corte').value = '';
       document.getElementById('a-peso').value = '';
+      document.getElementById('a-peso-inicial').value = '';
+      document.getElementById('a-data-peso-inicial').value = '';
       document.getElementById('a-sistema-alimentar').value = '';
+      document.getElementById('a-mae').value = '';
+      document.getElementById('a-pai').value = '';
+      document.getElementById('a-avo-materna').value = '';
+      document.getElementById('a-avo-materno').value = '';
+      document.getElementById('a-avo-paterna').value = '';
+      document.getElementById('a-avo-paterno').value = '';
       document.getElementById('a-vacina').value = '';
       document.getElementById('a-vermifugo').value = '';
       document.getElementById('a-carrapato').value = '';
@@ -2052,6 +2133,7 @@ async function fazerLogin() {
           { icon: '📋', label: 'Manejo', desc: 'Lote, objetivo e anotações práticas do dia a dia.', action: "showPage('manejo-corte')" },
           { icon: '📦', label: 'Registrar Entregas/Calculo de Gastos', desc: 'Compre trato, acompanhe estoque e custo por produto.', action: "showPage('despesas-corte')" },
           { icon: '💰', label: 'Animais Vendidos', desc: 'Veja preço, custo estimado e tempo até a venda.', action: "showPage('vendidos-corte')" },
+          { icon: '🌳', label: 'Árvore Genealógica', desc: 'Busque um animal e gere PDF com os dados completos.', action: "showPage('genealogia')" },
           { icon: '🩺', label: 'Veterinário', desc: 'Consulte orientações práticas quando precisar.', action: "showPage('veterinario')" }
         ];
       }
@@ -2343,6 +2425,7 @@ auth.onAuthStateChanged(async (user) => {
       if (id === 'despesas-corte') renderDespesasCorte();
       if (id === 'vendidos-corte') renderVendidosCorte();
       if (id === 'veterinario') renderVet();
+      if (id === 'genealogia') renderGenealogia();
       if (id === 'calendario') renderCalendario();
       if (id === 'arquivados') renderArquivados();
     }
@@ -2359,6 +2442,7 @@ auth.onAuthStateChanged(async (user) => {
       renderDespesasCorte();
       renderVendidosCorte();
       renderVet();
+      renderGenealogia();
       renderCalendario();
       renderArquivados();
       renderListaProdutosCorte();
@@ -2479,7 +2563,15 @@ auth.onAuthStateChanged(async (user) => {
       document.getElementById('a-lactacao').value = animal.lactacao ? 'sim' : 'nao';
       document.getElementById('a-fase-corte').value = animal.faseCorte || '';
       document.getElementById('a-peso').value = animal.pesoEstimado || '';
+      document.getElementById('a-peso-inicial').value = animal.pesoInicial || '';
+      document.getElementById('a-data-peso-inicial').value = animal.dataPesoInicial || '';
       document.getElementById('a-sistema-alimentar').value = animal.sistemaAlimentar || '';
+      document.getElementById('a-mae').value = animal.genealogia?.mae || '';
+      document.getElementById('a-pai').value = animal.genealogia?.pai || '';
+      document.getElementById('a-avo-materna').value = animal.genealogia?.avoMaterna || '';
+      document.getElementById('a-avo-materno').value = animal.genealogia?.avoMaterno || '';
+      document.getElementById('a-avo-paterna').value = animal.genealogia?.avoPaterna || '';
+      document.getElementById('a-avo-paterno').value = animal.genealogia?.avoPaterno || '';
       document.getElementById('a-vacina').value = animal.vacinaData || '';
       document.getElementById('a-vermifugo').value = animal.vermifugoData || '';
       document.getElementById('a-carrapato').value = animal.carrapatoData || '';
@@ -2519,7 +2611,17 @@ auth.onAuthStateChanged(async (user) => {
       const lactacao = document.getElementById('a-lactacao').value === 'sim';
       const faseCorte = document.getElementById('a-fase-corte').value;
       const pesoEstimado = parseFloat(document.getElementById('a-peso').value) || 0;
+      const pesoInicial = parseFloat(document.getElementById('a-peso-inicial').value) || 0;
+      const dataPesoInicial = document.getElementById('a-data-peso-inicial').value;
       const sistemaAlimentar = document.getElementById('a-sistema-alimentar').value;
+      const genealogia = {
+        mae: document.getElementById('a-mae').value.trim(),
+        pai: document.getElementById('a-pai').value.trim(),
+        avoMaterna: document.getElementById('a-avo-materna').value.trim(),
+        avoMaterno: document.getElementById('a-avo-materno').value.trim(),
+        avoPaterna: document.getElementById('a-avo-paterna').value.trim(),
+        avoPaterno: document.getElementById('a-avo-paterno').value.trim()
+      };
       const vacinaData = document.getElementById('a-vacina').value;
       const vermifugoData = document.getElementById('a-vermifugo').value;
       const carrapatoData = document.getElementById('a-carrapato').value;
@@ -2562,6 +2664,9 @@ auth.onAuthStateChanged(async (user) => {
             faseCorte: area === 'corte' ? faseCorte : '',
             pesoEstimado: area === 'corte' ? pesoEstimado : 0,
             sistemaAlimentar: area === 'corte' ? sistemaAlimentar : '',
+            pesoInicial: area === 'corte' ? pesoInicial : 0,
+            dataPesoInicial: area === 'corte' ? dataPesoInicial : '',
+            genealogia,
             dataEntradaConfinamento: area === 'corte' ? (animalAtual.dataEntradaConfinamento || animalAtual.dataCadastro || new Date().toISOString()) : '',
             vacinaData: area === 'corte' ? vacinaData : '',
             vermifugoData: area === 'corte' ? vermifugoData : '',
@@ -2587,6 +2692,9 @@ auth.onAuthStateChanged(async (user) => {
           faseCorte: area === 'corte' ? faseCorte : '',
           pesoEstimado: area === 'corte' ? pesoEstimado : 0,
           sistemaAlimentar: area === 'corte' ? sistemaAlimentar : '',
+          pesoInicial: area === 'corte' ? pesoInicial : 0,
+          dataPesoInicial: area === 'corte' ? dataPesoInicial : '',
+          genealogia,
           dataEntradaConfinamento: area === 'corte' ? new Date().toISOString() : '',
           vacinaData: area === 'corte' ? vacinaData : '',
           vermifugoData: area === 'corte' ? vermifugoData : '',
@@ -3152,6 +3260,16 @@ auth.onAuthStateChanged(async (user) => {
               <input type="date" value="${(a.dataEntradaConfinamento || a.dataCadastro || '').slice(0,10)}" onchange="atualizarCampoAnimal('${a.id}','dataEntradaConfinamento', this.value)" />
             </div>
           </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Peso inicial (kg)</label>
+              <input type="number" min="0" step="0.1" value="${a.pesoInicial || ''}" onchange="atualizarCampoAnimal('${a.id}','pesoInicial', parseFloat(this.value) || 0)" />
+            </div>
+            <div class="form-group">
+              <label>Data do peso inicial</label>
+              <input type="date" value="${(a.dataPesoInicial || '').slice(0,10)}" onchange="atualizarCampoAnimal('${a.id}','dataPesoInicial', this.value)" />
+            </div>
+          </div>
           <div class="form-row-3">
             <div class="form-group">
               <label>Milho (kg/dia)</label>
@@ -3224,6 +3342,296 @@ auth.onAuthStateChanged(async (user) => {
           </div>
         </div>
       `).join('');
+    }
+
+    function obterProducaoAnimal(animalId) {
+      const p = DB.producao?.[animalId] || {};
+      const manha = parseFloat(p.manha) || 0;
+      const tarde = parseFloat(p.tarde) || 0;
+      const noite = parseFloat(p.noite) || 0;
+      const total = manha + tarde + noite;
+      return { manha, tarde, noite, total, racao: total / 3 };
+    }
+
+    function calcularIndicadoresPeso(animal) {
+      const pesoAtual = parseFloat(animal?.pesoEstimado) || 0;
+      const pesoInicial = parseFloat(animal?.pesoInicial) || 0;
+      const dataInicial = animal?.dataPesoInicial || '';
+      const dataFinal = animal?.dataVenda || new Date().toISOString().slice(0, 10);
+      const dias = dataInicial ? diasEntreDatas(dataInicial, dataFinal) : 0;
+      const ganhoTotal = pesoAtual && pesoInicial ? (pesoAtual - pesoInicial) : 0;
+      const ganhoMedioDia = dias > 0 ? ganhoTotal / dias : 0;
+      return { pesoAtual, pesoInicial, dataInicial, dataFinal, dias, ganhoTotal, ganhoMedioDia };
+    }
+
+    function obterResumoFinanceiroLeite() {
+      const estoque = parseFloat(DB.estoqueRacao) || 0;
+      const consumoDia = getConsumoDiario();
+      const diasRestantes = consumoDia > 0 ? Math.floor(estoque / consumoDia) : null;
+      const entregas = Array.isArray(DB.entregas) ? DB.entregas : [];
+      const totalEntregueKg = entregas.reduce((sum, e) => sum + (parseFloat(e.totalKg) || 0), 0);
+      return { estoque, consumoDia, diasRestantes, totalEntregueKg, entregas };
+    }
+
+    function obterResumoFinanceiroCorte() {
+      const entregas = getEntregasCorte();
+      const totalComprado = entregas.reduce((sum, e) => sum + (parseFloat(e.precoTotal) || 0), 0);
+      const estoqueMilho = getTotalKgProduto('milho');
+      const estoqueSilagem = getTotalKgProduto('silagem');
+      const estoqueRacao = getTotalKgProduto('racao');
+      const custoAnimalDia = (animal) => obterCustosDiariosAnimal(animal).totalReaisDia;
+      const totalDia = getAnimaisDaArea('corte').reduce((sum, a) => sum + custoAnimalDia(a), 0);
+      return { entregas, totalComprado, estoqueMilho, estoqueSilagem, estoqueRacao, totalDia, totalMes: totalDia * 30 };
+    }
+
+    function formatarCampo(valor, fallback = 'Não informado') {
+      if (valor === null || valor === undefined || valor === '') return fallback;
+      return String(valor);
+    }
+
+    function montarRelatorioAnimalData(animal) {
+      const area = animal?.area || obterAreaAtual() || 'leiteiro';
+      const producao = obterProducaoAnimal(animal.id);
+      const peso = calcularIndicadoresPeso(animal);
+      const resumoLeite = area === 'leiteiro' ? obterResumoFinanceiroLeite() : null;
+      const resumoCorte = area === 'corte' ? obterResumoFinanceiroCorte() : null;
+      const entregasRecentes = area === 'leiteiro'
+        ? (resumoLeite?.entregas || []).slice().sort((a,b) => new Date(b.data) - new Date(a.data)).slice(0, 5)
+        : (resumoCorte?.entregas || []).slice().sort((a,b) => new Date(b.data) - new Date(a.data)).slice(0, 5);
+      const genealogia = animal.genealogia || {};
+      return { area, animal, producao, peso, resumoLeite, resumoCorte, entregasRecentes, genealogia };
+    }
+
+    function gerarHtmlRelatorioAnimal(rel) {
+      const { area, animal, producao, peso, resumoLeite, resumoCorte, entregasRecentes, genealogia } = rel;
+      const resumoVenda = animal.resumoVenda || null;
+      const rec = area === 'corte' ? gerarRecomendacoesCorte(animal) : null;
+      const blocos = [];
+      const addSec = (titulo, conteudo) => blocos.push(`<div style="margin-top:18px;"><h2 style="font-size:16px;margin:0 0 8px 0;color:#111">${titulo}</h2><div>${conteudo}</div></div>`);
+
+      addSec('Identificação do animal', `
+        <p><strong>Nome:</strong> ${escapeHtml(formatarCampo(animal.nome))}</p>
+        <p><strong>Área:</strong> ${area === 'leiteiro' ? 'Gado Leiteiro' : 'Gado de Corte / Engorda'}</p>
+        <p><strong>Brinco:</strong> ${escapeHtml(formatarCampo(animal.brinco))}</p>
+        <p><strong>Sexo:</strong> ${escapeHtml(formatarCampo(animal.sexo))}</p>
+        <p><strong>Categoria:</strong> ${escapeHtml(formatarCampo(animal.categoria))}</p>
+        <p><strong>Idade:</strong> ${animal.idadeMeses ? escapeHtml(String(animal.idadeMeses) + ' meses') : 'Não informada'}</p>
+        <p><strong>Data de nascimento:</strong> ${animal.dataNascimento ? new Date(animal.dataNascimento + 'T12:00:00').toLocaleDateString('pt-BR') : 'Não informada'}</p>
+        <p><strong>Data de cadastro:</strong> ${animal.dataCadastro ? formatarDataHora(animal.dataCadastro) : 'Não informada'}</p>
+        <p><strong>Observações:</strong> ${escapeHtml(formatarCampo(animal.obs))}</p>
+      `);
+
+      addSec('Árvore genealógica', `
+        <p><strong>Mãe:</strong> ${escapeHtml(formatarCampo(genealogia.mae))}</p>
+        <p><strong>Pai:</strong> ${escapeHtml(formatarCampo(genealogia.pai))}</p>
+        <p><strong>Avó materna:</strong> ${escapeHtml(formatarCampo(genealogia.avoMaterna))}</p>
+        <p><strong>Avô materno:</strong> ${escapeHtml(formatarCampo(genealogia.avoMaterno))}</p>
+        <p><strong>Avó paterna:</strong> ${escapeHtml(formatarCampo(genealogia.avoPaterna))}</p>
+        <p><strong>Avô paterno:</strong> ${escapeHtml(formatarCampo(genealogia.avoPaterno))}</p>
+      `);
+
+      if (area === 'leiteiro') {
+        addSec('Dados leiteiros', `
+          <p><strong>Prenha:</strong> ${animal.prenha ? 'Sim' : 'Não'}</p>
+          <p><strong>Data da confirmação da prenhez:</strong> ${animal.dataPrenha ? new Date(animal.dataPrenha + 'T12:00:00').toLocaleDateString('pt-BR') : 'Não informada'}</p>
+          <p><strong>Em lactação:</strong> ${animal.lactacao ? 'Sim' : 'Não'}</p>
+          <p><strong>Produção manhã:</strong> ${producao.manha.toFixed(1).replace('.', ',')} L</p>
+          <p><strong>Produção tarde:</strong> ${producao.tarde.toFixed(1).replace('.', ',')} L</p>
+          <p><strong>Produção noite:</strong> ${producao.noite.toFixed(1).replace('.', ',')} L</p>
+          <p><strong>Total diário:</strong> ${producao.total.toFixed(1).replace('.', ',')} L</p>
+          <p><strong>Ração estimada do animal:</strong> ${producao.racao.toFixed(1).replace('.', ',')} kg/dia</p>
+        `);
+
+        addSec('Gastos e estoque da área leiteira', `
+          <p><strong>Estoque atual de ração:</strong> ${(resumoLeite.estoque || 0).toFixed(1).replace('.', ',')} kg</p>
+          <p><strong>Consumo diário atual da área:</strong> ${(resumoLeite.consumoDia || 0).toFixed(1).replace('.', ',')} kg/dia</p>
+          <p><strong>Dias restantes estimados:</strong> ${resumoLeite.diasRestantes === null ? '—' : resumoLeite.diasRestantes}</p>
+          <p><strong>Total já entregue de ração:</strong> ${(resumoLeite.totalEntregueKg || 0).toFixed(1).replace('.', ',')} kg</p>
+        `);
+      }
+
+      if (area === 'corte') {
+        const custos = obterCustosDiariosAnimal(animal);
+        addSec('Dados de corte / engorda', `
+          <p><strong>Fase:</strong> ${escapeHtml(formatarCampo(animal.faseCorte))}</p>
+          <p><strong>Sistema alimentar:</strong> ${escapeHtml(formatarCampo(animal.sistemaAlimentar))}</p>
+          <p><strong>Peso atual:</strong> ${peso.pesoAtual ? peso.pesoAtual.toFixed(1).replace('.', ',') + ' kg' : 'Não informado'}</p>
+          <p><strong>Peso inicial:</strong> ${peso.pesoInicial ? peso.pesoInicial.toFixed(1).replace('.', ',') + ' kg' : 'Não informado'}</p>
+          <p><strong>Data do peso inicial:</strong> ${peso.dataInicial ? new Date(peso.dataInicial + 'T12:00:00').toLocaleDateString('pt-BR') : 'Não informada'}</p>
+          <p><strong>Ganho total de peso:</strong> ${peso.dias > 0 ? peso.ganhoTotal.toFixed(1).replace('.', ',') + ' kg' : 'Não há registros suficientes para calcular'}</p>
+          <p><strong>Índice de ganho de peso:</strong> ${peso.dias > 0 ? peso.ganhoMedioDia.toFixed(3).replace('.', ',') + ' kg/dia' : 'Não há registros suficientes para calcular'}</p>
+          <p><strong>Consumo milho:</strong> ${custos.milhoKg.toFixed(1).replace('.', ',')} kg/dia</p>
+          <p><strong>Consumo silagem:</strong> ${custos.silagemKg.toFixed(1).replace('.', ',')} kg/dia</p>
+          <p><strong>Consumo ração:</strong> ${custos.racaoKg.toFixed(1).replace('.', ',')} kg/dia</p>
+          <p><strong>Gasto diário total:</strong> R$ ${formatCurrencyBR(custos.totalReaisDia)}</p>
+          <p><strong>Vacinação:</strong> ${animal.vacinaData ? new Date(animal.vacinaData + 'T12:00:00').toLocaleDateString('pt-BR') : 'Não informada'}</p>
+          <p><strong>Vermifugação:</strong> ${animal.vermifugoData ? new Date(animal.vermifugoData + 'T12:00:00').toLocaleDateString('pt-BR') : 'Não informada'}</p>
+          <p><strong>Controle de carrapato:</strong> ${animal.carrapatoData ? new Date(animal.carrapatoData + 'T12:00:00').toLocaleDateString('pt-BR') : 'Não informada'}</p>
+          <p><strong>Obs. sanitária:</strong> ${escapeHtml(formatarCampo(animal.obsSanitaria))}</p>
+          <p><strong>Obs. nutricional:</strong> ${escapeHtml(formatarCampo(animal.obsNutricao))}</p>
+          <p><strong>Obs. manejo:</strong> ${escapeHtml(formatarCampo(animal.obsManejo))}</p>
+          <p><strong>Lote:</strong> ${escapeHtml(formatarCampo(animal.loteCorte))}</p>
+          <p><strong>Objetivo:</strong> ${escapeHtml(formatarCampo(animal.objetivoCorte))}</p>
+        `);
+
+        addSec('Gastos da área de corte / engorda', `
+          <p><strong>Estoque milho:</strong> ${(resumoCorte.estoqueMilho || 0).toFixed(1).replace('.', ',')} kg</p>
+          <p><strong>Estoque silagem:</strong> ${(resumoCorte.estoqueSilagem || 0).toFixed(1).replace('.', ',')} kg</p>
+          <p><strong>Estoque ração:</strong> ${(resumoCorte.estoqueRacao || 0).toFixed(1).replace('.', ',')} kg</p>
+          <p><strong>Total comprado na área:</strong> R$ ${formatCurrencyBR(resumoCorte.totalComprado || 0)}</p>
+          <p><strong>Gasto diário atual da área:</strong> R$ ${formatCurrencyBR(resumoCorte.totalDia || 0)}</p>
+          <p><strong>Gasto mensal automático:</strong> R$ ${formatCurrencyBR(resumoCorte.totalMes || 0)}</p>
+        `);
+
+        addSec('Recomendações atuais da área de corte', `
+          <p><strong>Veterinário:</strong> ${escapeHtml(rec.veterinario)}</p>
+          <p><strong>Sanitário:</strong> ${escapeHtml(rec.sanitario)}</p>
+          <p><strong>Nutricional:</strong> ${escapeHtml(rec.nutricional)}</p>
+        `);
+      }
+
+      if (entregasRecentes.length) {
+        addSec('Lançamentos recentes de gastos / entregas', entregasRecentes.map(e => {
+          if (area === 'leiteiro') {
+            return `<p>• ${new Date(e.data + 'T12:00:00').toLocaleDateString('pt-BR')} — ${e.sacos} saco(s) de ${e.tipoKg} kg · total ${e.totalKg} kg</p>`;
+          }
+          return `<p>• ${new Date(e.data + 'T12:00:00').toLocaleDateString('pt-BR')} — ${escapeHtml(e.produto || '')} · ${(parseFloat(e.totalKg)||0).toFixed(1).replace('.', ',')} kg · R$ ${formatCurrencyBR(e.precoTotal || 0)}</p>`;
+        }).join(''));
+      }
+
+      if (resumoVenda) {
+        addSec('Resumo da venda', `
+          <p><strong>Data da venda:</strong> ${escapeHtml(resumoVenda.dataVendaFmt || '—')}</p>
+          <p><strong>Preço:</strong> R$ ${escapeHtml(resumoVenda.precoVendaFmt || '0,00')}</p>
+          <p><strong>Custo alimentar:</strong> R$ ${escapeHtml(resumoVenda.custoAlimentarFmt || '0,00')}</p>
+          <p><strong>Resultado bruto:</strong> R$ ${escapeHtml(resumoVenda.resultadoBrutoFmt || '0,00')}</p>
+        `);
+      }
+
+      return `
+        <div style="font-family:Arial,sans-serif;color:#111;background:#fff;padding:24px;line-height:1.5;">
+          <div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start;border-bottom:2px solid #111;padding-bottom:12px;">
+            <div>
+              <h1 style="margin:0;font-size:22px;">IA Rural</h1>
+              <div style="font-size:14px;margin-top:4px;">Relatório completo do animal</div>
+            </div>
+            <div style="text-align:right;font-size:12px;">
+              <div><strong>Gerado em:</strong> ${new Date().toLocaleString('pt-BR')}</div>
+              <div><strong>Usuário:</strong> ${escapeHtml(usuarioLogado || '')}</div>
+            </div>
+          </div>
+          ${animal.foto ? `<div style="margin-top:16px;"><img src="${animal.foto}" alt="Foto do animal" style="max-width:180px;max-height:180px;border:1px solid #ddd;border-radius:12px;object-fit:cover;" /></div>` : ''}
+          ${blocos.join('')}
+        </div>
+      `;
+    }
+
+    async function baixarPdfAnimal(idOuNome) {
+      const animal = DB.animais.find(a => a.id === idOuNome) || DB.arquivados.find(a => a.id === idOuNome) || DB.animais.find(a => (a.nome || '').toLowerCase() === String(idOuNome || '').toLowerCase());
+      if (!animal) {
+        alert('Animal não encontrado para gerar o PDF.');
+        return;
+      }
+
+      if (!window.jspdf?.jsPDF) {
+        alert('Biblioteca de PDF não carregada. Atualize a página e tente novamente.');
+        return;
+      }
+
+      const rel = montarRelatorioAnimalData(animal);
+      const html = gerarHtmlRelatorioAnimal(rel);
+      const wrap = document.createElement('div');
+      wrap.style.position = 'fixed';
+      wrap.style.left = '-99999px';
+      wrap.style.top = '0';
+      wrap.style.width = '760px';
+      wrap.innerHTML = html;
+      document.body.appendChild(wrap);
+
+      try {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'pt', 'a4');
+        await pdf.html(wrap, {
+          margin: [24, 24, 24, 24],
+          autoPaging: 'text',
+          html2canvas: { scale: 0.5, useCORS: true },
+          width: 547,
+          windowWidth: 760
+        });
+        const nome = (animal.nome || 'animal').replace(/[^a-z0-9_-]+/gi, '_');
+        pdf.save(`IA_Rural_${nome}.pdf`);
+      } catch (erro) {
+        console.error(erro);
+        alert('Não foi possível gerar o PDF deste animal.');
+      } finally {
+        wrap.remove();
+      }
+    }
+
+    function montarCardGenealogiaResultado(animal) {
+      const rel = montarRelatorioAnimalData(animal);
+      const { area, producao, peso, genealogia } = rel;
+      return `
+        <div class="animal-item" style="align-items:flex-start;">
+          ${animal.foto ? `<img class="animal-photo" src="${animal.foto}" alt="Foto de ${escapeAttr(animal.nome)}" />` : `<div class="animal-avatar">${emojiAnimal(animal.categoria)}</div>`}
+          <div class="animal-body">
+            <div class="animal-name">${escapeHtml(animal.nome)} ${animal.brinco ? `<span style="font-size:11px;color:var(--muted);font-weight:400;">· Brinco ${escapeHtml(animal.brinco)}</span>` : ''}</div>
+            <div class="animal-meta">${area === 'leiteiro' ? 'Área leiteira' : 'Área corte/engorda'} · ${escapeHtml(animal.categoria || 'Não definido')}</div>
+            <div class="rec-grid" style="margin-top:12px;">
+              <div class="rec-box"><h5>Mãe</h5><p>${escapeHtml(formatarCampo(genealogia.mae))}</p></div>
+              <div class="rec-box"><h5>Pai</h5><p>${escapeHtml(formatarCampo(genealogia.pai))}</p></div>
+              <div class="rec-box"><h5>Avó materna</h5><p>${escapeHtml(formatarCampo(genealogia.avoMaterna))}</p></div>
+              <div class="rec-box"><h5>Avô materno</h5><p>${escapeHtml(formatarCampo(genealogia.avoMaterno))}</p></div>
+              <div class="rec-box"><h5>Avó paterna</h5><p>${escapeHtml(formatarCampo(genealogia.avoPaterna))}</p></div>
+              <div class="rec-box"><h5>Avô paterno</h5><p>${escapeHtml(formatarCampo(genealogia.avoPaterno))}</p></div>
+              ${area === 'leiteiro' ? `<div class="rec-box"><h5>Total diário de leite</h5><p>${producao.total.toFixed(1).replace('.', ',')} L</p></div><div class="rec-box"><h5>Ração estimada</h5><p>${producao.racao.toFixed(1).replace('.', ',')} kg/dia</p></div>` : `<div class="rec-box"><h5>Peso atual</h5><p>${peso.pesoAtual ? peso.pesoAtual.toFixed(1).replace('.', ',') + ' kg' : 'Não informado'}</p></div><div class="rec-box"><h5>Ganho de peso</h5><p>${peso.dias > 0 ? peso.ganhoMedioDia.toFixed(3).replace('.', ',') + ' kg/dia' : 'Não há registros suficientes'}</p></div>`}
+            </div>
+            <div class="animal-actions" style="margin-top:12px;">
+              <button class="btn btn-primary btn-sm" onclick="baixarPdfAnimal('${animal.id}')">Baixar PDF</button>
+              <button class="btn btn-outline btn-sm" onclick="abrirEdicaoAnimal('${animal.id}');showPage('rebanho')">Editar animal</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function buscarAnimalGenealogia() {
+      const busca = (document.getElementById('genealogia-busca')?.value || '').trim().toLowerCase();
+      const area = obterAreaAtual() || 'leiteiro';
+      const alvo = document.getElementById('genealogia-resultado');
+      if (!alvo) return;
+      if (!busca) {
+        alvo.innerHTML = '<div class="empty-state"><div class="empty-icon">🌳</div>Digite o nome do animal para buscar.</div>';
+        return;
+      }
+      const lista = getAnimaisDaArea(area).filter(a => (a.nome || '').toLowerCase().includes(busca) || (a.brinco || '').toLowerCase().includes(busca));
+      if (!lista.length) {
+        alvo.innerHTML = '<div class="empty-state"><div class="empty-icon">🔎</div>Nenhum animal encontrado com esse nome na área atual.</div>';
+        return;
+      }
+      alvo.innerHTML = lista.map(montarCardGenealogiaResultado).join('');
+    }
+
+    function limparBuscaGenealogia() {
+      const input = document.getElementById('genealogia-busca');
+      const alvo = document.getElementById('genealogia-resultado');
+      if (input) input.value = '';
+      if (alvo) alvo.innerHTML = '<div class="empty-state"><div class="empty-icon">🌳</div>Digite o nome do animal para visualizar a árvore genealógica e baixar o PDF completo.</div>';
+    }
+
+    function renderGenealogia() {
+      const alvo = document.getElementById('genealogia-resultado');
+      if (!alvo) return;
+      const busca = (document.getElementById('genealogia-busca')?.value || '').trim();
+      if (!getAnimaisDaArea(obterAreaAtual() || 'leiteiro').length) {
+        alvo.innerHTML = '<div class="empty-state"><div class="empty-icon">🌳</div>Nenhum animal cadastrado na área atual ainda.</div>';
+        return;
+      }
+      if (busca) {
+        buscarAnimalGenealogia();
+        return;
+      }
+      alvo.innerHTML = '<div class="empty-state"><div class="empty-icon">🌳</div>Digite o nome do animal para visualizar a árvore genealógica e baixar o PDF completo.</div>';
     }
 
     function renderRebanho() {
