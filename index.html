@@ -1893,6 +1893,8 @@ async function fazerLogin() {
       aplicarAreaNaInterface();
       showPage('inicio');
       carregarConfigWhatsApp();
+      garantirBotaoTutorial();
+      agendarTutorialAutomatico();
     }
 
     function getLocalKey() {
@@ -2369,6 +2371,9 @@ async function fazerLogin() {
       document.getElementById('login-usuario').value = '';
       document.getElementById('login-senha').value = '';
       document.getElementById('login-erro').style.display = 'none';
+      limparHighlightTutorial();
+      const tutorialOverlay = document.getElementById('tutorial-overlay');
+      if (tutorialOverlay) tutorialOverlay.style.display = 'none';
     }
 
 auth.onAuthStateChanged(async (user) => {
@@ -4246,8 +4251,375 @@ auth.onAuthStateChanged(async (user) => {
       }
     });
 
+
+
+    const TUTORIAL_KEY_PREFIX = 'ia_rural_tutorial_concluido_';
+    let tutorialAtivo = false;
+    let tutorialPassoAtual = 0;
+    let tutorialAreaOriginal = null;
+    let tutorialTimerAuto = null;
+
+    const tutorialPassos = [
+      {
+        title: 'Bem-vindo ao IA Rural',
+        text: 'Este tutorial ensina o usuário a mexer em todo o app. Você pode rever depois no botão Tutorial.',
+        page: 'inicio',
+        selector: '.nav-tab[data-page="inicio"]'
+      },
+      {
+        title: 'Escolha da área principal',
+        text: 'Aqui o usuário escolhe se quer trabalhar na área leiteira ou na área de corte/engorda. O menu se adapta sozinho.',
+        page: 'inicio',
+        selector: '#area-card-leiteiro',
+        before: async () => { await selecionarArea('leiteiro'); }
+      },
+      {
+        title: 'Área de corte / engorda',
+        text: 'Se escolher corte, aparecem abas próprias como sanitário, nutrição, manejo, gastos e animais vendidos.',
+        page: 'inicio',
+        selector: '#area-card-corte',
+        before: async () => { await selecionarArea('corte'); }
+      },
+      {
+        title: 'Meu Rebanho',
+        text: 'Nesta aba ficam todos os animais da área atual. Aqui o usuário consulta, edita e gera PDF individual.',
+        area: 'leiteiro',
+        page: 'rebanho',
+        selector: '.nav-tab[data-page="rebanho"]',
+        before: async () => { await selecionarArea('leiteiro'); }
+      },
+      {
+        title: 'Cadastrar Animal',
+        text: 'O cadastro permite informar nome, brinco, sexo, idade, foto, observações e os dados específicos de cada área.',
+        area: 'leiteiro',
+        page: 'rebanho',
+        selector: '#btn-toggle-form-animal',
+        before: async () => {
+          await selecionarArea('leiteiro');
+          showPage('rebanho');
+          const form = document.getElementById('form-animal');
+          if (form && form.classList.contains('hidden')) toggleForm('form-animal');
+        }
+      },
+      {
+        title: 'Genealogia no cadastro',
+        text: 'No cadastro o usuário pode preencher mãe, pai, avós e outras informações para montar a árvore genealógica do animal.',
+        area: 'leiteiro',
+        page: 'rebanho',
+        selector: '#a-mae',
+        before: async () => {
+          await selecionarArea('leiteiro');
+          showPage('rebanho');
+          const form = document.getElementById('form-animal');
+          if (form && form.classList.contains('hidden')) toggleForm('form-animal');
+        }
+      },
+      {
+        title: 'Produção leiteira',
+        text: 'Na Produção o usuário lança litros do dia e o sistema calcula total e ração automaticamente.',
+        area: 'leiteiro',
+        page: 'producao',
+        selector: '.nav-tab[data-page="producao"]',
+        before: async () => { await selecionarArea('leiteiro'); }
+      },
+      {
+        title: 'Despesas do leite',
+        text: 'Aqui ele controla estoque, entregas e gasto da atividade leiteira.',
+        area: 'leiteiro',
+        page: 'despesas',
+        selector: '.nav-tab[data-page="despesas"]',
+        before: async () => { await selecionarArea('leiteiro'); }
+      },
+      {
+        title: 'Calendário',
+        text: 'O calendário ajuda a acompanhar secagem, pré-parto, parto e datas importantes da rotina reprodutiva.',
+        area: 'leiteiro',
+        page: 'calendario',
+        selector: '.nav-tab[data-page="calendario"]',
+        before: async () => { await selecionarArea('leiteiro'); }
+      },
+      {
+        title: 'Veterinário',
+        text: 'Esta aba reúne orientações rápidas para consulta dentro do sistema.',
+        page: 'veterinario',
+        selector: '.nav-tab[data-page="veterinario"]'
+      },
+      {
+        title: 'Árvore Genealógica',
+        text: 'Aqui o usuário digita o nome do animal e vê os dados detalhados já registrados no app.',
+        page: 'genealogia',
+        selector: '.nav-tab[data-page="genealogia"]'
+      },
+      {
+        title: 'Busca e PDF do animal',
+        text: 'Nesta tela ele pesquisa um animal específico e pode baixar o PDF com genealogia, leite, corte, peso, ganho e gastos registrados.',
+        page: 'genealogia',
+        selector: '#genealogia-busca'
+      },
+      {
+        title: 'Sanitário do corte',
+        text: 'No modo corte, esta aba organiza vacina, vermífugo, carrapato e observações sanitárias.',
+        area: 'corte',
+        page: 'sanitario-corte',
+        selector: '.nav-tab[data-page="sanitario-corte"]',
+        before: async () => { await selecionarArea('corte'); }
+      },
+      {
+        title: 'Nutrição do corte',
+        text: 'Aqui entram fase, peso, sistema alimentar, consumo e custo diário por animal.',
+        area: 'corte',
+        page: 'nutricao-corte',
+        selector: '.nav-tab[data-page="nutricao-corte"]',
+        before: async () => { await selecionarArea('corte'); }
+      },
+      {
+        title: 'Manejo do corte',
+        text: 'Esta parte serve para anotações de lote, objetivo, manejo diário e observações práticas.',
+        area: 'corte',
+        page: 'manejo-corte',
+        selector: '.nav-tab[data-page="manejo-corte"]',
+        before: async () => { await selecionarArea('corte'); }
+      },
+      {
+        title: 'Registrar Entregas e Calcular Gastos',
+        text: 'Nesta aba o usuário lança milho, silagem e ração e acompanha estoque, custo diário e gasto mensal do corte.',
+        area: 'corte',
+        page: 'despesas-corte',
+        selector: '.nav-tab[data-page="despesas-corte"]',
+        before: async () => { await selecionarArea('corte'); }
+      },
+      {
+        title: 'Animais vendidos',
+        text: 'Aqui ficam os animais vendidos com preço, consumo, custo alimentar e resultado bruto.',
+        area: 'corte',
+        page: 'vendidos-corte',
+        selector: '.nav-tab[data-page="vendidos-corte"]',
+        before: async () => { await selecionarArea('corte'); }
+      },
+      {
+        title: 'Arquivados',
+        text: 'Nesta aba o usuário acompanha animais arquivados, mortos, vendidos ou retirados da rotina principal.',
+        page: 'arquivados',
+        selector: '.nav-tab[data-page="arquivados"]'
+      },
+      {
+        title: 'Tutorial concluído',
+        text: 'Pronto. O usuário já sabe onde mexer em tudo no app. Depois ele pode rever este passo a passo no botão Tutorial.',
+        page: 'inicio',
+        selector: '.nav-tab[data-page="inicio"]',
+        before: async () => { if (tutorialAreaOriginal) { await selecionarArea(tutorialAreaOriginal); } }
+      }
+    ];
+
+    function tutorialStorageKey() {
+      return `${TUTORIAL_KEY_PREFIX}${normalizarUsuario(usuarioLogado || 'anonimo')}`;
+    }
+
+    function criarInterfaceTutorial() {
+      if (document.getElementById('tutorial-overlay')) return;
+
+      const style = document.createElement('style');
+      style.textContent = `
+        .tutorial-highlight {
+          position: relative !important;
+          z-index: 10002 !important;
+          box-shadow: 0 0 0 4px rgba(109,213,109,.65), 0 0 0 9999px rgba(0,0,0,.68) !important;
+          border-radius: 14px !important;
+          transition: box-shadow .2s ease;
+        }
+        #tutorial-overlay {
+          position: fixed;
+          inset: 0;
+          display: none;
+          align-items: flex-end;
+          justify-content: center;
+          padding: 18px;
+          z-index: 10001;
+          pointer-events: none;
+        }
+        #tutorial-card {
+          width: min(460px, 100%);
+          background: #0f0f0f;
+          color: #fff;
+          border: 1px solid #2a2a2a;
+          border-radius: 18px;
+          box-shadow: 0 18px 45px rgba(0,0,0,.42);
+          padding: 18px;
+          pointer-events: auto;
+        }
+        #tutorial-card h3 {
+          font-size: 18px;
+          margin-bottom: 8px;
+        }
+        #tutorial-card p {
+          font-size: 13px;
+          line-height: 1.65;
+          color: #d1d5db;
+          margin-bottom: 12px;
+        }
+        #tutorial-progress {
+          font-size: 11px;
+          color: #9ca3af;
+          margin-bottom: 10px;
+        }
+        #tutorial-actions {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+        #tutorial-actions button {
+          border: 1px solid #2a2a2a;
+          border-radius: 10px;
+          padding: 10px 14px;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 13px;
+          cursor: pointer;
+          font-weight: 700;
+        }
+        #tutorial-prev, #tutorial-skip {
+          background: transparent;
+          color: #fff;
+        }
+        #tutorial-next {
+          background: #fff;
+          color: #000;
+          border-color: #fff;
+        }
+      `;
+      document.head.appendChild(style);
+
+      const overlay = document.createElement('div');
+      overlay.id = 'tutorial-overlay';
+      overlay.innerHTML = `
+        <div id="tutorial-card">
+          <div id="tutorial-progress"></div>
+          <h3 id="tutorial-title"></h3>
+          <p id="tutorial-text"></p>
+          <div id="tutorial-actions">
+            <button id="tutorial-prev" type="button">Voltar</button>
+            <button id="tutorial-skip" type="button">Pular tutorial</button>
+            <button id="tutorial-next" type="button">Próximo</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+
+      document.getElementById('tutorial-prev').addEventListener('click', voltarTutorial);
+      document.getElementById('tutorial-next').addEventListener('click', avancarTutorial);
+      document.getElementById('tutorial-skip').addEventListener('click', () => finalizarTutorial(true));
+    }
+
+    function garantirBotaoTutorial() {
+      if (document.getElementById('btn-tutorial-nav')) return;
+      const navRight = document.querySelector('.nav-right');
+      if (!navRight) return;
+      const btn = document.createElement('button');
+      btn.id = 'btn-tutorial-nav';
+      btn.className = 'nav-btn';
+      btn.textContent = 'Tutorial';
+      btn.onclick = () => iniciarTutorial(true);
+      navRight.insertBefore(btn, navRight.firstChild);
+    }
+
+    function limparHighlightTutorial() {
+      document.querySelectorAll('.tutorial-highlight').forEach(el => el.classList.remove('tutorial-highlight'));
+    }
+
+    async function prepararPassoTutorial(passo) {
+      if (typeof passo.before === 'function') {
+        await passo.before();
+      }
+      if (passo.area) {
+        await selecionarArea(passo.area);
+      }
+      if (passo.page) {
+        showPage(passo.page);
+      }
+      await new Promise(r => setTimeout(r, 220));
+    }
+
+    async function mostrarPassoTutorial() {
+      criarInterfaceTutorial();
+      garantirBotaoTutorial();
+      limparHighlightTutorial();
+
+      const passo = tutorialPassos[tutorialPassoAtual];
+      if (!passo) return;
+
+      await prepararPassoTutorial(passo);
+
+      const overlay = document.getElementById('tutorial-overlay');
+      overlay.style.display = 'flex';
+      document.getElementById('tutorial-progress').textContent = `Passo ${tutorialPassoAtual + 1} de ${tutorialPassos.length}`;
+      document.getElementById('tutorial-title').textContent = passo.title;
+      document.getElementById('tutorial-text').textContent = passo.text;
+      document.getElementById('tutorial-prev').style.display = tutorialPassoAtual === 0 ? 'none' : 'inline-flex';
+      document.getElementById('tutorial-next').textContent = tutorialPassoAtual === tutorialPassos.length - 1 ? 'Concluir' : 'Próximo';
+
+      const alvo = passo.selector ? document.querySelector(passo.selector) : null;
+      if (alvo) {
+        alvo.classList.add('tutorial-highlight');
+        try { alvo.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' }); } catch (_) {}
+      }
+    }
+
+    function tutorialJaConcluido() {
+      return localStorage.getItem(tutorialStorageKey()) === 'true';
+    }
+
+    function marcarTutorialConcluido() {
+      localStorage.setItem(tutorialStorageKey(), 'true');
+    }
+
+    async function iniciarTutorial(forcado = false) {
+      if (!usuarioLogado) return;
+      if (!forcado && tutorialJaConcluido()) return;
+      clearTimeout(tutorialTimerAuto);
+      tutorialAtivo = true;
+      tutorialPassoAtual = 0;
+      tutorialAreaOriginal = obterAreaAtual();
+      await mostrarPassoTutorial();
+    }
+
+    async function avancarTutorial() {
+      if (!tutorialAtivo) return;
+      if (tutorialPassoAtual >= tutorialPassos.length - 1) {
+        finalizarTutorial(false);
+        return;
+      }
+      tutorialPassoAtual += 1;
+      await mostrarPassoTutorial();
+    }
+
+    async function voltarTutorial() {
+      if (!tutorialAtivo || tutorialPassoAtual === 0) return;
+      tutorialPassoAtual -= 1;
+      await mostrarPassoTutorial();
+    }
+
+    async function finalizarTutorial(pulado = false) {
+      tutorialAtivo = false;
+      limparHighlightTutorial();
+      const overlay = document.getElementById('tutorial-overlay');
+      if (overlay) overlay.style.display = 'none';
+      if (tutorialAreaOriginal) {
+        await selecionarArea(tutorialAreaOriginal);
+      }
+      showPage('inicio');
+      if (!pulado) {
+        marcarTutorialConcluido();
+      }
+    }
+
+    function agendarTutorialAutomatico() {
+      if (!usuarioLogado || tutorialJaConcluido() || tutorialAtivo) return;
+      clearTimeout(tutorialTimerAuto);
+      tutorialTimerAuto = setTimeout(() => iniciarTutorial(false), 900);
+    }
+
     aplicarAreaNaInterface();
     renderTudo();
   </script>
 </body>
 </html>
+
