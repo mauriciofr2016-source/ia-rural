@@ -680,6 +680,102 @@
       margin-bottom: 12px;
     }
 
+
+    .area-choice-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .area-card {
+      background: #111111;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+      cursor: pointer;
+      transition: .2s;
+    }
+
+    .area-card:hover {
+      border-color: #4b4b4b;
+      transform: translateY(-1px);
+    }
+
+    .area-card.active {
+      border-color: #6dd56d;
+      box-shadow: 0 0 0 1px rgba(109,213,109,.25);
+    }
+
+    .area-card h3 {
+      font-size: 18px;
+      margin-bottom: 6px;
+      color: #ffffff;
+    }
+
+    .area-card p {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .area-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #0f0f0f;
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .area-status-card {
+      background: #0f0f0f;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      margin-top: 16px;
+    }
+
+    .area-status-title {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: #ffffff;
+    }
+
+    .area-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .area-gate {
+      background: #0f0f0f;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+
+    .area-gate h3 {
+      font-size: 17px;
+      margin-bottom: 8px;
+      color: #ffffff;
+    }
+
+    .area-gate p {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+
     @media (max-width: 760px) {
       .form-row,
       .form-row-3,
@@ -743,10 +839,10 @@
       <div class="nav-tabs">
         <div class="nav-tab active" onclick="showPage('inicio')">Início</div>
         <div class="nav-tab" onclick="showPage('rebanho')">Meu Rebanho</div>
-        <div class="nav-tab" onclick="showPage('producao')">Produção</div>
-        <div class="nav-tab" onclick="showPage('despesas')">Despesas</div>
+        <div class="nav-tab" data-area="leiteiro" onclick="showPage('producao')">Produção</div>
+        <div class="nav-tab" data-area="leiteiro" onclick="showPage('despesas')">Despesas</div>
         <div class="nav-tab" onclick="showPage('veterinario')">Veterinário</div>
-        <div class="nav-tab" onclick="showPage('calendario')">Calendário</div>
+        <div class="nav-tab" data-area="leiteiro" onclick="showPage('calendario')">Calendário</div>
         <div class="nav-tab" onclick="showPage('arquivados')">Arquivados</div>
       </div>
     </nav>
@@ -754,54 +850,42 @@
     <div id="page-inicio" class="page active">
       <div class="welcome-hero">
         <h1>Bem-vindo ao<br /><span>IA Rural</span> 🌾</h1>
-        <p class="muted">Seu sistema para gerenciar o rebanho, controlar a produção de leite, acompanhar o estoque de ração, consultar informações veterinárias e visualizar eventos do calendário.</p>
+        <p class="muted">Escolha abaixo a área principal do seu sistema. O IA Rural vai ajustar a tela inicial e o menu conforme o tipo de manejo que você quer usar agora.</p>
 
-        <div class="features-grid">
-          <div class="feat-card" onclick="showPage('rebanho')">
-            <div class="feat-icon">🐄</div>
-            <div class="feat-label">Meu Rebanho</div>
-            <div class="feat-desc">Cadastre, organize e acompanhe seus animais.</div>
+        <div class="area-choice-grid">
+          <div class="area-card" id="area-card-leiteiro" onclick="selecionarArea('leiteiro')">
+            <div class="area-badge">🥛 Área leiteira</div>
+            <h3>Gado Leiteiro</h3>
+            <p>Use o sistema focado em rebanho leiteiro, produção, ração, calendário reprodutivo e rotina de acompanhamento diário.</p>
           </div>
 
-          <div class="feat-card" onclick="showPage('producao')">
-            <div class="feat-icon">🥛</div>
-            <div class="feat-label">Produção</div>
-            <div class="feat-desc">Registre litros do dia e calcule ração automaticamente.</div>
-          </div>
-
-          <div class="feat-card" onclick="showPage('despesas')">
-            <div class="feat-icon">📦</div>
-            <div class="feat-label">Despesas</div>
-            <div class="feat-desc">Controle estoque de ração e veja quando vai acabar.</div>
-          </div>
-
-          <div class="feat-card" onclick="showPage('veterinario')">
-            <div class="feat-icon">🩺</div>
-            <div class="feat-label">Veterinário</div>
-            <div class="feat-desc">Biblioteca prática com causas, sintomas e medidas iniciais.</div>
-          </div>
-
-          <div class="feat-card" onclick="showPage('calendario')">
-            <div class="feat-icon">📅</div>
-            <div class="feat-label">Calendário</div>
-            <div class="feat-desc">Secagem, pré-parto, parto e protocolos fixos.</div>
-          </div>
-
-          <div class="feat-card" onclick="openBackupModal()">
-            <div class="feat-icon">☁️</div>
-            <div class="feat-label">Backup</div>
-            <div class="feat-desc">Exporte ou importe seu banco do app quando quiser.</div>
+          <div class="area-card" id="area-card-corte" onclick="selecionarArea('corte')">
+            <div class="area-badge">🐂 Área de corte</div>
+            <h3>Gado de Corte / Engorda</h3>
+            <p>Entre no modo corte para organizar o rebanho dessa área desde agora, sem misturar com a rotina leiteira. As funções específicas vão entrar nas próximas etapas.</p>
           </div>
         </div>
+
+        <div class="area-status-card">
+          <div class="area-status-title" id="area-status-title">Área atual: ainda não selecionada</div>
+          <p class="muted" id="area-status-desc">Escolha uma das duas áreas acima para o sistema adaptar a navegação inicial. Sua escolha fica salva para o usuário logado.</p>
+
+          <div class="area-actions">
+            <button class="btn btn-primary" onclick="irParaAreaPrincipal()">Abrir área selecionada</button>
+            <button class="btn btn-outline" onclick="showPage('rebanho')">Ir para meu rebanho</button>
+          </div>
+        </div>
+
+        <div class="features-grid" id="features-grid-home"></div>
       </div>
 
       <div class="card">
-        <div class="section-title">📘 Como usar o IA Rural</div>
-        <div class="muted">
-          <p style="margin-bottom:8px;"><strong>1.</strong> Vá em <strong>Meu Rebanho</strong> e cadastre seus animais com nome, brinco, sexo e idade em meses.</p>
-          <p style="margin-bottom:8px;"><strong>2.</strong> Em <strong>Produção</strong>, registre os litros da manhã, tarde e noite. O sistema calcula a ração com a fórmula <strong>1 kg para cada 3 litros</strong>.</p>
-          <p style="margin-bottom:8px;"><strong>3.</strong> Em <strong>Despesas</strong>, registre entregas de ração e acompanhe quantos dias restam de estoque.</p>
-          <p style="margin-bottom:8px;"><strong>4.</strong> Em <strong>Veterinário</strong>, consulte fichas prontas com doenças comuns em bezerros e vacas.</p>
+        <div class="section-title" id="home-guide-title">📘 Como usar o IA Rural</div>
+        <div class="muted" id="home-guide-content">
+          <p style="margin-bottom:8px;"><strong>1.</strong> Escolha a área principal em <strong>Gado Leiteiro</strong> ou <strong>Gado de Corte / Engorda</strong>.</p>
+          <p style="margin-bottom:8px;"><strong>2.</strong> Vá em <strong>Meu Rebanho</strong> e cadastre seus animais com nome, brinco, sexo e idade em meses.</p>
+          <p style="margin-bottom:8px;"><strong>3.</strong> No modo leiteiro, use <strong>Produção</strong>, <strong>Despesas</strong> e <strong>Calendário</strong> normalmente.</p>
+          <p style="margin-bottom:8px;"><strong>4.</strong> No modo corte, a base do rebanho já fica separada visualmente e as funções específicas entrarão nas próximas etapas.</p>
           <p><strong>5.</strong> Seus dados ficam salvos no navegador e também na nuvem do usuário logado.</p>
         </div>
       </div>
@@ -887,7 +971,12 @@
     </div>
 
     <div id="page-producao" class="page">
-      <div class="card">
+      <div class="area-gate hidden" id="gate-producao">
+        <h3>🥛 Área exclusiva do leite</h3>
+        <p>A área de produção fica disponível quando o sistema estiver no modo <strong>Gado Leiteiro</strong>. Você pode trocar a área na tela inicial quando quiser.</p>
+        <button class="btn btn-primary" onclick="showPage('inicio')">Trocar área na tela inicial</button>
+      </div>
+      <div class="card" data-area="leiteiro">
         <div class="section-title">🥛 Produção de Leite</div>
         <p class="muted" style="margin-bottom:14px;">Registre os litros por período. A ração é calculada automaticamente com base em <strong>1 kg para cada 3 litros</strong>.</p>
 
@@ -908,9 +997,14 @@
     </div>
 
     <div id="page-despesas" class="page">
-      <div id="alerta-racao"></div>
+      <div class="area-gate hidden" id="gate-despesas">
+        <h3>📦 Área exclusiva do leite</h3>
+        <p>A área de despesas e ração fica disponível quando o sistema estiver no modo <strong>Gado Leiteiro</strong>. Você pode trocar a área na tela inicial quando quiser.</p>
+        <button class="btn btn-primary" onclick="showPage('inicio')">Trocar área na tela inicial</button>
+      </div>
+      <div id="alerta-racao" data-area="leiteiro"></div>
 
-      <div class="card">
+      <div class="card" data-area="leiteiro">
         <div class="section-title">📦 Registrar Entrega de Ração</div>
 
         <div class="form-row">
@@ -943,12 +1037,12 @@
         <button class="btn btn-success" onclick="salvarEntregaRacao()">+ Registrar Entrega</button>
       </div>
 
-      <div class="card">
+      <div class="card" data-area="leiteiro">
         <div class="section-title">📊 Estoque Atual de Ração</div>
         <div id="painel-estoque"></div>
       </div>
 
-      <div class="card">
+      <div class="card" data-area="leiteiro">
         <div class="section-title">📋 Histórico de Entregas</div>
         <div id="historico-racao"></div>
       </div>
@@ -975,13 +1069,18 @@
     </div>
 
     <div id="page-calendario" class="page">
-      <div class="card">
+      <div class="area-gate hidden" id="gate-calendario">
+        <h3>📅 Área exclusiva do leite</h3>
+        <p>O calendário reprodutivo desta versão fica disponível quando o sistema estiver no modo <strong>Gado Leiteiro</strong>. Você pode trocar a área na tela inicial quando quiser.</p>
+        <button class="btn btn-primary" onclick="showPage('inicio')">Trocar área na tela inicial</button>
+      </div>
+      <div class="card" data-area="leiteiro">
         <div class="section-title">📅 Calendário Inteligente</div>
         <p class="muted" style="margin-bottom:14px;">Eventos calculados automaticamente com base nos animais prenhes e protocolos fixos.</p>
         <div id="lista-calendario"></div>
       </div>
 
-      <div class="card">
+      <div class="card" data-area="leiteiro">
         <div class="section-title">💉 Protocolos Fixos</div>
         <div id="lista-vacinas"></div>
       </div>
@@ -1055,7 +1154,8 @@
       producao: {},
       entregas: [],
       estoqueRacao: 0,
-      ultimoBackup: null
+      ultimoBackup: null,
+      areaSelecionada: ''
     });
 
     let DB = DB_PADRAO();
@@ -1063,6 +1163,7 @@
     let usuarioLogado = null;
     let animalParaExcluir = null;
     let vetFilter = 'todos';
+    const AREAS_DISPONIVEIS = ['leiteiro', 'corte'];
 
     const VET_DB = [
       {
@@ -1281,7 +1382,12 @@ async function fazerLogin() {
       document.getElementById('nav-usuario').textContent = usuario;
       document.getElementById('tela-login').style.display = 'none';
       document.getElementById('app-wrapper').style.display = 'block';
+      aplicarAreaNaInterface();
       showPage('inicio');
+    }
+
+    function getLocalKey() {
+      return `ia_rural_db_${normalizarUsuario(usuarioLogado || 'anonimo')}`;
     }
 
     function salvarLocal() {
@@ -1305,14 +1411,141 @@ async function fazerLogin() {
 
     function normalizarDB(obj) {
       const base = DB_PADRAO();
+      const area = AREAS_DISPONIVEIS.includes(obj?.areaSelecionada) ? obj.areaSelecionada : base.areaSelecionada;
+
       return {
         animais: Array.isArray(obj?.animais) ? obj.animais : base.animais,
         arquivados: Array.isArray(obj?.arquivados) ? obj.arquivados : base.arquivados,
         producao: obj?.producao && typeof obj.producao === 'object' ? obj.producao : base.producao,
         entregas: Array.isArray(obj?.entregas) ? obj.entregas : base.entregas,
         estoqueRacao: typeof obj?.estoqueRacao === 'number' ? obj.estoqueRacao : base.estoqueRacao,
-        ultimoBackup: obj?.ultimoBackup || base.ultimoBackup
+        ultimoBackup: obj?.ultimoBackup || base.ultimoBackup,
+        areaSelecionada: area
       };
+    }
+
+    function obterAreaAtual() {
+      return AREAS_DISPONIVEIS.includes(DB?.areaSelecionada) ? DB.areaSelecionada : '';
+    }
+
+    function getHomeFeatures(area) {
+      if (area === 'corte') {
+        return [
+          { icon: '🐂', label: 'Meu Rebanho', desc: 'Cadastre e acompanhe os animais da área de corte.', action: "showPage('rebanho')" },
+          { icon: '🩺', label: 'Veterinário', desc: 'Consulte orientações práticas quando precisar.', action: "showPage('veterinario')" },
+          { icon: '🗂', label: 'Arquivados', desc: 'Veja animais vendidos ou que faleceram.', action: "showPage('arquivados')" },
+          { icon: '☁️', label: 'Backup', desc: 'Exporte ou importe seu banco do app quando quiser.', action: "openBackupModal()" }
+        ];
+      }
+
+      return [
+        { icon: '🐄', label: 'Meu Rebanho', desc: 'Cadastre, organize e acompanhe seus animais.', action: "showPage('rebanho')" },
+        { icon: '🥛', label: 'Produção', desc: 'Registre litros do dia e calcule ração automaticamente.', action: "showPage('producao')" },
+        { icon: '📦', label: 'Despesas', desc: 'Controle estoque de ração e veja quando vai acabar.', action: "showPage('despesas')" },
+        { icon: '🩺', label: 'Veterinário', desc: 'Biblioteca prática com causas, sintomas e medidas iniciais.', action: "showPage('veterinario')" },
+        { icon: '📅', label: 'Calendário', desc: 'Secagem, pré-parto, parto e protocolos fixos.', action: "showPage('calendario')" },
+        { icon: '☁️', label: 'Backup', desc: 'Exporte ou importe seu banco do app quando quiser.', action: "openBackupModal()" }
+      ];
+    }
+
+    function atualizarHomeArea() {
+      const area = obterAreaAtual();
+      const title = document.getElementById('area-status-title');
+      const desc = document.getElementById('area-status-desc');
+      const guideTitle = document.getElementById('home-guide-title');
+      const guideContent = document.getElementById('home-guide-content');
+      const grid = document.getElementById('features-grid-home');
+      const cardLeite = document.getElementById('area-card-leiteiro');
+      const cardCorte = document.getElementById('area-card-corte');
+
+      if (cardLeite) cardLeite.classList.toggle('active', area === 'leiteiro');
+      if (cardCorte) cardCorte.classList.toggle('active', area === 'corte');
+
+      if (title && desc) {
+        if (area === 'leiteiro') {
+          title.textContent = 'Área atual: Gado Leiteiro';
+          desc.textContent = 'Você está no modo leiteiro. Produção, despesas e calendário permanecem ativos normalmente.';
+        } else if (area === 'corte') {
+          title.textContent = 'Área atual: Gado de Corte / Engorda';
+          desc.textContent = 'Você está no modo corte. O sistema já separa essa área visualmente e as funções específicas de corte serão adicionadas nas próximas etapas.';
+        } else {
+          title.textContent = 'Área atual: ainda não selecionada';
+          desc.textContent = 'Escolha uma das duas áreas acima para o sistema adaptar a navegação inicial. Sua escolha fica salva para o usuário logado.';
+        }
+      }
+
+      if (guideTitle && guideContent) {
+        if (area === 'corte') {
+          guideTitle.textContent = '📘 Como usar a área de corte / engorda';
+          guideContent.innerHTML = `
+            <p style="margin-bottom:8px;"><strong>1.</strong> Vá em <strong>Meu Rebanho</strong> e cadastre os animais da área de corte.</p>
+            <p style="margin-bottom:8px;"><strong>2.</strong> Use <strong>Veterinário</strong> para consultas rápidas quando precisar.</p>
+            <p style="margin-bottom:8px;"><strong>3.</strong> Em <strong>Arquivados</strong>, acompanhe animais vendidos ou que faleceram.</p>
+            <p style="margin-bottom:8px;"><strong>4.</strong> As funções específicas de corte/engorda serão adicionadas nas próximas etapas sem quebrar esta base.</p>
+            <p><strong>5.</strong> Sua escolha de área fica salva para o usuário logado.</p>
+          `;
+        } else {
+          guideTitle.textContent = '📘 Como usar o IA Rural';
+          guideContent.innerHTML = `
+            <p style="margin-bottom:8px;"><strong>1.</strong> Escolha a área principal em <strong>Gado Leiteiro</strong> ou <strong>Gado de Corte / Engorda</strong>.</p>
+            <p style="margin-bottom:8px;"><strong>2.</strong> Vá em <strong>Meu Rebanho</strong> e cadastre seus animais com nome, brinco, sexo e idade em meses.</p>
+            <p style="margin-bottom:8px;"><strong>3.</strong> No modo leiteiro, use <strong>Produção</strong>, <strong>Despesas</strong> e <strong>Calendário</strong> normalmente.</p>
+            <p style="margin-bottom:8px;"><strong>4.</strong> No modo corte, a base do rebanho já fica separada visualmente e as funções específicas entrarão nas próximas etapas.</p>
+            <p><strong>5.</strong> Seus dados ficam salvos no navegador e também na nuvem do usuário logado.</p>
+          `;
+        }
+      }
+
+      if (grid) {
+        grid.innerHTML = getHomeFeatures(area).map(item => `
+          <div class="feat-card" onclick="${item.action}">
+            <div class="feat-icon">${item.icon}</div>
+            <div class="feat-label">${item.label}</div>
+            <div class="feat-desc">${item.desc}</div>
+          </div>
+        `).join('');
+      }
+    }
+
+    function aplicarAreaNaInterface() {
+      const area = obterAreaAtual();
+      const leiteiroAtivo = area !== 'corte';
+
+      document.querySelectorAll('[data-area="leiteiro"]').forEach(el => {
+        el.classList.toggle('hidden', !leiteiroAtivo);
+      });
+
+      const gateProd = document.getElementById('gate-producao');
+      const gateDesp = document.getElementById('gate-despesas');
+      const gateCal = document.getElementById('gate-calendario');
+
+      if (gateProd) gateProd.classList.toggle('hidden', leiteiroAtivo);
+      if (gateDesp) gateDesp.classList.toggle('hidden', leiteiroAtivo);
+      if (gateCal) gateCal.classList.toggle('hidden', leiteiroAtivo);
+
+      atualizarHomeArea();
+    }
+
+    async function selecionarArea(area) {
+      if (!AREAS_DISPONIVEIS.includes(area)) return;
+      DB.areaSelecionada = area;
+      aplicarAreaNaInterface();
+      await salvarDB();
+    }
+
+    function irParaAreaPrincipal() {
+      const area = obterAreaAtual();
+      if (area === 'corte') {
+        showPage('rebanho');
+        return;
+      }
+
+      if (area === 'leiteiro') {
+        showPage('producao');
+        return;
+      }
+
+      alert('Escolha primeiro se deseja entrar em Gado Leiteiro ou Gado de Corte / Engorda.');
     }
 
     async function salvarNuvem() {
@@ -1459,16 +1692,32 @@ auth.onAuthStateChanged(async (user) => {
 });
     
     function showPage(id) {
+      const area = obterAreaAtual();
+      const paginasBloqueadasNoCorte = ['producao', 'despesas', 'calendario'];
+
+      if (area === 'corte' && paginasBloqueadasNoCorte.includes(id)) {
+        id = 'inicio';
+      }
+
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
       document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
 
       const page = document.getElementById('page-' + id);
       if (page) page.classList.add('active');
 
-      const pages = ['inicio','rebanho','producao','despesas','veterinario','calendario','arquivados'];
-      const idx = pages.indexOf(id);
-      if (idx >= 0) document.querySelectorAll('.nav-tab')[idx].classList.add('active');
+      const abas = Array.from(document.querySelectorAll('.nav-tab:not(.hidden)'));
+      const tab = abas.find(t => t.textContent.trim().toLowerCase() === ({
+        inicio: 'início',
+        rebanho: 'meu rebanho',
+        producao: 'produção',
+        despesas: 'despesas',
+        veterinario: 'veterinário',
+        calendario: 'calendário',
+        arquivados: 'arquivados'
+      }[id] || ''));
+      if (tab) tab.classList.add('active');
 
+      if (id === 'inicio') atualizarHomeArea();
       if (id === 'rebanho') renderRebanho();
       if (id === 'producao') renderProducao();
       if (id === 'despesas') renderDespesas();
@@ -1478,6 +1727,7 @@ auth.onAuthStateChanged(async (user) => {
     }
 
     function renderTudo() {
+      aplicarAreaNaInterface();
       renderRebanho();
       renderProducao();
       renderDespesas();
