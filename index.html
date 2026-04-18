@@ -1,17 +1,15 @@
 <!DOCTYPE html>
+
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>IA Rural — Gestão Inteligente do Campo</title>
-
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet" />
-
-  <style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>IA Rural — Gestão Inteligente do Campo</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet"/>
+<style>
     :root {
       --bg: #000000;
       --bg-soft: #0d0d0d;
@@ -905,434 +903,367 @@
   </style>
 </head>
 <body>
-  <div id="tela-login">
-    <div class="login-box">
-      <div class="login-logo">IA <span>Rural</span></div>
-      <div class="login-tagline">Gestão inteligente do campo com rebanho, produção, despesas, veterinário e calendário em um só lugar.</div>
-
-      <div class="login-field">
-        <label>Usuário</label>
-        <input type="text" id="login-usuario" placeholder="Seu usuário" onkeydown="if(event.key==='Enter')fazerLogin()" />
-      </div>
-
-      <div class="login-field">
-        <label>Senha</label>
-        <input type="password" id="login-senha" placeholder="••••••••" onkeydown="if(event.key==='Enter')fazerLogin()" />
-      </div>
-
-      <button class="login-btn" onclick="fazerLogin()">Entrar</button>
-
-      <div class="login-error" id="login-erro">Não foi possível entrar. Verifique usuário, senha e se o domínio está autorizado no Firebase Authentication.</div>
-      <div class="login-footer">IA Rural · Sistema de gestão rural inteligente</div>
-    </div>
-  </div>
-
-  <div id="app-wrapper">
-    <nav>
-      <div class="nav-header">
-        <div class="nav-logo">IA <span>Rural</span></div>
-
-        <div class="nav-right">
-          <div class="nav-user" id="nav-usuario">Usuário</div>
-          <button class="nav-btn" onclick="openBackupModal()">☁ Backup</button>
-          <button class="nav-btn" onclick="fazerLogout()">Sair</button>
-        </div>
-      </div>
-
-      <div class="nav-tabs">
-        <div class="nav-tab active" data-page="inicio" onclick="showPage('inicio')">Início</div>
-        <div class="nav-tab" data-page="rebanho" onclick="showPage('rebanho')">Meu Rebanho</div>
-        <div class="nav-tab" data-page="producao" data-area="leiteiro" onclick="showPage('producao')">Produção</div>
-        <div class="nav-tab" data-page="despesas" data-area="leiteiro" onclick="showPage('despesas')">Despesas</div>
-        <div class="nav-tab hidden" data-page="sanitario-corte" data-area="corte" onclick="showPage('sanitario-corte')">Sanitário</div>
-        <div class="nav-tab hidden" data-page="nutricao-corte" data-area="corte" onclick="showPage('nutricao-corte')">Nutrição</div>
-        <div class="nav-tab hidden" data-page="manejo-corte" data-area="corte" onclick="showPage('manejo-corte')">Manejo</div>
-        <div class="nav-tab" data-page="veterinario" onclick="showPage('veterinario')">Veterinário</div>
-        <div class="nav-tab" data-page="calendario" data-area="leiteiro" onclick="showPage('calendario')">Calendário</div>
-        <div class="nav-tab" data-page="arquivados" onclick="showPage('arquivados')">Arquivados</div>
-      </div>
-    </nav>
-
-    <div id="page-inicio" class="page active">
-      <div class="welcome-hero">
-        <h1>Bem-vindo ao<br /><span>IA Rural</span> 🌾</h1>
-        <p class="muted">Escolha abaixo a área principal do seu sistema. O IA Rural vai ajustar a tela inicial e o menu conforme o tipo de manejo que você quer usar agora.</p>
-
-        <div class="area-choice-grid">
-          <div class="area-card" id="area-card-leiteiro" onclick="selecionarArea('leiteiro')">
-            <div class="area-badge">🥛 Área leiteira</div>
-            <h3>Gado Leiteiro</h3>
-            <p>Use o sistema focado em rebanho leiteiro, produção, ração, calendário reprodutivo e rotina de acompanhamento diário.</p>
-          </div>
-
-          <div class="area-card" id="area-card-corte" onclick="selecionarArea('corte')">
-            <div class="area-badge">🐂 Área de corte</div>
-            <h3>Gado de Corte / Engorda</h3>
-            <p>Entre no modo corte para organizar o rebanho dessa área desde agora, sem misturar com a rotina leiteira. As funções específicas já incluem abas iniciais de sanitário, nutrição e manejo.</p>
-          </div>
-        </div>
-
-        <div class="area-status-card">
-          <div class="area-status-title" id="area-status-title">Área atual: ainda não selecionada</div>
-          <p class="muted" id="area-status-desc">Escolha uma das duas áreas acima para o sistema adaptar a navegação inicial. Sua escolha fica salva para o usuário logado.</p>
-
-          <div class="area-actions">
-            <button class="btn btn-primary" onclick="irParaAreaPrincipal()">Abrir área selecionada</button>
-            <button class="btn btn-outline" onclick="showPage('rebanho')">Ir para meu rebanho</button>
-          </div>
-        </div>
-
-        <div class="features-grid" id="features-grid-home"></div>
-      </div>
-
-      <div class="card">
-        <div class="section-title" id="home-guide-title">📘 Como usar o IA Rural</div>
-        <div class="muted" id="home-guide-content">
-          <p style="margin-bottom:8px;"><strong>1.</strong> Escolha a área principal em <strong>Gado Leiteiro</strong> ou <strong>Gado de Corte / Engorda</strong>.</p>
-          <p style="margin-bottom:8px;"><strong>2.</strong> Vá em <strong>Meu Rebanho</strong> e cadastre seus animais com nome, brinco, sexo e idade em meses.</p>
-          <p style="margin-bottom:8px;"><strong>3.</strong> No modo leiteiro, use <strong>Produção</strong>, <strong>Despesas</strong> e <strong>Calendário</strong> normalmente.</p>
-          <p style="margin-bottom:8px;"><strong>4.</strong> No modo corte, o rebanho fica separado e você já pode usar as abas de sanitário, nutrição e manejo.</p>
-          <p><strong>5.</strong> Seus dados ficam salvos no navegador e também na nuvem do usuário logado.</p>
-        </div>
-      </div>
-    </div>
-
-    <div id="page-rebanho" class="page">
-      <div class="backup-notice">💾 Dados salvos localmente e sincronizados na nuvem para o usuário logado.</div>
-
-      <div class="card">
-        <div class="section-title">🐄 Meu Rebanho</div>
-        <button class="btn btn-primary" onclick="toggleForm('form-animal')">+ Cadastrar Animal</button>
-
-        <div id="form-animal" class="hidden" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);">
-          <div class="form-row">
-            <div class="form-group">
-              <label>Nome do animal</label>
-              <input type="text" id="a-nome" placeholder="Ex: Mimosa" />
-            </div>
-            <div class="form-group">
-              <label>Nº do brinco (opcional)</label>
-              <input type="text" id="a-brinco" placeholder="Ex: 001" />
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>Sexo (opcional no corte)</label>
-              <select id="a-sexo" onchange="atualizarCategoria()">
-                <option value="">Selecione</option>
-                <option>Fêmea</option>
-                <option>Macho</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label>Idade em meses (opcional no corte)</label>
-              <input type="number" id="a-idade" placeholder="Ex: 36" oninput="atualizarCategoria()" />
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>Data de nascimento (opcional)</label>
-              <input type="date" id="a-data-nascimento" onchange="atualizarCategoria()" />
-            </div>
-
-            <div class="form-group area-only" id="campo-castrado">
-              <label>Macho castrado?</label>
-              <select id="a-castrado" onchange="atualizarCategoria()">
-                <option value="nao">Não</option>
-                <option value="sim">Sim</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label>Foto do animal (opcional)</label>
-            <input type="file" id="a-foto" accept="image/*" onchange="previewFotoAnimal(event)" />
-            <div class="preview-photo-box hidden" id="preview-foto-box">
-              <img id="preview-foto-img" alt="Prévia da foto do animal" />
-              <div class="muted">Prévia da foto selecionada. A imagem será salva junto com o animal.</div>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label>Categoria (calculada automaticamente)</label>
-            <div id="a-categoria-box" class="info-box">Preencha idade, sexo ou data de nascimento. No corte, isso é opcional.</div>
-          </div>
-
-          <div class="area-only" id="bloco-leiteiro-form">
-            <div class="form-row">
-              <div class="form-group">
-                <label>Está prenha?</label>
-                <select id="a-prenha" onchange="togglePrenha()">
-                  <option value="nao">Não</option>
-                  <option value="sim">Sim</option>
-                </select>
-              </div>
-
-              <div class="form-group hidden" id="campo-data-prenha">
-                <label>Data de confirmação da prenhez</label>
-                <input type="date" id="a-data-prenha" />
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label>Em lactação?</label>
-              <select id="a-lactacao">
-                <option value="nao">Não</option>
-                <option value="sim">Sim</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="area-only" id="bloco-corte-form">
-            <div class="form-row">
-              <div class="form-group">
-                <label>Fase do animal (opcional)</label>
-                <select id="a-fase-corte">
-                  <option value="">Selecione</option>
-                  <option>Cria</option>
-                  <option>Recria</option>
-                  <option>Engorda</option>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label>Peso estimado em kg (opcional)</label>
-                <input type="number" id="a-peso" placeholder="Ex: 320" />
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label>Sistema alimentar (opcional)</label>
-                <select id="a-sistema-alimentar">
-                  <option value="">Selecione</option>
-                  <option>Pasto</option>
-                  <option>Semi-confinamento</option>
-                  <option>Confinamento</option>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label>Última vermifugação (opcional)</label>
-                <input type="date" id="a-vermifugo" />
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label>Última vacinação (opcional)</label>
-                <input type="date" id="a-vacina" />
-              </div>
-
-              <div class="form-group">
-                <label>Controle de carrapato (opcional)</label>
-                <input type="date" id="a-carrapato" />
-              </div>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label>Observações (opcional)</label>
-            <textarea id="a-obs" placeholder="Raça, histórico, lote, observações..."></textarea>
-          </div>
-
-          <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <button class="btn btn-success" onclick="salvarAnimal()">✓ Salvar Animal</button>
-            <button class="btn btn-outline" onclick="toggleForm('form-animal')">Cancelar</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="section-title">Lista do Rebanho (<span id="count-rebanho">0</span>)</div>
-      <div id="lista-rebanho"></div>
-    </div>
-
-
-    <div id="page-sanitario-corte" class="page">
-      <div class="card">
-        <div class="section-title">🧴 Sanitário do Corte / Engorda</div>
-        <p class="muted" style="margin-bottom:14px;">Registre vacinação, vermifugação, controle de carrapato e observações sanitárias por animal.</p>
-        <div id="lista-sanitario-corte"></div>
-      </div>
-    </div>
-
-    <div id="page-nutricao-corte" class="page">
-      <div class="card">
-        <div class="section-title">🌾 Nutrição do Corte / Engorda</div>
-        <p class="muted" style="margin-bottom:14px;">Organize fase, sistema alimentar, peso estimado, consumo e observações nutricionais por animal.</p>
-        <div id="lista-nutricao-corte"></div>
-      </div>
-    </div>
-
-    <div id="page-manejo-corte" class="page">
-      <div class="card">
-        <div class="section-title">📋 Manejo do Corte / Engorda</div>
-        <p class="muted" style="margin-bottom:14px;">Faça anotações de lote, objetivo, manejo diário e observações práticas para cada animal.</p>
-        <div id="lista-manejo-corte"></div>
-      </div>
-    </div>
-
-    <div id="page-producao" class="page">
-      <div class="area-gate hidden" id="gate-producao">
-        <h3>🥛 Área exclusiva do leite</h3>
-        <p>A área de produção fica disponível quando o sistema estiver no modo <strong>Gado Leiteiro</strong>. Você pode trocar a área na tela inicial quando quiser.</p>
-        <button class="btn btn-primary" onclick="showPage('inicio')">Trocar área na tela inicial</button>
-      </div>
-      <div class="card" data-area="leiteiro">
-        <div class="section-title">🥛 Produção de Leite</div>
-        <p class="muted" style="margin-bottom:14px;">Registre os litros por período. A ração é calculada automaticamente com base em <strong>1 kg para cada 3 litros</strong>.</p>
-
-        <div id="lista-producao"></div>
-
-        <div class="total-bar hidden" id="bloco-total-prod">
-          <div style="font-size:12px; color:var(--muted); font-weight:700;">Total geral do dia</div>
-          <div class="total-big" id="total-litros-dia">0,0 L</div>
-          <div class="muted">Ração total necessária: <strong id="total-racao-dia">0,0 kg</strong></div>
-        </div>
-
-        <div id="empty-prod" class="empty-state">
-          <div class="empty-icon">🥛</div>
-          Nenhuma vaca em lactação cadastrada.<br />
+<div id="tela-login">
+<div class="login-box">
+<div class="login-logo">IA <span>Rural</span></div>
+<div class="login-tagline">Gestão inteligente do campo com rebanho, produção, despesas, veterinário e calendário em um só lugar.</div>
+<div class="login-field">
+<label>Usuário</label>
+<input id="login-usuario" onkeydown="if(event.key==='Enter')fazerLogin()" placeholder="Seu usuário" type="text"/>
+</div>
+<div class="login-field">
+<label>Senha</label>
+<input id="login-senha" onkeydown="if(event.key==='Enter')fazerLogin()" placeholder="••••••••" type="password"/>
+</div>
+<button class="login-btn" onclick="fazerLogin()">Entrar</button>
+<div class="login-error" id="login-erro">Não foi possível entrar. Verifique usuário, senha e se o domínio está autorizado no Firebase Authentication.</div>
+<div class="login-footer">IA Rural · Sistema de gestão rural inteligente</div>
+</div>
+</div>
+<div id="app-wrapper">
+<nav>
+<div class="nav-header">
+<div class="nav-logo">IA <span>Rural</span></div>
+<div class="nav-right">
+<div class="nav-user" id="nav-usuario">Usuário</div>
+<button class="nav-btn" onclick="openBackupModal()">☁ Backup</button>
+<button class="nav-btn" onclick="fazerLogout()">Sair</button>
+</div>
+</div>
+<div class="nav-tabs">
+<div class="nav-tab active" data-page="inicio" onclick="showPage('inicio')">Início</div>
+<div class="nav-tab" data-page="rebanho" onclick="showPage('rebanho')">Meu Rebanho</div>
+<div class="nav-tab" data-area="leiteiro" data-page="producao" onclick="showPage('producao')">Produção</div>
+<div class="nav-tab" data-area="leiteiro" data-page="despesas" onclick="showPage('despesas')">Despesas</div>
+<div class="nav-tab hidden" data-area="corte" data-page="sanitario-corte" onclick="showPage('sanitario-corte')">Sanitário</div>
+<div class="nav-tab hidden" data-area="corte" data-page="nutricao-corte" onclick="showPage('nutricao-corte')">Nutrição</div>
+<div class="nav-tab hidden" data-area="corte" data-page="manejo-corte" onclick="showPage('manejo-corte')">Manejo</div>
+<div class="nav-tab" data-page="veterinario" onclick="showPage('veterinario')">Veterinário</div>
+<div class="nav-tab" data-area="leiteiro" data-page="calendario" onclick="showPage('calendario')">Calendário</div>
+<div class="nav-tab" data-page="arquivados" onclick="showPage('arquivados')">Arquivados</div>
+</div>
+</nav>
+<div class="page active" id="page-inicio">
+<div class="welcome-hero">
+<h1>Bem-vindo ao<br/><span>IA Rural</span> 🌾</h1>
+<p class="muted">Escolha abaixo a área principal do seu sistema. O IA Rural vai ajustar a tela inicial e o menu conforme o tipo de manejo que você quer usar agora.</p>
+<div class="area-choice-grid">
+<div class="area-card" id="area-card-leiteiro" onclick="selecionarArea('leiteiro')">
+<div class="area-badge">🥛 Área leiteira</div>
+<h3>Gado Leiteiro</h3>
+<p>Use o sistema focado em rebanho leiteiro, produção, ração, calendário reprodutivo e rotina de acompanhamento diário.</p>
+</div>
+<div class="area-card" id="area-card-corte" onclick="selecionarArea('corte')">
+<div class="area-badge">🐂 Área de corte</div>
+<h3>Gado de Corte / Engorda</h3>
+<p>Entre no modo corte para organizar o rebanho dessa área desde agora, sem misturar com a rotina leiteira. As funções específicas já incluem abas iniciais de sanitário, nutrição e manejo.</p>
+</div>
+</div>
+<div class="area-status-card">
+<div class="area-status-title" id="area-status-title">Área atual: ainda não selecionada</div>
+<p class="muted" id="area-status-desc">Escolha uma das duas áreas acima para o sistema adaptar a navegação inicial. Sua escolha fica salva para o usuário logado.</p>
+<div class="area-actions">
+<button class="btn btn-primary" onclick="irParaAreaPrincipal()">Abrir área selecionada</button>
+<button class="btn btn-outline" onclick="showPage('rebanho')">Ir para meu rebanho</button>
+</div>
+</div>
+<div class="features-grid" id="features-grid-home"></div>
+</div>
+<div class="card">
+<div class="section-title" id="home-guide-title">📘 Como usar o IA Rural</div>
+<div class="muted" id="home-guide-content">
+<p style="margin-bottom:8px;"><strong>1.</strong> Escolha a área principal em <strong>Gado Leiteiro</strong> ou <strong>Gado de Corte / Engorda</strong>.</p>
+<p style="margin-bottom:8px;"><strong>2.</strong> Vá em <strong>Meu Rebanho</strong> e cadastre seus animais com nome, brinco, sexo e idade em meses.</p>
+<p style="margin-bottom:8px;"><strong>3.</strong> No modo leiteiro, use <strong>Produção</strong>, <strong>Despesas</strong> e <strong>Calendário</strong> normalmente.</p>
+<p style="margin-bottom:8px;"><strong>4.</strong> No modo corte, o rebanho fica separado e você já pode usar as abas de sanitário, nutrição e manejo.</p>
+<p><strong>5.</strong> Seus dados ficam salvos no navegador e também na nuvem do usuário logado.</p>
+</div>
+</div>
+</div>
+<div class="page" id="page-rebanho">
+<div class="backup-notice">💾 Dados salvos localmente e sincronizados na nuvem para o usuário logado.</div>
+<div class="card">
+<div class="section-title">🐄 Meu Rebanho</div>
+<button class="btn btn-primary" onclick="toggleForm('form-animal')">+ Cadastrar Animal</button>
+<div class="hidden" id="form-animal" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);">
+<div class="form-row">
+<div class="form-group">
+<label>Nome do animal</label>
+<input id="a-nome" placeholder="Ex: Mimosa" type="text"/>
+</div>
+<div class="form-group">
+<label>Nº do brinco (opcional)</label>
+<input id="a-brinco" placeholder="Ex: 001" type="text"/>
+</div>
+</div>
+<div class="form-row">
+<div class="form-group">
+<label>Sexo (opcional no corte)</label>
+<select id="a-sexo" onchange="atualizarCategoria()">
+<option value="">Selecione</option>
+<option>Fêmea</option>
+<option>Macho</option>
+</select>
+</div>
+<div class="form-group">
+<label>Idade em meses (opcional no corte)</label>
+<input id="a-idade" oninput="atualizarCategoria()" placeholder="Ex: 36" type="number"/>
+</div>
+</div>
+<div class="form-row">
+<div class="form-group">
+<label>Data de nascimento (opcional)</label>
+<input id="a-data-nascimento" onchange="atualizarCategoria()" type="date"/>
+</div>
+<div class="form-group area-only" id="campo-castrado">
+<label>Macho castrado?</label>
+<select id="a-castrado" onchange="atualizarCategoria()">
+<option value="nao">Não</option>
+<option value="sim">Sim</option>
+</select>
+</div>
+</div>
+<div class="form-group">
+<label>Foto do animal (opcional)</label>
+<input accept="image/*" id="a-foto" onchange="previewFotoAnimal(event)" type="file"/>
+<div class="preview-photo-box hidden" id="preview-foto-box">
+<img alt="Prévia da foto do animal" id="preview-foto-img"/>
+<div class="muted">Prévia da foto selecionada. A imagem será salva junto com o animal.</div>
+</div>
+</div>
+<div class="form-group">
+<label>Categoria (calculada automaticamente)</label>
+<div class="info-box" id="a-categoria-box">Preencha idade, sexo ou data de nascimento. No corte, isso é opcional.</div>
+</div>
+<div class="area-only" id="bloco-leiteiro-form">
+<div class="form-row">
+<div class="form-group">
+<label>Está prenha?</label>
+<select id="a-prenha" onchange="togglePrenha()">
+<option value="nao">Não</option>
+<option value="sim">Sim</option>
+</select>
+</div>
+<div class="form-group hidden" id="campo-data-prenha">
+<label>Data de confirmação da prenhez</label>
+<input id="a-data-prenha" type="date"/>
+</div>
+</div>
+<div class="form-group">
+<label>Em lactação?</label>
+<select id="a-lactacao">
+<option value="nao">Não</option>
+<option value="sim">Sim</option>
+</select>
+</div>
+</div>
+<div class="area-only" id="bloco-corte-form">
+<div class="form-row">
+<div class="form-group">
+<label>Fase do animal (opcional)</label>
+<select id="a-fase-corte">
+<option value="">Selecione</option>
+<option>Cria</option>
+<option>Recria</option>
+<option>Engorda</option>
+</select>
+</div>
+<div class="form-group">
+<label>Peso estimado em kg (opcional)</label>
+<input id="a-peso" placeholder="Ex: 320" type="number"/>
+</div>
+</div>
+<div class="form-row">
+<div class="form-group">
+<label>Sistema alimentar (opcional)</label>
+<select id="a-sistema-alimentar">
+<option value="">Selecione</option>
+<option>Pasto</option>
+<option>Semi-confinamento</option>
+<option>Confinamento</option>
+</select>
+</div>
+<div class="form-group">
+<label>Última vermifugação (opcional)</label>
+<input id="a-vermifugo" type="date"/>
+</div>
+</div>
+<div class="form-row">
+<div class="form-group">
+<label>Última vacinação (opcional)</label>
+<input id="a-vacina" type="date"/>
+</div>
+<div class="form-group">
+<label>Controle de carrapato (opcional)</label>
+<input id="a-carrapato" type="date"/>
+</div>
+</div>
+</div>
+<div class="form-group">
+<label>Observações (opcional)</label>
+<textarea id="a-obs" placeholder="Raça, histórico, lote, observações..."></textarea>
+</div>
+<div style="display:flex; gap:8px; flex-wrap:wrap;">
+<button class="btn btn-success" onclick="salvarAnimal()">✓ Salvar Animal</button>
+<button class="btn btn-outline" onclick="toggleForm('form-animal')">Cancelar</button>
+</div>
+</div>
+</div>
+<div class="section-title">Lista do Rebanho (<span id="count-rebanho">0</span>)</div>
+<div id="lista-rebanho"></div>
+</div>
+<div class="page" id="page-sanitario-corte">
+<div class="card">
+<div class="section-title">🧴 Sanitário do Corte / Engorda</div>
+<p class="muted" style="margin-bottom:14px;">Registre vacinação, vermifugação, controle de carrapato e observações sanitárias por animal.</p>
+<div id="lista-sanitario-corte"></div>
+</div>
+</div>
+<div class="page" id="page-nutricao-corte">
+<div class="card">
+<div class="section-title">🌾 Nutrição do Corte / Engorda</div>
+<p class="muted" style="margin-bottom:14px;">Organize fase, sistema alimentar, peso estimado, consumo e observações nutricionais por animal.</p>
+<div id="lista-nutricao-corte"></div>
+</div>
+</div>
+<div class="page" id="page-manejo-corte">
+<div class="card">
+<div class="section-title">📋 Manejo do Corte / Engorda</div>
+<p class="muted" style="margin-bottom:14px;">Faça anotações de lote, objetivo, manejo diário e observações práticas para cada animal.</p>
+<div id="lista-manejo-corte"></div>
+</div>
+</div>
+<div class="page" id="page-producao">
+<div class="area-gate hidden" id="gate-producao">
+<h3>🥛 Área exclusiva do leite</h3>
+<p>A área de produção fica disponível quando o sistema estiver no modo <strong>Gado Leiteiro</strong>. Você pode trocar a área na tela inicial quando quiser.</p>
+<button class="btn btn-primary" onclick="showPage('inicio')">Trocar área na tela inicial</button>
+</div>
+<div class="card" data-area="leiteiro">
+<div class="section-title">🥛 Produção de Leite</div>
+<p class="muted" style="margin-bottom:14px;">Registre os litros por período. A ração é calculada automaticamente com base em <strong>1 kg para cada 3 litros</strong>.</p>
+<div id="lista-producao"></div>
+<div class="total-bar hidden" id="bloco-total-prod">
+<div style="font-size:12px; color:var(--muted); font-weight:700;">Total geral do dia</div>
+<div class="total-big" id="total-litros-dia">0,0 L</div>
+<div class="muted">Ração total necessária: <strong id="total-racao-dia">0,0 kg</strong></div>
+</div>
+<div class="empty-state" id="empty-prod">
+<div class="empty-icon">🥛</div>
+          Nenhuma vaca em lactação cadastrada.<br/>
           Vá em <strong>Meu Rebanho</strong> e marque o animal como em lactação.
         </div>
-      </div>
-    </div>
-
-    <div id="page-despesas" class="page">
-      <div class="area-gate hidden" id="gate-despesas">
-        <h3>📦 Área exclusiva do leite</h3>
-        <p>A área de despesas e ração fica disponível quando o sistema estiver no modo <strong>Gado Leiteiro</strong>. Você pode trocar a área na tela inicial quando quiser.</p>
-        <button class="btn btn-primary" onclick="showPage('inicio')">Trocar área na tela inicial</button>
-      </div>
-      <div id="alerta-racao" data-area="leiteiro"></div>
-
-      <div class="card" data-area="leiteiro">
-        <div class="section-title">📦 Registrar Entrega de Ração</div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Data da entrega</label>
-            <input type="date" id="d-data" />
-          </div>
-
-          <div class="form-group">
-            <label>Quantidade de sacos</label>
-            <input type="number" id="d-sacos" placeholder="Ex: 10" oninput="calcEntregaRacao()" />
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Tipo de saco</label>
-            <select id="d-tipo" onchange="calcEntregaRacao()">
-              <option value="40">40 kg</option>
-              <option value="50">50 kg</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>Total calculado</label>
-            <div id="d-total-calc" class="info-box">—</div>
-          </div>
-        </div>
-
-        <button class="btn btn-success" onclick="salvarEntregaRacao()">+ Registrar Entrega</button>
-      </div>
-
-      <div class="card" data-area="leiteiro">
-        <div class="section-title">📊 Estoque Atual de Ração</div>
-        <div id="painel-estoque"></div>
-      </div>
-
-      <div class="card" data-area="leiteiro">
-        <div class="section-title">📋 Histórico de Entregas</div>
-        <div id="historico-racao"></div>
-      </div>
-    </div>
-
-    <div id="page-veterinario" class="page">
-      <div class="card">
-        <div class="section-title">🩺 Veterinário</div>
-        <p class="muted" style="margin-bottom:12px;">Biblioteca prática com doenças comuns em bezerros e vacas. Use a busca e os filtros para localizar mais rápido.</p>
-
-        <div class="form-group" style="margin-bottom:12px;">
-          <label>Buscar doença</label>
-          <input type="text" id="vet-busca" placeholder="Ex: mastite, diarreia, pneumonia..." oninput="renderVet()" />
-        </div>
-
-        <div class="filter-row">
-          <button class="pill-filter active" id="vet-filter-todos" onclick="setVetFilter('todos')">Todos</button>
-          <button class="pill-filter" id="vet-filter-bezerros" onclick="setVetFilter('bezerros')">Bezerros</button>
-          <button class="pill-filter" id="vet-filter-vacas" onclick="setVetFilter('vacas')">Vacas</button>
-        </div>
-
-        <div id="vet-lista" class="vet-grid"></div>
-      </div>
-    </div>
-
-    <div id="page-calendario" class="page">
-      <div class="area-gate hidden" id="gate-calendario">
-        <h3>📅 Área exclusiva do leite</h3>
-        <p>O calendário reprodutivo desta versão fica disponível quando o sistema estiver no modo <strong>Gado Leiteiro</strong>. Você pode trocar a área na tela inicial quando quiser.</p>
-        <button class="btn btn-primary" onclick="showPage('inicio')">Trocar área na tela inicial</button>
-      </div>
-      <div class="card" data-area="leiteiro">
-        <div class="section-title">📅 Calendário Inteligente</div>
-        <p class="muted" style="margin-bottom:14px;">Eventos calculados automaticamente com base nos animais prenhes e protocolos fixos.</p>
-        <div id="lista-calendario"></div>
-      </div>
-
-      <div class="card" data-area="leiteiro">
-        <div class="section-title">💉 Protocolos Fixos</div>
-        <div id="lista-vacinas"></div>
-      </div>
-    </div>
-
-    <div id="page-arquivados" class="page">
-      <div class="card">
-        <div class="section-title">🗂 Animais Arquivados</div>
-        <div id="lista-arquivados"></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal-bg" id="modal-excluir">
-    <div class="modal-box">
-      <h3 id="modal-excluir-titulo">O que aconteceu com o animal?</h3>
-      <p>Selecione o motivo. O animal irá para a aba <strong>Arquivados</strong>, sem ser perdido.</p>
-
-      <div class="modal-actions">
-        <button class="btn btn-primary" onclick="confirmarExclusao('vendido')">💰 Foi vendido</button>
-        <button class="btn btn-danger" onclick="confirmarExclusao('faleceu')">🕊 Faleceu</button>
-        <button class="btn btn-outline" onclick="fecharModal('modal-excluir')">Cancelar</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal-bg" id="modal-backup">
-    <div class="modal-box">
-      <h3>☁ Backup e Restauração</h3>
-      <p>Exporte ou importe um arquivo de backup do seu banco do app.</p>
-
-      <div class="modal-actions">
-        <button class="btn btn-success" onclick="exportarDados()">⬇ Exportar backup (.json)</button>
-
-        <label class="btn btn-outline" style="cursor:pointer;">
+</div>
+</div>
+<div class="page" id="page-despesas">
+<div class="area-gate hidden" id="gate-despesas">
+<h3>📦 Área exclusiva do leite</h3>
+<p>A área de despesas e ração fica disponível quando o sistema estiver no modo <strong>Gado Leiteiro</strong>. Você pode trocar a área na tela inicial quando quiser.</p>
+<button class="btn btn-primary" onclick="showPage('inicio')">Trocar área na tela inicial</button>
+</div>
+<div data-area="leiteiro" id="alerta-racao"></div>
+<div class="card" data-area="leiteiro">
+<div class="section-title">📦 Registrar Entrega de Ração</div>
+<div class="form-row">
+<div class="form-group">
+<label>Data da entrega</label>
+<input id="d-data" type="date"/>
+</div>
+<div class="form-group">
+<label>Quantidade de sacos</label>
+<input id="d-sacos" oninput="calcEntregaRacao()" placeholder="Ex: 10" type="number"/>
+</div>
+</div>
+<div class="form-row">
+<div class="form-group">
+<label>Tipo de saco</label>
+<select id="d-tipo" onchange="calcEntregaRacao()">
+<option value="40">40 kg</option>
+<option value="50">50 kg</option>
+</select>
+</div>
+<div class="form-group">
+<label>Total calculado</label>
+<div class="info-box" id="d-total-calc">—</div>
+</div>
+</div>
+<button class="btn btn-success" onclick="salvarEntregaRacao()">+ Registrar Entrega</button>
+</div>
+<div class="card" data-area="leiteiro">
+<div class="section-title">📊 Estoque Atual de Ração</div>
+<div id="painel-estoque"></div>
+</div>
+<div class="card" data-area="leiteiro">
+<div class="section-title">📋 Histórico de Entregas</div>
+<div id="historico-racao"></div>
+</div>
+</div>
+<div class="page" id="page-veterinario">
+<div class="card">
+<div class="section-title">🩺 Veterinário</div>
+<p class="muted" style="margin-bottom:12px;">Biblioteca prática com doenças comuns em bezerros e vacas. Use a busca e os filtros para localizar mais rápido.</p>
+<div class="form-group" style="margin-bottom:12px;">
+<label>Buscar doença</label>
+<input id="vet-busca" oninput="renderVet()" placeholder="Ex: mastite, diarreia, pneumonia..." type="text"/>
+</div>
+<div class="filter-row">
+<button class="pill-filter active" id="vet-filter-todos" onclick="setVetFilter('todos')">Todos</button>
+<button class="pill-filter" id="vet-filter-bezerros" onclick="setVetFilter('bezerros')">Bezerros</button>
+<button class="pill-filter" id="vet-filter-vacas" onclick="setVetFilter('vacas')">Vacas</button>
+</div>
+<div class="vet-grid" id="vet-lista"></div>
+</div>
+</div>
+<div class="page" id="page-calendario">
+<div class="area-gate hidden" id="gate-calendario">
+<h3>📅 Área exclusiva do leite</h3>
+<p>O calendário reprodutivo desta versão fica disponível quando o sistema estiver no modo <strong>Gado Leiteiro</strong>. Você pode trocar a área na tela inicial quando quiser.</p>
+<button class="btn btn-primary" onclick="showPage('inicio')">Trocar área na tela inicial</button>
+</div>
+<div class="card" data-area="leiteiro">
+<div class="section-title">📅 Calendário Inteligente</div>
+<p class="muted" style="margin-bottom:14px;">Eventos calculados automaticamente com base nos animais prenhes e protocolos fixos.</p>
+<div id="lista-calendario"></div>
+</div>
+<div class="card" data-area="leiteiro">
+<div class="section-title">💉 Protocolos Fixos</div>
+<div id="lista-vacinas"></div>
+</div>
+</div>
+<div class="page" id="page-arquivados">
+<div class="card">
+<div class="section-title">🗂 Animais Arquivados</div>
+<div id="lista-arquivados"></div>
+</div>
+</div>
+</div>
+<div class="modal-bg" id="modal-excluir">
+<div class="modal-box">
+<h3 id="modal-excluir-titulo">O que aconteceu com o animal?</h3>
+<p>Selecione o motivo. O animal irá para a aba <strong>Arquivados</strong>, sem ser perdido.</p>
+<div class="modal-actions">
+<button class="btn btn-primary" onclick="confirmarExclusao('vendido')">💰 Foi vendido</button>
+<button class="btn btn-danger" onclick="confirmarExclusao('faleceu')">🕊 Faleceu</button>
+<button class="btn btn-outline" onclick="fecharModal('modal-excluir')">Cancelar</button>
+</div>
+</div>
+</div>
+<div class="modal-bg" id="modal-backup">
+<div class="modal-box">
+<h3>☁ Backup e Restauração</h3>
+<p>Exporte ou importe um arquivo de backup do seu banco do app.</p>
+<div class="modal-actions">
+<button class="btn btn-success" onclick="exportarDados()">⬇ Exportar backup (.json)</button>
+<label class="btn btn-outline" style="cursor:pointer;">
           ⬆ Importar backup
-          <input type="file" accept=".json" onchange="importarDados(event)" style="display:none;" />
-        </label>
-
-        <button class="btn btn-outline" onclick="fecharModal('modal-backup')">Fechar</button>
-      </div>
-
-      <p style="margin-top:12px; font-size:11px; color:var(--muted);">Última atualização: <span id="ultimo-backup">—</span></p>
-    </div>
-  </div>
-
-  <script>
+          <input accept=".json" onchange="importarDados(event)" style="display:none;" type="file"/>
+</label>
+<button class="btn btn-outline" onclick="fecharModal('modal-backup')">Fechar</button>
+</div>
+<p style="margin-top:12px; font-size:11px; color:var(--muted);">Última atualização: <span id="ultimo-backup">—</span></p>
+</div>
+</div>
+<script>
     const firebaseConfig = {
       apiKey: "AIzaSyDs6njrUFchymlhcFHwdGSv6nPrKXoiLEc",
       authDomain: "ia-rural.firebaseapp.com",
@@ -1655,7 +1586,6 @@ async function fazerLogin() {
         objetivoCorte: a?.objetivoCorte || '',
         obsManejo: a?.obsManejo || ''
       };
-    };
     }
 
     function getAnimaisDaArea(area = obterAreaAtual()) {
@@ -1894,18 +1824,6 @@ async function fazerLogin() {
 
       atualizarHomeArea();
       atualizarVisibilidadeCamposCadastro();
-    });
-
-      const gateProd = document.getElementById('gate-producao');
-      const gateDesp = document.getElementById('gate-despesas');
-      const gateCal = document.getElementById('gate-calendario');
-
-      if (gateProd) gateProd.classList.toggle('hidden', leiteiroAtivo);
-      if (gateDesp) gateDesp.classList.toggle('hidden', leiteiroAtivo);
-      if (gateCal) gateCal.classList.toggle('hidden', leiteiroAtivo);
-
-      atualizarHomeArea();
-      atualizarVisibilidadeCamposCadastro();
     }
 
     async function selecionarArea(area) {
@@ -2103,32 +2021,6 @@ auth.onAuthStateChanged(async (user) => {
       if (id === 'arquivados') renderArquivados();
     }
 
-      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-
-      const page = document.getElementById('page-' + id);
-      if (page) page.classList.add('active');
-
-      const abas = Array.from(document.querySelectorAll('.nav-tab:not(.hidden)'));
-      const tab = abas.find(t => t.textContent.trim().toLowerCase() === ({
-        inicio: 'início',
-        rebanho: 'meu rebanho',
-        producao: 'produção',
-        despesas: 'despesas',
-        veterinario: 'veterinário',
-        calendario: 'calendário',
-        arquivados: 'arquivados'
-      }[id] || ''));
-      if (tab) tab.classList.add('active');
-
-      if (id === 'inicio') atualizarHomeArea();
-      if (id === 'rebanho') renderRebanho();
-      if (id === 'producao') renderProducao();
-      if (id === 'despesas') renderDespesas();
-      if (id === 'veterinario') renderVet();
-      if (id === 'calendario') renderCalendario();
-      if (id === 'arquivados') renderArquivados();
-    }
 
     function renderTudo() {
       aplicarAreaNaInterface();
