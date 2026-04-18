@@ -938,6 +938,8 @@
 <div class="nav-tab hidden" data-area="corte" data-page="sanitario-corte" onclick="showPage('sanitario-corte')">Sanitário</div>
 <div class="nav-tab hidden" data-area="corte" data-page="nutricao-corte" onclick="showPage('nutricao-corte')">Nutrição</div>
 <div class="nav-tab hidden" data-area="corte" data-page="manejo-corte" onclick="showPage('manejo-corte')">Manejo</div>
+<div class="nav-tab hidden" data-area="corte" data-page="despesas-corte" onclick="showPage('despesas-corte')">Registrar Entregas/Calculo de Gastos</div>
+<div class="nav-tab hidden" data-area="corte" data-page="vendidos-corte" onclick="showPage('vendidos-corte')">Animais Vendidos</div>
 <div class="nav-tab" data-page="veterinario" onclick="showPage('veterinario')">Veterinário</div>
 <div class="nav-tab" data-area="leiteiro" data-page="calendario" onclick="showPage('calendario')">Calendário</div>
 <div class="nav-tab" data-page="arquivados" onclick="showPage('arquivados')">Arquivados</div>
@@ -956,7 +958,7 @@
 <div class="area-card" id="area-card-corte" onclick="selecionarArea('corte')">
 <div class="area-badge">🐂 Área de corte</div>
 <h3>Gado de Corte / Engorda</h3>
-<p>Entre no modo corte para organizar o rebanho dessa área desde agora, sem misturar com a rotina leiteira. As funções específicas já incluem abas iniciais de sanitário, nutrição e manejo.</p>
+<p>Entre no modo corte para organizar o rebanho dessa área desde agora, sem misturar com a rotina leiteira. As funções específicas já incluem abas de sanitário, nutrição, manejo, registrar entregas/cálculo de gastos e animais vendidos.</p>
 </div>
 </div>
 <div class="area-status-card">
@@ -984,7 +986,7 @@
 <div class="backup-notice">💾 Dados salvos localmente e sincronizados na nuvem para o usuário logado.</div>
 <div class="card">
 <div class="section-title">🐄 Meu Rebanho</div>
-<button class="btn btn-primary" onclick="toggleForm('form-animal')">+ Cadastrar Animal</button>
+<button class="btn btn-primary" id="btn-toggle-form-animal" onclick="toggleForm('form-animal')">+ Cadastrar Animal</button>
 <div class="hidden" id="form-animal" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);">
 <div class="form-row">
 <div class="form-group">
@@ -1104,8 +1106,8 @@
 <textarea id="a-obs" placeholder="Raça, histórico, lote, observações..."></textarea>
 </div>
 <div style="display:flex; gap:8px; flex-wrap:wrap;">
-<button class="btn btn-success" onclick="salvarAnimal()">✓ Salvar Animal</button>
-<button class="btn btn-outline" onclick="toggleForm('form-animal')">Cancelar</button>
+<button class="btn btn-success" id="btn-salvar-animal" onclick="salvarAnimal()">✓ Salvar Animal</button>
+<button class="btn btn-outline" onclick="cancelarEdicaoAnimal()">Cancelar</button>
 </div>
 </div>
 </div>
@@ -1122,7 +1124,7 @@
 <div class="page" id="page-nutricao-corte">
 <div class="card">
 <div class="section-title">🌾 Nutrição do Corte / Engorda</div>
-<p class="muted" style="margin-bottom:14px;">Organize fase, sistema alimentar, peso estimado, consumo e observações nutricionais por animal.</p>
+<p class="muted" style="margin-bottom:14px;">Aqui ficam apenas os dados nutricionais de cada animal: sistema alimentar, peso, fase, consumo diário de milho, silagem e ração, além do custo diário calculado automaticamente.</p>
 <div id="lista-nutricao-corte"></div>
 </div>
 </div>
@@ -1133,6 +1135,170 @@
 <div id="lista-manejo-corte"></div>
 </div>
 </div>
+
+<div class="page" id="page-despesas-corte">
+<div class="card">
+<div class="section-title">📦 Registrar Entregas / Cálculo de Gastos</div>
+<p class="muted" style="margin-bottom:14px;">Cadastre compras de milho, silagem e ração, acompanhe estoque, custo por kg, gasto diário por animal, total geral diário e gasto mensal automático da área de corte.</p>
+
+<div class="cut-card" style="margin-bottom:14px;">
+  <div class="cut-card-header">
+    <div>
+      <div class="cut-card-title">🌽 Milho</div>
+      <div class="cut-helper">Informe em sacos de 40/50 kg ou em toneladas.</div>
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <label>Data da entrega</label>
+      <input type="date" id="dc-milho-data" />
+    </div>
+    <div class="form-group">
+      <label>Formato da compra</label>
+      <select id="dc-milho-formato" onchange="toggleCompraFields('milho'); calcCompraProduto('milho')">
+        <option value="saco">Saco</option>
+        <option value="tonelada">Tonelada</option>
+      </select>
+    </div>
+  </div>
+  <div class="form-row" id="dc-milho-saco-row">
+    <div class="form-group">
+      <label>Saco de</label>
+      <select id="dc-milho-saco-kg" onchange="calcCompraProduto('milho')">
+        <option value="40">40 kg</option>
+        <option value="50">50 kg</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Quantidade de sacos</label>
+      <input type="number" id="dc-milho-sacos" min="0" step="1" placeholder="Ex: 20" oninput="calcCompraProduto('milho')" />
+    </div>
+  </div>
+  <div class="form-row hidden" id="dc-milho-ton-row">
+    <div class="form-group">
+      <label>Toneladas</label>
+      <input type="number" id="dc-milho-ton" min="0" step="0.01" placeholder="Ex: 2" oninput="calcCompraProduto('milho')" />
+    </div>
+    <div class="form-group">
+      <label>Preço por tonelada (R$)</label>
+      <input type="number" id="dc-milho-preco-ton" min="0" step="0.01" placeholder="Ex: 1800" oninput="calcCompraProduto('milho')" />
+    </div>
+  </div>
+  <div class="form-row" id="dc-milho-price-row">
+    <div class="form-group">
+      <label>Preço por saco (R$)</label>
+      <input type="number" id="dc-milho-preco-saco" min="0" step="0.01" placeholder="Ex: 95" oninput="calcCompraProduto('milho')" />
+    </div>
+    <div class="form-group">
+      <label>Total calculado</label>
+      <div id="dc-milho-total" class="info-box">—</div>
+    </div>
+  </div>
+  <button class="btn btn-success" onclick="salvarCompraProduto('milho')">+ Registrar milho</button>
+</div>
+
+<div class="cut-card" style="margin-bottom:14px;">
+  <div class="cut-card-header">
+    <div>
+      <div class="cut-card-title">🌾 Silagem</div>
+      <div class="cut-helper">Informe a quantidade em toneladas e o preço por tonelada.</div>
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <label>Data da entrega</label>
+      <input type="date" id="dc-silagem-data" />
+    </div>
+    <div class="form-group">
+      <label>Toneladas</label>
+      <input type="number" id="dc-silagem-ton" min="0" step="0.01" placeholder="Ex: 8" oninput="calcCompraProduto('silagem')" />
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <label>Preço por tonelada (R$)</label>
+      <input type="number" id="dc-silagem-preco-ton" min="0" step="0.01" placeholder="Ex: 350" oninput="calcCompraProduto('silagem')" />
+    </div>
+    <div class="form-group">
+      <label>Total calculado</label>
+      <div id="dc-silagem-total" class="info-box">—</div>
+    </div>
+  </div>
+  <button class="btn btn-success" onclick="salvarCompraProduto('silagem')">+ Registrar silagem</button>
+</div>
+
+<div class="cut-card">
+  <div class="cut-card-header">
+    <div>
+      <div class="cut-card-title">🥣 Ração</div>
+      <div class="cut-helper">Informe em sacos de 40/50 kg.</div>
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <label>Data da entrega</label>
+      <input type="date" id="dc-racao-data" />
+    </div>
+    <div class="form-group">
+      <label>Saco de</label>
+      <select id="dc-racao-saco-kg" onchange="calcCompraProduto('racao')">
+        <option value="40">40 kg</option>
+        <option value="50">50 kg</option>
+      </select>
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <label>Quantidade de sacos</label>
+      <input type="number" id="dc-racao-sacos" min="0" step="1" placeholder="Ex: 15" oninput="calcCompraProduto('racao')" />
+    </div>
+    <div class="form-group">
+      <label>Preço por saco (R$)</label>
+      <input type="number" id="dc-racao-preco-saco" min="0" step="0.01" placeholder="Ex: 120" oninput="calcCompraProduto('racao')" />
+    </div>
+  </div>
+  <div class="form-group">
+    <label>Total calculado</label>
+    <div id="dc-racao-total" class="info-box">—</div>
+  </div>
+  <button class="btn btn-success" onclick="salvarCompraProduto('racao')">+ Registrar ração</button>
+</div>
+</div>
+
+<div class="card">
+<div class="section-title">📊 Estoque atual e custo por produto</div>
+<div id="painel-estoque-corte"></div>
+</div>
+
+<div class="card">
+<div class="section-title">🐂 Gasto diário por animal</div>
+<div id="painel-custo-animal-corte"></div>
+</div>
+
+<div class="card">
+<div class="section-title">💰 Total geral diário da área de corte</div>
+<div id="painel-total-geral-corte"></div>
+</div>
+
+<div class="card">
+<div class="section-title">📆 Gasto mensal automático da área de corte</div>
+<div id="painel-total-mensal-corte"></div>
+</div>
+
+<div class="card">
+<div class="section-title">📋 Histórico de compras</div>
+<div id="historico-corte"></div>
+</div>
+</div>
+
+<div class="page" id="page-vendidos-corte">
+<div class="card">
+<div class="section-title">💰 Animais Vendidos</div>
+<p class="muted" style="margin-bottom:14px;">Aqui ficam os animais vendidos com preço, peso final, tempo até a venda, consumo estimado e custo alimentar estimado calculado pelo sistema.</p>
+<div id="lista-vendidos-corte"></div>
+</div>
+</div>
+
 <div class="page" id="page-producao">
 <div class="area-gate hidden" id="gate-producao">
 <h3>🥛 Área exclusiva do leite</h3>
@@ -1248,6 +1414,34 @@
 </div>
 </div>
 </div>
+
+<div class="modal-bg" id="modal-venda">
+<div class="modal-box">
+<h3>💰 Registrar venda</h3>
+<p>Preencha o preço e a data da venda. O restante será calculado automaticamente pelo sistema para enviar o animal à aba <strong>Animais Vendidos</strong>.</p>
+
+<div class="form-group">
+<label>Preço de venda (R$)</label>
+<input type="number" id="venda-preco" min="0" step="0.01" placeholder="Ex: 8500" />
+</div>
+
+<div class="form-group">
+<label>Data da venda</label>
+<input type="date" id="venda-data" />
+</div>
+
+<div class="form-group">
+<label>Observação da venda (opcional)</label>
+<textarea id="venda-obs" placeholder="Ex: vendido no gancho, pagamento à vista..."></textarea>
+</div>
+
+<div class="modal-actions">
+<button class="btn btn-success" onclick="confirmarVendaAnimal()">Confirmar venda</button>
+<button class="btn btn-outline" onclick="fecharModal('modal-venda')">Cancelar</button>
+</div>
+</div>
+</div>
+
 <div class="modal-bg" id="modal-backup">
 <div class="modal-box">
 <h3>☁ Backup e Restauração</h3>
@@ -1263,6 +1457,7 @@
 <p style="margin-top:12px; font-size:11px; color:var(--muted);">Última atualização: <span id="ultimo-backup">—</span></p>
 </div>
 </div>
+<datalist id="produtos-corte-lista"></datalist>
 <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDs6njrUFchymlhcFHwdGSv6nPrKXoiLEc",
@@ -1291,7 +1486,8 @@
       entregas: [],
       estoqueRacao: 0,
       ultimoBackup: null,
-      areaSelecionada: ''
+      areaSelecionada: '',
+      entregasCorte: []
     });
 
     let DB = DB_PADRAO();
@@ -1299,6 +1495,7 @@
     let usuarioLogado = null;
     let animalParaExcluir = null;
     let vetFilter = 'todos';
+    let animalEmEdicao = null;
     const AREAS_DISPONIVEIS = ['leiteiro', 'corte'];
 
     const VET_DB = [
@@ -1557,7 +1754,8 @@ async function fazerLogin() {
         entregas: Array.isArray(obj?.entregas) ? obj.entregas : base.entregas,
         estoqueRacao: typeof obj?.estoqueRacao === 'number' ? obj.estoqueRacao : base.estoqueRacao,
         ultimoBackup: obj?.ultimoBackup || base.ultimoBackup,
-        areaSelecionada: area
+        areaSelecionada: area,
+        entregasCorte: Array.isArray(obj?.entregasCorte) ? obj.entregasCorte : base.entregasCorte
       };
     }
 
@@ -1580,11 +1778,22 @@ async function fazerLogin() {
         carrapatoData: a?.carrapatoData || '',
         anotacaoRapida: a?.anotacaoRapida || '',
         consumoEstimado: typeof a?.consumoEstimado === 'number' ? a.consumoEstimado : (parseFloat(a?.consumoEstimado) || 0),
+        consumoMilho: typeof a?.consumoMilho === 'number' ? a.consumoMilho : (parseFloat(a?.consumoMilho) || 0),
+        consumoSilagem: typeof a?.consumoSilagem === 'number' ? a.consumoSilagem : (parseFloat(a?.consumoSilagem) || 0),
+        consumoRacao: typeof a?.consumoRacao === 'number' ? a.consumoRacao : (parseFloat(a?.consumoRacao) || 0),
         obsSanitaria: a?.obsSanitaria || '',
         obsNutricao: a?.obsNutricao || '',
         loteCorte: a?.loteCorte || '',
         objetivoCorte: a?.objetivoCorte || '',
-        obsManejo: a?.obsManejo || ''
+        obsManejo: a?.obsManejo || '',
+        alimentoPrincipal: a?.alimentoPrincipal || '',
+        detalheAlimento: a?.detalheAlimento || '',
+        custoKgManual: typeof a?.custoKgManual === 'number' ? a.custoKgManual : (parseFloat(a?.custoKgManual) || 0),
+        dataEntradaConfinamento: a?.dataEntradaConfinamento || a?.dataCadastro || '',
+        precoVenda: typeof a?.precoVenda === 'number' ? a.precoVenda : (parseFloat(a?.precoVenda) || 0),
+        dataVenda: a?.dataVenda || '',
+        obsVenda: a?.obsVenda || '',
+        resumoVenda: a?.resumoVenda || null
       };
     }
 
@@ -1696,6 +1905,7 @@ async function fazerLogin() {
     }
 
     function limparFormularioAnimal() {
+      animalEmEdicao = null;
       document.getElementById('a-nome').value = '';
       document.getElementById('a-brinco').value = '';
       document.getElementById('a-sexo').value = '';
@@ -1718,6 +1928,7 @@ async function fazerLogin() {
       document.getElementById('preview-foto-box')?.classList.add('hidden');
       document.getElementById('preview-foto-img').src = '';
       atualizarVisibilidadeCamposCadastro();
+      atualizarTextoFormularioAnimal();
     }
 
     function getHomeFeatures(area) {
@@ -1727,8 +1938,9 @@ async function fazerLogin() {
           { icon: '🧴', label: 'Sanitário', desc: 'Vacinação, vermífugo, carrapato e observações por animal.', action: "showPage('sanitario-corte')" },
           { icon: '🌾', label: 'Nutrição', desc: 'Fase, sistema alimentar, peso e consumo estimado.', action: "showPage('nutricao-corte')" },
           { icon: '📋', label: 'Manejo', desc: 'Lote, objetivo e anotações práticas do dia a dia.', action: "showPage('manejo-corte')" },
-          { icon: '🩺', label: 'Veterinário', desc: 'Consulte orientações práticas quando precisar.', action: "showPage('veterinario')" },
-          { icon: '🗂', label: 'Arquivados', desc: 'Veja animais vendidos ou que faleceram.', action: "showPage('arquivados')" }
+          { icon: '📦', label: 'Registrar Entregas/Calculo de Gastos', desc: 'Compre trato, acompanhe estoque e custo por produto.', action: "showPage('despesas-corte')" },
+          { icon: '💰', label: 'Animais Vendidos', desc: 'Veja preço, custo estimado e tempo até a venda.', action: "showPage('vendidos-corte')" },
+          { icon: '🩺', label: 'Veterinário', desc: 'Consulte orientações práticas quando precisar.', action: "showPage('veterinario')" }
         ];
       }
 
@@ -1761,7 +1973,7 @@ async function fazerLogin() {
           desc.textContent = 'Você está no modo leiteiro. Produção, despesas e calendário permanecem ativos normalmente.';
         } else if (area === 'corte') {
           title.textContent = 'Área atual: Gado de Corte / Engorda';
-          desc.textContent = 'Você está no modo corte. O sistema já separa essa área visualmente e as funções específicas de corte serão adicionadas nas próximas etapas.';
+          desc.textContent = 'Você está no modo corte. A área já tem sanitário, nutrição, manejo, registrar entregas/cálculo de gastos e animais vendidos com cálculo automático de apoio.';
         } else {
           title.textContent = 'Área atual: ainda não selecionada';
           desc.textContent = 'Escolha uma das duas áreas acima para o sistema adaptar a navegação inicial. Sua escolha fica salva para o usuário logado.';
@@ -1773,10 +1985,10 @@ async function fazerLogin() {
           guideTitle.textContent = '📘 Como usar a área de corte / engorda';
           guideContent.innerHTML = `
             <p style="margin-bottom:8px;"><strong>1.</strong> Vá em <strong>Meu Rebanho</strong> e cadastre os animais da área de corte.</p>
-            <p style="margin-bottom:8px;"><strong>2.</strong> Use <strong>Veterinário</strong> para consultas rápidas quando precisar.</p>
-            <p style="margin-bottom:8px;"><strong>3.</strong> Em <strong>Arquivados</strong>, acompanhe animais vendidos ou que faleceram.</p>
-            <p style="margin-bottom:8px;"><strong>4.</strong> As funções específicas de corte/engorda serão adicionadas nas próximas etapas sem quebrar esta base.</p>
-            <p><strong>5.</strong> Sua escolha de área fica salva para o usuário logado.</p>
+            <p style="margin-bottom:8px;"><strong>2.</strong> Em <strong>Nutrição</strong>, informe fase, sistema alimentar, alimento principal, consumo e custo por kg se quiser detalhar mais.</p>
+            <p style="margin-bottom:8px;"><strong>3.</strong> Em <strong>Registrar Entregas/Calculo de Gastos</strong>, registre compras de trato, acompanhe o estoque e até quando cada produto deve durar.</p>
+            <p style="margin-bottom:8px;"><strong>4.</strong> Ao excluir um animal, o sistema pergunta se ele morreu ou foi vendido. Se for vendido, o app calcula tempo, consumo e custo estimado automaticamente.</p>
+            <p><strong>5.</strong> Em <strong>Animais Vendidos</strong>, acompanhe os resultados consolidados de venda da área de corte.</p>
           `;
         } else {
           guideTitle.textContent = '📘 Como usar o IA Rural';
@@ -2016,6 +2228,8 @@ auth.onAuthStateChanged(async (user) => {
       if (id === 'sanitario-corte') renderSanitarioCorte();
       if (id === 'nutricao-corte') renderNutricaoCorte();
       if (id === 'manejo-corte') renderManejoCorte();
+      if (id === 'despesas-corte') renderDespesasCorte();
+      if (id === 'vendidos-corte') renderVendidosCorte();
       if (id === 'veterinario') renderVet();
       if (id === 'calendario') renderCalendario();
       if (id === 'arquivados') renderArquivados();
@@ -2030,10 +2244,18 @@ auth.onAuthStateChanged(async (user) => {
       renderSanitarioCorte();
       renderNutricaoCorte();
       renderManejoCorte();
+      renderDespesasCorte();
+      renderVendidosCorte();
       renderVet();
       renderCalendario();
       renderArquivados();
+      renderListaProdutosCorte();
+      toggleCompraFields('milho');
+      calcCompraProduto('milho');
+      calcCompraProduto('silagem');
+      calcCompraProduto('racao');
       atualizarUltimoBackup();
+      atualizarTextoFormularioAnimal();
     }
 
     function toggleForm(id) {
@@ -2109,6 +2331,69 @@ auth.onAuthStateChanged(async (user) => {
       return '🐄';
     }
 
+    function atualizarTextoFormularioAnimal() {
+      const btnSalvar = document.getElementById('btn-salvar-animal');
+      const btnToggle = document.getElementById('btn-toggle-form-animal');
+      if (btnSalvar) btnSalvar.textContent = animalEmEdicao ? '✓ Salvar Alterações' : '✓ Salvar Animal';
+      if (btnToggle) btnToggle.textContent = animalEmEdicao ? 'Editando Animal' : '+ Cadastrar Animal';
+    }
+
+    function preencherPreviewFoto(src = '') {
+      const box = document.getElementById('preview-foto-box');
+      const img = document.getElementById('preview-foto-img');
+      if (!box || !img) return;
+      if (src) {
+        img.src = src;
+        box.classList.remove('hidden');
+      } else {
+        img.src = '';
+        box.classList.add('hidden');
+      }
+    }
+
+    function abrirEdicaoAnimal(id) {
+      const animal = DB.animais.find(a => a.id === id);
+      if (!animal) return;
+
+      animalEmEdicao = id;
+      document.getElementById('a-nome').value = animal.nome || '';
+      document.getElementById('a-brinco').value = animal.brinco || '';
+      document.getElementById('a-sexo').value = animal.sexo || '';
+      document.getElementById('a-idade').value = animal.idadeMeses || '';
+      document.getElementById('a-data-nascimento').value = animal.dataNascimento || '';
+      document.getElementById('a-castrado').value = animal.castrado ? 'sim' : 'nao';
+      document.getElementById('a-prenha').value = animal.prenha ? 'sim' : 'nao';
+      document.getElementById('a-data-prenha').value = animal.dataPrenha || '';
+      document.getElementById('a-lactacao').value = animal.lactacao ? 'sim' : 'nao';
+      document.getElementById('a-fase-corte').value = animal.faseCorte || '';
+      document.getElementById('a-peso').value = animal.pesoEstimado || '';
+      document.getElementById('a-sistema-alimentar').value = animal.sistemaAlimentar || '';
+      document.getElementById('a-vacina').value = animal.vacinaData || '';
+      document.getElementById('a-vermifugo').value = animal.vermifugoData || '';
+      document.getElementById('a-carrapato').value = animal.carrapatoData || '';
+      document.getElementById('a-obs').value = animal.obs || '';
+      document.getElementById('a-foto').value = '';
+      preencherPreviewFoto(animal.foto || '');
+      togglePrenha();
+      atualizarVisibilidadeCamposCadastro();
+      atualizarCategoria();
+      atualizarTextoFormularioAnimal();
+
+      const form = document.getElementById('form-animal');
+      if (form.classList.contains('hidden')) {
+        form.classList.remove('hidden');
+      }
+
+      form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function cancelarEdicaoAnimal() {
+      animalEmEdicao = null;
+      limparFormularioAnimal();
+      document.getElementById('form-animal').classList.add('hidden');
+      atualizarTextoFormularioAnimal();
+    }
+
     async function salvarAnimal() {
       const area = obterAreaAtual() || 'leiteiro';
       const nome = document.getElementById('a-nome').value.trim();
@@ -2127,7 +2412,7 @@ auth.onAuthStateChanged(async (user) => {
       const vermifugoData = document.getElementById('a-vermifugo').value;
       const carrapatoData = document.getElementById('a-carrapato').value;
       const obs = document.getElementById('a-obs').value.trim();
-      const foto = await lerFotoAnimalBase64();
+      const fotoNova = await lerFotoAnimalBase64();
 
       if (!nome) return alert('Informe o nome do animal.');
 
@@ -2142,50 +2427,514 @@ auth.onAuthStateChanged(async (user) => {
       }
 
       const categoria = getCategoriaPorArea(area, sexo, Number.isFinite(idade) ? idade : NaN, castrado);
-      const animal = normalizarAnimal({
-        id: Date.now().toString(),
-        area,
-        nome,
-        brinco,
-        sexo,
-        idadeMeses: Number.isFinite(idade) ? idade : 0,
-        dataNascimento,
-        categoria,
-        castrado,
-        prenha: area === 'leiteiro' ? prenha : false,
-        dataPrenha: area === 'leiteiro' && prenha ? dataPrenha : '',
-        lactacao: area === 'leiteiro' ? lactacao : false,
-        obs,
-        foto,
-        faseCorte: area === 'corte' ? faseCorte : '',
-        pesoEstimado: area === 'corte' ? pesoEstimado : 0,
-        sistemaAlimentar: area === 'corte' ? sistemaAlimentar : '',
-        vacinaData: area === 'corte' ? vacinaData : '',
-        vermifugoData: area === 'corte' ? vermifugoData : '',
-        carrapatoData: area === 'corte' ? carrapatoData : '',
-        dataCadastro: new Date().toISOString()
-      });
 
-      DB.animais.push(animal);
+      if (animalEmEdicao) {
+        const idx = DB.animais.findIndex(a => a.id === animalEmEdicao);
+        if (idx >= 0) {
+          const animalAtual = normalizarAnimal(DB.animais[idx]);
+          DB.animais[idx] = normalizarAnimal({
+            ...animalAtual,
+            area,
+            nome,
+            brinco,
+            sexo,
+            idadeMeses: Number.isFinite(idade) ? idade : 0,
+            dataNascimento,
+            categoria,
+            castrado,
+            prenha: area === 'leiteiro' ? prenha : false,
+            dataPrenha: area === 'leiteiro' && prenha ? dataPrenha : '',
+            lactacao: area === 'leiteiro' ? lactacao : false,
+            obs,
+            foto: fotoNova || animalAtual.foto || '',
+            faseCorte: area === 'corte' ? faseCorte : '',
+            pesoEstimado: area === 'corte' ? pesoEstimado : 0,
+            sistemaAlimentar: area === 'corte' ? sistemaAlimentar : '',
+            dataEntradaConfinamento: area === 'corte' ? (animalAtual.dataEntradaConfinamento || animalAtual.dataCadastro || new Date().toISOString()) : '',
+            vacinaData: area === 'corte' ? vacinaData : '',
+            vermifugoData: area === 'corte' ? vermifugoData : '',
+            carrapatoData: area === 'corte' ? carrapatoData : ''
+          });
+        }
+      } else {
+        const animal = normalizarAnimal({
+          id: Date.now().toString(),
+          area,
+          nome,
+          brinco,
+          sexo,
+          idadeMeses: Number.isFinite(idade) ? idade : 0,
+          dataNascimento,
+          categoria,
+          castrado,
+          prenha: area === 'leiteiro' ? prenha : false,
+          dataPrenha: area === 'leiteiro' && prenha ? dataPrenha : '',
+          lactacao: area === 'leiteiro' ? lactacao : false,
+          obs,
+          foto: fotoNova,
+          faseCorte: area === 'corte' ? faseCorte : '',
+          pesoEstimado: area === 'corte' ? pesoEstimado : 0,
+          sistemaAlimentar: area === 'corte' ? sistemaAlimentar : '',
+          dataEntradaConfinamento: area === 'corte' ? new Date().toISOString() : '',
+          vacinaData: area === 'corte' ? vacinaData : '',
+          vermifugoData: area === 'corte' ? vermifugoData : '',
+          carrapatoData: area === 'corte' ? carrapatoData : '',
+          dataCadastro: new Date().toISOString()
+        });
+        DB.animais.push(animal);
+      }
+
       await salvarDB();
 
+      animalEmEdicao = null;
       limparFormularioAnimal();
       document.getElementById('form-animal').classList.add('hidden');
+      atualizarTextoFormularioAnimal();
 
       renderTudo();
       showPage('rebanho');
     }
 
-
     async function atualizarCampoAnimal(id, campo, valor) {
       const animal = DB.animais.find(a => a.id === id);
       if (!animal) return;
       animal[campo] = valor;
+      if (animal.area === 'corte') {
+        animal.consumoEstimado = getConsumoTotalAnimal(animal);
+      }
       await salvarDB();
       renderRebanho();
       renderSanitarioCorte();
       renderNutricaoCorte();
       renderManejoCorte();
+      renderDespesasCorte();
+      renderVendidosCorte();
+      renderListaProdutosCorte();
+    }
+
+
+    function escapeHtml(valor) {
+      return String(valor ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function escapeAttr(valor) {
+      return escapeHtml(valor);
+    }
+
+    
+    function getEntregasCorte() {
+      return Array.isArray(DB.entregasCorte) ? DB.entregasCorte : [];
+    }
+
+    function formatarTipoProdutoCorte(tipo) {
+      const mapa = { milho: 'Milho', silagem: 'Silagem', racao: 'Ração' };
+      return mapa[tipo] || tipo;
+    }
+
+    function renderListaProdutosCorte() {
+      const datalist = document.getElementById('produtos-corte-lista');
+      if (!datalist) return;
+      datalist.innerHTML = ['Milho','Silagem','Ração'].map(nome => `<option value="${escapeAttr(nome)}"></option>`).join('');
+    }
+
+    function normalizarTipoProduto(tipo) {
+      const t = String(tipo || '').trim().toLowerCase();
+      if (t === 'ração' || t === 'racao') return 'racao';
+      if (t === 'silagem' || t === 'silo') return 'silagem';
+      if (t === 'milho') return 'milho';
+      return t;
+    }
+
+    function getEntregasPorTipo(tipo) {
+      const alvo = normalizarTipoProduto(tipo);
+      return getEntregasCorte().filter(e => normalizarTipoProduto(e.tipo || e.produto) === alvo);
+    }
+
+    function getTotalKgProduto(tipo) {
+      return getEntregasPorTipo(tipo).reduce((sum, e) => sum + (parseFloat(e.totalKg) || 0), 0);
+    }
+
+    function getCustoTotalProduto(tipo) {
+      return getEntregasPorTipo(tipo).reduce((sum, e) => sum + (parseFloat(e.precoTotal) || 0), 0);
+    }
+
+    function getCustoMedioProdutoKg(tipo) {
+      const kg = getTotalKgProduto(tipo);
+      if (!kg) return 0;
+      return getCustoTotalProduto(tipo) / kg;
+    }
+
+    function getConsumoDiarioPorTipo(tipo) {
+      const campoMap = {
+        milho: 'consumoMilho',
+        silagem: 'consumoSilagem',
+        racao: 'consumoRacao'
+      };
+      const campo = campoMap[normalizarTipoProduto(tipo)];
+      if (!campo) return 0;
+      return getAnimaisDaArea('corte').reduce((sum, a) => sum + (parseFloat(a[campo]) || 0), 0);
+    }
+
+    function getConsumoTotalAnimal(a) {
+      const milho = parseFloat(a?.consumoMilho) || 0;
+      const silagem = parseFloat(a?.consumoSilagem) || 0;
+      const racao = parseFloat(a?.consumoRacao) || 0;
+      return milho + silagem + racao;
+    }
+
+    function obterCustosDiariosAnimal(animal) {
+      const milhoKg = parseFloat(animal?.consumoMilho) || 0;
+      const silagemKg = parseFloat(animal?.consumoSilagem) || 0;
+      const racaoKg = parseFloat(animal?.consumoRacao) || 0;
+      const custoMilhoKg = getCustoMedioProdutoKg('milho');
+      const custoSilagemKg = getCustoMedioProdutoKg('silagem');
+      const custoRacaoKg = getCustoMedioProdutoKg('racao');
+      const custoMilhoDia = milhoKg * custoMilhoKg;
+      const custoSilagemDia = silagemKg * custoSilagemKg;
+      const custoRacaoDia = racaoKg * custoRacaoKg;
+      return {
+        milhoKg,
+        silagemKg,
+        racaoKg,
+        custoMilhoKg,
+        custoSilagemKg,
+        custoRacaoKg,
+        custoMilhoDia,
+        custoSilagemDia,
+        custoRacaoDia,
+        totalKgDia: milhoKg + silagemKg + racaoKg,
+        totalReaisDia: custoMilhoDia + custoSilagemDia + custoRacaoDia
+      };
+    }
+
+    function formatCurrencyBR(v) {
+      const n = parseFloat(v) || 0;
+      return n.toFixed(2).replace('.', ',');
+    }
+
+    function diasEntreDatas(inicioISO, fimISO) {
+      const inicio = new Date((inicioISO || '').slice(0,10) + 'T12:00:00');
+      const fim = new Date((fimISO || '').slice(0,10) + 'T12:00:00');
+      if (isNaN(inicio.getTime()) || isNaN(fim.getTime())) return 0;
+      const diff = Math.round((fim - inicio) / 86400000);
+      return Math.max(0, diff);
+    }
+
+    function montarResumoVenda(animal, precoVenda, dataVenda) {
+      const inicio = animal.dataEntradaConfinamento || animal.dataCadastro || dataVenda;
+      const diasConfinado = diasEntreDatas(inicio, dataVenda);
+      const custosDia = obterCustosDiariosAnimal(animal);
+      const milhoConsumido = custosDia.milhoKg * diasConfinado;
+      const silagemConsumida = custosDia.silagemKg * diasConfinado;
+      const racaoConsumida = custosDia.racaoKg * diasConfinado;
+      const custoMilho = milhoConsumido * custosDia.custoMilhoKg;
+      const custoSilagem = silagemConsumida * custosDia.custoSilagemKg;
+      const custoRacao = racaoConsumida * custosDia.custoRacaoKg;
+      const custoAlimentar = custoMilho + custoSilagem + custoRacao;
+      const pesoFinal = parseFloat(animal.pesoEstimado) || 0;
+      return {
+        diasConfinado,
+        pesoFinal,
+        precoVenda: parseFloat(precoVenda) || 0,
+        milhoConsumido,
+        silagemConsumida,
+        racaoConsumida,
+        custoMilho,
+        custoSilagem,
+        custoRacao,
+        kilosConsumidos: milhoConsumido + silagemConsumida + racaoConsumida,
+        custoAlimentar,
+        resultadoBruto: (parseFloat(precoVenda) || 0) - custoAlimentar,
+        dataVendaFmt: dataVenda ? new Date(dataVenda + 'T12:00:00').toLocaleDateString('pt-BR') : '—',
+        pesoFinalFmt: pesoFinal.toFixed(1).replace('.', ','),
+        milhoConsumidoFmt: milhoConsumido.toFixed(1).replace('.', ','),
+        silagemConsumidaFmt: silagemConsumida.toFixed(1).replace('.', ','),
+        racaoConsumidaFmt: racaoConsumida.toFixed(1).replace('.', ','),
+        kilosConsumidosFmt: (milhoConsumido + silagemConsumida + racaoConsumida).toFixed(1).replace('.', ','),
+        custoMilhoFmt: formatCurrencyBR(custoMilho),
+        custoSilagemFmt: formatCurrencyBR(custoSilagem),
+        custoRacaoFmt: formatCurrencyBR(custoRacao),
+        custoAlimentarFmt: formatCurrencyBR(custoAlimentar),
+        precoVendaFmt: formatCurrencyBR(precoVenda),
+        resultadoBrutoFmt: formatCurrencyBR((parseFloat(precoVenda) || 0) - custoAlimentar)
+      };
+    }
+
+    
+    function toggleCompraFields(tipo) {
+      if (tipo === 'milho') {
+        const formato = document.getElementById('dc-milho-formato')?.value || 'saco';
+        document.getElementById('dc-milho-saco-row')?.classList.toggle('hidden', formato !== 'saco');
+        document.getElementById('dc-milho-price-row')?.classList.toggle('hidden', formato !== 'saco');
+        document.getElementById('dc-milho-ton-row')?.classList.toggle('hidden', formato !== 'tonelada');
+      }
+    }
+
+    function calcCompraProduto(tipo) {
+      if (tipo === 'milho') {
+        const formato = document.getElementById('dc-milho-formato')?.value || 'saco';
+        const totalEl = document.getElementById('dc-milho-total');
+        if (!totalEl) return;
+        let totalKg = 0;
+        let precoTotal = 0;
+        if (formato === 'saco') {
+          const kgSaco = parseFloat(document.getElementById('dc-milho-saco-kg')?.value) || 0;
+          const sacos = parseFloat(document.getElementById('dc-milho-sacos')?.value) || 0;
+          const precoSaco = parseFloat(document.getElementById('dc-milho-preco-saco')?.value) || 0;
+          totalKg = kgSaco * sacos;
+          precoTotal = sacos * precoSaco;
+          totalEl.textContent = totalKg > 0 ? `${totalKg.toFixed(1).replace('.', ',')} kg · R$ ${formatCurrencyBR(precoTotal)} no total` : '—';
+        } else {
+          const ton = parseFloat(document.getElementById('dc-milho-ton')?.value) || 0;
+          const precoTon = parseFloat(document.getElementById('dc-milho-preco-ton')?.value) || 0;
+          totalKg = ton * 1000;
+          precoTotal = ton * precoTon;
+          totalEl.textContent = totalKg > 0 ? `${totalKg.toFixed(1).replace('.', ',')} kg · R$ ${formatCurrencyBR(precoTotal)} no total` : '—';
+        }
+        return;
+      }
+
+      if (tipo === 'silagem') {
+        const ton = parseFloat(document.getElementById('dc-silagem-ton')?.value) || 0;
+        const precoTon = parseFloat(document.getElementById('dc-silagem-preco-ton')?.value) || 0;
+        const totalKg = ton * 1000;
+        const precoTotal = ton * precoTon;
+        const totalEl = document.getElementById('dc-silagem-total');
+        if (totalEl) totalEl.textContent = totalKg > 0 ? `${totalKg.toFixed(1).replace('.', ',')} kg · R$ ${formatCurrencyBR(precoTotal)} no total` : '—';
+        return;
+      }
+
+      if (tipo === 'racao') {
+        const kgSaco = parseFloat(document.getElementById('dc-racao-saco-kg')?.value) || 0;
+        const sacos = parseFloat(document.getElementById('dc-racao-sacos')?.value) || 0;
+        const precoSaco = parseFloat(document.getElementById('dc-racao-preco-saco')?.value) || 0;
+        const totalKg = kgSaco * sacos;
+        const precoTotal = sacos * precoSaco;
+        const totalEl = document.getElementById('dc-racao-total');
+        if (totalEl) totalEl.textContent = totalKg > 0 ? `${totalKg.toFixed(1).replace('.', ',')} kg · R$ ${formatCurrencyBR(precoTotal)} no total` : '—';
+      }
+    }
+
+    async function salvarCompraProduto(tipo) {
+      if (!Array.isArray(DB.entregasCorte)) DB.entregasCorte = [];
+
+      let registro = null;
+
+      if (tipo === 'milho') {
+        const data = document.getElementById('dc-milho-data')?.value || '';
+        const formato = document.getElementById('dc-milho-formato')?.value || 'saco';
+        if (!data) return alert('Informe a data da entrega do milho.');
+
+        if (formato === 'saco') {
+          const kgSaco = parseFloat(document.getElementById('dc-milho-saco-kg')?.value) || 0;
+          const sacos = parseFloat(document.getElementById('dc-milho-sacos')?.value) || 0;
+          const precoSaco = parseFloat(document.getElementById('dc-milho-preco-saco')?.value) || 0;
+          if (sacos <= 0) return alert('Informe a quantidade de sacos de milho.');
+          if (precoSaco <= 0) return alert('Informe o preço por saco do milho.');
+          registro = {
+            id: Date.now().toString(),
+            data,
+            tipo: 'milho',
+            produto: 'Milho',
+            formato,
+            kgPorSaco: kgSaco,
+            quantidade: sacos,
+            totalKg: kgSaco * sacos,
+            precoUnitario: precoSaco,
+            precoTotal: sacos * precoSaco
+          };
+        } else {
+          const ton = parseFloat(document.getElementById('dc-milho-ton')?.value) || 0;
+          const precoTon = parseFloat(document.getElementById('dc-milho-preco-ton')?.value) || 0;
+          if (ton <= 0) return alert('Informe as toneladas de milho.');
+          if (precoTon <= 0) return alert('Informe o preço por tonelada do milho.');
+          registro = {
+            id: Date.now().toString(),
+            data,
+            tipo: 'milho',
+            produto: 'Milho',
+            formato,
+            quantidade: ton,
+            totalKg: ton * 1000,
+            precoUnitario: precoTon,
+            precoTotal: ton * precoTon
+          };
+        }
+
+        DB.entregasCorte.push(registro);
+        await salvarDB();
+        ['dc-milho-data','dc-milho-sacos','dc-milho-preco-saco','dc-milho-ton','dc-milho-preco-ton'].forEach(id => {
+          const el = document.getElementById(id); if (el) el.value = '';
+        });
+        document.getElementById('dc-milho-formato').value = 'saco';
+        document.getElementById('dc-milho-saco-kg').value = '40';
+        toggleCompraFields('milho');
+        calcCompraProduto('milho');
+      }
+
+      if (tipo === 'silagem') {
+        const data = document.getElementById('dc-silagem-data')?.value || '';
+        const ton = parseFloat(document.getElementById('dc-silagem-ton')?.value) || 0;
+        const precoTon = parseFloat(document.getElementById('dc-silagem-preco-ton')?.value) || 0;
+        if (!data) return alert('Informe a data da entrega da silagem.');
+        if (ton <= 0) return alert('Informe as toneladas de silagem.');
+        if (precoTon <= 0) return alert('Informe o preço por tonelada da silagem.');
+        DB.entregasCorte.push({
+          id: Date.now().toString(),
+          data,
+          tipo: 'silagem',
+          produto: 'Silagem',
+          formato: 'tonelada',
+          quantidade: ton,
+          totalKg: ton * 1000,
+          precoUnitario: precoTon,
+          precoTotal: ton * precoTon
+        });
+        await salvarDB();
+        ['dc-silagem-data','dc-silagem-ton','dc-silagem-preco-ton'].forEach(id => {
+          const el = document.getElementById(id); if (el) el.value = '';
+        });
+        calcCompraProduto('silagem');
+      }
+
+      if (tipo === 'racao') {
+        const data = document.getElementById('dc-racao-data')?.value || '';
+        const kgSaco = parseFloat(document.getElementById('dc-racao-saco-kg')?.value) || 0;
+        const sacos = parseFloat(document.getElementById('dc-racao-sacos')?.value) || 0;
+        const precoSaco = parseFloat(document.getElementById('dc-racao-preco-saco')?.value) || 0;
+        if (!data) return alert('Informe a data da entrega da ração.');
+        if (sacos <= 0) return alert('Informe a quantidade de sacos da ração.');
+        if (precoSaco <= 0) return alert('Informe o preço por saco da ração.');
+        DB.entregasCorte.push({
+          id: Date.now().toString(),
+          data,
+          tipo: 'racao',
+          produto: 'Ração',
+          formato: 'saco',
+          kgPorSaco: kgSaco,
+          quantidade: sacos,
+          totalKg: kgSaco * sacos,
+          precoUnitario: precoSaco,
+          precoTotal: sacos * precoSaco
+        });
+        await salvarDB();
+        ['dc-racao-data','dc-racao-sacos','dc-racao-preco-saco'].forEach(id => {
+          const el = document.getElementById(id); if (el) el.value = '';
+        });
+        document.getElementById('dc-racao-saco-kg').value = '40';
+        calcCompraProduto('racao');
+      }
+
+      renderDespesasCorte();
+      renderNutricaoCorte();
+      renderVendidosCorte();
+      renderListaProdutosCorte();
+    }
+
+    function renderDespesasCorte() {
+      const painel = document.getElementById('painel-estoque-corte');
+      const historico = document.getElementById('historico-corte');
+      const painelAnimal = document.getElementById('painel-custo-animal-corte');
+      const painelGeral = document.getElementById('painel-total-geral-corte');
+      const painelMensal = document.getElementById('painel-total-mensal-corte');
+      if (!painel || !historico || !painelAnimal || !painelGeral || !painelMensal) return;
+
+      const tipos = ['milho', 'silagem', 'racao'];
+
+      painel.innerHTML = tipos.map(tipo => {
+        const estoqueKg = getTotalKgProduto(tipo);
+        const consumoDia = getConsumoDiarioPorTipo(tipo);
+        const diasRestantes = consumoDia > 0 ? Math.floor(estoqueKg / consumoDia) : null;
+        const custoKg = getCustoMedioProdutoKg(tipo);
+        return `
+          <div class="delivery-item">
+            <h4>${formatarTipoProdutoCorte(tipo)}</h4>
+            <p>Estoque atual: <strong>${estoqueKg.toFixed(1).replace('.', ',')} kg</strong></p>
+            <p>Consumo diário estimado: <strong>${consumoDia.toFixed(1).replace('.', ',')} kg/dia</strong></p>
+            <p>Custo médio: <strong>R$ ${formatCurrencyBR(custoKg)}/kg</strong></p>
+            <p>Dias restantes estimados: <strong>${diasRestantes === null ? '—' : diasRestantes}</strong></p>
+          </div>
+        `;
+      }).join('');
+
+      const animais = getAnimaisDaArea('corte');
+      if (!animais.length) {
+        painelAnimal.innerHTML = `<div class="empty-state"><div class="empty-icon">🐂</div>Nenhum animal cadastrado na área de corte/engorda ainda.</div>`;
+      } else {
+        painelAnimal.innerHTML = animais.map(a => {
+          const c = obterCustosDiariosAnimal(a);
+          return `
+            <div class="delivery-item">
+              <h4>${escapeHtml(a.nome)}</h4>
+              <p>Sistema alimentar: <strong>${escapeHtml(a.sistemaAlimentar || 'Não informado')}</strong></p>
+              <p>Milho: <strong>${c.milhoKg.toFixed(1).replace('.', ',')} kg/dia</strong> · R$ ${formatCurrencyBR(c.custoMilhoDia)}/dia</p>
+              <p>Silagem: <strong>${c.silagemKg.toFixed(1).replace('.', ',')} kg/dia</strong> · R$ ${formatCurrencyBR(c.custoSilagemDia)}/dia</p>
+              <p>Ração: <strong>${c.racaoKg.toFixed(1).replace('.', ',')} kg/dia</strong> · R$ ${formatCurrencyBR(c.custoRacaoDia)}/dia</p>
+              <p>Total do animal: <strong>${c.totalKgDia.toFixed(1).replace('.', ',')} kg/dia</strong> · <strong>R$ ${formatCurrencyBR(c.totalReaisDia)}/dia</strong></p>
+            </div>
+          `;
+        }).join('');
+      }
+
+      const totalMilhoDia = getConsumoDiarioPorTipo('milho');
+      const totalSilagemDia = getConsumoDiarioPorTipo('silagem');
+      const totalRacaoDia = getConsumoDiarioPorTipo('racao');
+      const totalReaisDia = getAnimaisDaArea('corte').reduce((sum, a) => sum + obterCustosDiariosAnimal(a).totalReaisDia, 0);
+
+      painelGeral.innerHTML = `
+        <div class="delivery-item">
+          <h4>Resumo diário geral</h4>
+          <p>Milho total por dia: <strong>${totalMilhoDia.toFixed(1).replace('.', ',')} kg</strong></p>
+          <p>Silagem total por dia: <strong>${totalSilagemDia.toFixed(1).replace('.', ',')} kg</strong></p>
+          <p>Ração total por dia: <strong>${totalRacaoDia.toFixed(1).replace('.', ',')} kg</strong></p>
+          <p>Total geral em kg por dia: <strong>${(totalMilhoDia + totalSilagemDia + totalRacaoDia).toFixed(1).replace('.', ',')} kg</strong></p>
+          <p>Total geral em reais por dia: <strong>R$ ${formatCurrencyBR(totalReaisDia)}</strong></p>
+        </div>
+      `;
+
+      const totalMilhoMes = totalMilhoDia * 30;
+      const totalSilagemMes = totalSilagemDia * 30;
+      const totalRacaoMes = totalRacaoDia * 30;
+      const totalReaisMes = totalReaisDia * 30;
+
+      painelMensal.innerHTML = `
+        <div class="delivery-item">
+          <h4>Resumo mensal automático</h4>
+          <p>Milho total por mês: <strong>${totalMilhoMes.toFixed(1).replace('.', ',')} kg</strong></p>
+          <p>Silagem total por mês: <strong>${totalSilagemMes.toFixed(1).replace('.', ',')} kg</strong></p>
+          <p>Ração total por mês: <strong>${totalRacaoMes.toFixed(1).replace('.', ',')} kg</strong></p>
+          <p>Total geral em kg por mês: <strong>${(totalMilhoMes + totalSilagemMes + totalRacaoMes).toFixed(1).replace('.', ',')} kg</strong></p>
+          <p>Gasto mensal automático: <strong>R$ ${formatCurrencyBR(totalReaisMes)}</strong></p>
+          <p style="margin-top:6px; color: var(--muted); font-size:12px;">Cálculo automático com base em 30 dias usando o consumo diário atual de todos os animais da área de corte.</p>
+        </div>
+      `;
+
+      const entregas = getEntregasCorte().slice().sort((a,b) => new Date(b.data) - new Date(a.data));
+      if (!entregas.length) {
+        historico.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📦</div>
+            Nenhuma compra registrada ainda na área de corte.
+          </div>
+        `;
+      } else {
+        historico.innerHTML = entregas.map(e => `
+          <div class="delivery-item">
+            <h4>${new Date(e.data + 'T12:00:00').toLocaleDateString('pt-BR')} · ${escapeHtml(e.produto)}</h4>
+            <p>Formato: <strong>${escapeHtml(e.formato || '—')}</strong></p>
+            <p>Quantidade lançada: <strong>${(parseFloat(e.quantidade)||0).toFixed(2).replace('.', ',')}</strong>${e.formato === 'saco' ? ' saco(s)' : e.formato === 'tonelada' ? ' tonelada(s)' : ' kg'}</p>
+            <p>Total em kg: <strong>${(parseFloat(e.totalKg)||0).toFixed(1).replace('.', ',')} kg</strong></p>
+            <p>Compra: <strong>R$ ${formatCurrencyBR(e.precoTotal || 0)}</strong></p>
+            <p>Custo médio: <strong>R$ ${formatCurrencyBR((parseFloat(e.precoTotal)||0) / Math.max(parseFloat(e.totalKg)||1,1))}/kg</strong></p>
+          </div>
+        `).join('');
+      }
+      renderListaProdutosCorte();
     }
 
     function renderSanitarioCorte() {
@@ -2235,6 +2984,7 @@ auth.onAuthStateChanged(async (user) => {
       `).join('');
     }
 
+    
     function renderNutricaoCorte() {
       const lista = document.getElementById('lista-nutricao-corte');
       if (!lista) return;
@@ -2250,12 +3000,14 @@ auth.onAuthStateChanged(async (user) => {
         return;
       }
 
-      lista.innerHTML = animais.map(a => `
+      lista.innerHTML = animais.map(a => {
+        const custos = obterCustosDiariosAnimal(a);
+        return `
         <div class="cut-card">
           <div class="cut-card-header">
             <div>
-              <div class="cut-card-title">${a.nome}</div>
-              <div class="cut-helper">${a.categoria || 'Não definido'}${a.sistemaAlimentar ? ' · ' + a.sistemaAlimentar : ''}</div>
+              <div class="cut-card-title">${escapeHtml(a.nome)}</div>
+              <div class="cut-helper">${escapeHtml(a.categoria || 'Não definido')}${a.sistemaAlimentar ? ' · ' + escapeHtml(a.sistemaAlimentar) : ''}</div>
             </div>
           </div>
           <div class="form-row">
@@ -2284,16 +3036,37 @@ auth.onAuthStateChanged(async (user) => {
               <input type="number" min="0" step="0.1" value="${a.pesoEstimado || ''}" onchange="atualizarCampoAnimal('${a.id}','pesoEstimado', parseFloat(this.value) || 0)" />
             </div>
             <div class="form-group">
-              <label>Consumo estimado (kg/dia)</label>
-              <input type="number" min="0" step="0.1" value="${a.consumoEstimado || ''}" onchange="atualizarCampoAnimal('${a.id}','consumoEstimado', parseFloat(this.value) || 0)" />
+              <label>Data de entrada no confinamento</label>
+              <input type="date" value="${(a.dataEntradaConfinamento || a.dataCadastro || '').slice(0,10)}" onchange="atualizarCampoAnimal('${a.id}','dataEntradaConfinamento', this.value)" />
             </div>
+          </div>
+          <div class="form-row-3">
+            <div class="form-group">
+              <label>Milho (kg/dia)</label>
+              <input type="number" min="0" step="0.1" value="${a.consumoMilho || ''}" onchange="atualizarCampoAnimal('${a.id}','consumoMilho', parseFloat(this.value) || 0)" />
+            </div>
+            <div class="form-group">
+              <label>Silagem (kg/dia)</label>
+              <input type="number" min="0" step="0.1" value="${a.consumoSilagem || ''}" onchange="atualizarCampoAnimal('${a.id}','consumoSilagem', parseFloat(this.value) || 0)" />
+            </div>
+            <div class="form-group">
+              <label>Ração (kg/dia)</label>
+              <input type="number" min="0" step="0.1" value="${a.consumoRacao || ''}" onchange="atualizarCampoAnimal('${a.id}','consumoRacao', parseFloat(this.value) || 0)" />
+            </div>
+          </div>
+          <div class="info-box" style="margin-bottom:10px;">
+            Total diário do animal: <strong>${custos.totalKgDia.toFixed(1).replace('.', ',')} kg/dia</strong><br />
+            Gasto diário com milho: <strong>R$ ${formatCurrencyBR(custos.custoMilhoDia)}</strong><br />
+            Gasto diário com silagem: <strong>R$ ${formatCurrencyBR(custos.custoSilagemDia)}</strong><br />
+            Gasto diário com ração: <strong>R$ ${formatCurrencyBR(custos.custoRacaoDia)}</strong><br />
+            Gasto diário total: <strong>R$ ${formatCurrencyBR(custos.totalReaisDia)}</strong>
           </div>
           <div class="form-group">
             <label>Observação nutricional</label>
-            <textarea onchange="atualizarCampoAnimal('${a.id}','obsNutricao', this.value)" placeholder="Ex: suplementação, adaptação, cocho, ganho de peso...">${a.obsNutricao || ''}</textarea>
+            <textarea onchange="atualizarCampoAnimal('${a.id}','obsNutricao', this.value)" placeholder="Ex: adaptação de dieta, cocho, escore, consumo, mistura...">${a.obsNutricao || ''}</textarea>
           </div>
-        </div>
-      `).join('');
+        </div>`;
+      }).join('');
     }
 
     function renderManejoCorte() {
@@ -2409,6 +3182,7 @@ auth.onAuthStateChanged(async (user) => {
             ` : ''}
 
             <div class="animal-actions">
+              <button class="btn btn-outline btn-sm" onclick="abrirEdicaoAnimal('${a.id}')">Editar</button>
               <button class="btn btn-outline btn-sm" onclick="editarAnotacaoRapida('${a.id}', '${a.nome.replace(/'/g, "\\'")}')">📝 Anotar</button>
               <button class="btn btn-outline btn-sm" onclick="abrirExcluir('${a.id}', '${a.nome.replace(/'/g, "\\'")}')">Excluir</button>
             </div>
@@ -2436,22 +3210,65 @@ auth.onAuthStateChanged(async (user) => {
 
     async function confirmarExclusao(motivo) {
       const idx = DB.animais.findIndex(a => a.id === animalParaExcluir);
-      if (idx >= 0) {
-        const animal = DB.animais.splice(idx, 1)[0];
-        animal.motivoArquivo = motivo;
-        animal.dataArquivo = new Date().toISOString();
-        DB.arquivados.push(animal);
+      if (idx < 0) return;
 
-        delete DB.producao[animal.id];
-        await salvarDB();
+      const animal = DB.animais[idx];
+      if ((animal.area || 'leiteiro') === 'corte' && motivo === 'vendido') {
+        document.getElementById('venda-preco').value = animal.precoVenda || '';
+        document.getElementById('venda-data').value = new Date().toISOString().slice(0, 10);
+        document.getElementById('venda-obs').value = '';
+        fecharModal('modal-excluir');
+        document.getElementById('modal-venda').classList.add('open');
+        return;
       }
+
+      const removido = DB.animais.splice(idx, 1)[0];
+      removido.motivoArquivo = motivo;
+      removido.dataArquivo = new Date().toISOString();
+      DB.arquivados.push(removido);
+
+      delete DB.producao[removido.id];
+      await salvarDB();
 
       fecharModal('modal-excluir');
       renderTudo();
     }
 
+    async function confirmarVendaAnimal() {
+      const precoVenda = parseFloat(document.getElementById('venda-preco').value) || 0;
+      const dataVenda = document.getElementById('venda-data').value;
+      const obsVenda = document.getElementById('venda-obs').value.trim();
+
+      if (!precoVenda || precoVenda <= 0) return alert('Informe o preço de venda.');
+      if (!dataVenda) return alert('Informe a data da venda.');
+
+      const idx = DB.animais.findIndex(a => a.id === animalParaExcluir);
+      if (idx < 0) return;
+
+      const animal = DB.animais.splice(idx, 1)[0];
+      const resumoVenda = montarResumoVenda(animal, precoVenda, dataVenda);
+
+      animal.motivoArquivo = 'vendido';
+      animal.dataArquivo = new Date().toISOString();
+      animal.precoVenda = precoVenda;
+      animal.dataVenda = dataVenda;
+      animal.obsVenda = obsVenda;
+      animal.resumoVenda = resumoVenda;
+      DB.arquivados.push(animal);
+
+      await salvarDB();
+      fecharModal('modal-venda');
+      renderTudo();
+      showPage('vendidos-corte');
+    }
+
     function fecharModal(id) {
       document.getElementById(id).classList.remove('open');
+      if (id === 'modal-venda') {
+        document.getElementById('venda-preco').value = '';
+        document.getElementById('venda-data').value = '';
+        document.getElementById('venda-obs').value = '';
+      }
     }
 
     function renderProducao() {
@@ -2774,7 +3591,8 @@ auth.onAuthStateChanged(async (user) => {
 
     function renderArquivados() {
       const lista = document.getElementById('lista-arquivados');
-      const arquivadosDaArea = getArquivadosDaArea();
+      const area = obterAreaAtual() || 'leiteiro';
+      const arquivadosDaArea = getArquivadosDaArea(area).filter(a => area === 'corte' ? a.motivoArquivo !== 'vendido' : true);
 
       if (!arquivadosDaArea.length) {
         lista.innerHTML = `
@@ -2810,6 +3628,53 @@ auth.onAuthStateChanged(async (user) => {
             </div>
           </div>
         `).join('');
+    }
+
+    function renderVendidosCorte() {
+      const lista = document.getElementById('lista-vendidos-corte');
+      if (!lista) return;
+      const vendidos = getArquivadosDaArea('corte').filter(a => a.motivoArquivo === 'vendido');
+
+      if (!vendidos.length) {
+        lista.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">💰</div>
+            Nenhum animal vendido registrado ainda.
+          </div>
+        `;
+        return;
+      }
+
+      lista.innerHTML = vendidos
+        .slice()
+        .sort((a, b) => new Date(b.dataVenda || b.dataArquivo || 0) - new Date(a.dataVenda || a.dataArquivo || 0))
+        .map(a => {
+          const r = a.resumoVenda || montarResumoVenda(a, a.precoVenda || 0, a.dataVenda || new Date().toISOString().slice(0,10));
+          return `
+          <div class="animal-item">
+            ${a.foto ? `<img class="animal-photo" src="${a.foto}" alt="Foto de ${a.nome}" />` : `<div class="animal-avatar">${emojiAnimal(a.categoria)}</div>`}
+            <div class="animal-body">
+              <div class="animal-name">${a.nome}${a.brinco ? `<span style="font-size:11px;color:var(--muted);font-weight:400;">· Brinco ${a.brinco}</span>` : ''}</div>
+              <div class="tag-wrap">
+                <span class="tag ${tagClass(a.categoria)}">${a.categoria || 'Não definido'}</span>
+                <span class="tag" style="background:#111111;color:#ffffff;">💰 Vendido</span>
+              </div>
+              <div class="animal-obs">Venda em: ${r.dataVendaFmt} · Preço: <strong>R$ ${r.precoVendaFmt}</strong></div>
+              <div class="rec-grid" style="margin-top:10px;">
+                <div class="rec-box"><h5>⚖ Peso final</h5><p>${r.pesoFinalFmt} kg</p></div>
+                <div class="rec-box"><h5>⏱ Tempo até venda</h5><p>${r.diasConfinado} dia(s)</p></div>
+                <div class="rec-box"><h5>🌽 Milho gasto</h5><p>${r.milhoConsumidoFmt} kg · R$ ${r.custoMilhoFmt}</p></div>
+                <div class="rec-box"><h5>🌾 Silagem gasta</h5><p>${r.silagemConsumidaFmt} kg · R$ ${r.custoSilagemFmt}</p></div>
+                <div class="rec-box"><h5>🥣 Ração gasta</h5><p>${r.racaoConsumidaFmt} kg · R$ ${r.custoRacaoFmt}</p></div>
+                <div class="rec-box"><h5>🌾 Consumo total</h5><p>${r.kilosConsumidosFmt} kg</p></div>
+                <div class="rec-box"><h5>💸 Custo alimentar</h5><p>R$ ${r.custoAlimentarFmt}</p></div>
+                <div class="rec-box"><h5>📈 Resultado bruto</h5><p>R$ ${r.resultadoBrutoFmt}</p></div>
+                <div class="rec-box"><h5>🧾 Sistema alimentar</h5><p>${escapeHtml(a.sistemaAlimentar || 'Não informado')}</p></div>
+              </div>
+              ${a.obsVenda ? `<div class="animal-obs" style="margin-top:8px;">Obs. da venda: ${escapeHtml(a.obsVenda)}</div>` : ''}
+            </div>
+          </div>`;
+        }).join('');
     }
 
     function openBackupModal() {
@@ -2866,4 +3731,3 @@ auth.onAuthStateChanged(async (user) => {
   </script>
 </body>
 </html>
-
