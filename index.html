@@ -848,6 +848,37 @@
       color: #ffffff;
     }
 
+
+    .cut-card {
+      background: #000000;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+
+    .cut-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .cut-card-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .cut-helper {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 4px;
+      line-height: 1.5;
+    }
+
     @media (max-width: 760px) {
       .form-row,
       .form-row-3,
@@ -909,13 +940,16 @@
       </div>
 
       <div class="nav-tabs">
-        <div class="nav-tab active" onclick="showPage('inicio')">Início</div>
-        <div class="nav-tab" onclick="showPage('rebanho')">Meu Rebanho</div>
-        <div class="nav-tab" data-area="leiteiro" onclick="showPage('producao')">Produção</div>
-        <div class="nav-tab" data-area="leiteiro" onclick="showPage('despesas')">Despesas</div>
-        <div class="nav-tab" onclick="showPage('veterinario')">Veterinário</div>
-        <div class="nav-tab" data-area="leiteiro" onclick="showPage('calendario')">Calendário</div>
-        <div class="nav-tab" onclick="showPage('arquivados')">Arquivados</div>
+        <div class="nav-tab active" data-page="inicio" onclick="showPage('inicio')">Início</div>
+        <div class="nav-tab" data-page="rebanho" onclick="showPage('rebanho')">Meu Rebanho</div>
+        <div class="nav-tab" data-page="producao" data-area="leiteiro" onclick="showPage('producao')">Produção</div>
+        <div class="nav-tab" data-page="despesas" data-area="leiteiro" onclick="showPage('despesas')">Despesas</div>
+        <div class="nav-tab hidden" data-page="sanitario-corte" data-area="corte" onclick="showPage('sanitario-corte')">Sanitário</div>
+        <div class="nav-tab hidden" data-page="nutricao-corte" data-area="corte" onclick="showPage('nutricao-corte')">Nutrição</div>
+        <div class="nav-tab hidden" data-page="manejo-corte" data-area="corte" onclick="showPage('manejo-corte')">Manejo</div>
+        <div class="nav-tab" data-page="veterinario" onclick="showPage('veterinario')">Veterinário</div>
+        <div class="nav-tab" data-page="calendario" data-area="leiteiro" onclick="showPage('calendario')">Calendário</div>
+        <div class="nav-tab" data-page="arquivados" onclick="showPage('arquivados')">Arquivados</div>
       </div>
     </nav>
 
@@ -934,7 +968,7 @@
           <div class="area-card" id="area-card-corte" onclick="selecionarArea('corte')">
             <div class="area-badge">🐂 Área de corte</div>
             <h3>Gado de Corte / Engorda</h3>
-            <p>Entre no modo corte para organizar o rebanho dessa área desde agora, sem misturar com a rotina leiteira. As funções específicas vão entrar nas próximas etapas.</p>
+            <p>Entre no modo corte para organizar o rebanho dessa área desde agora, sem misturar com a rotina leiteira. As funções específicas já incluem abas iniciais de sanitário, nutrição e manejo.</p>
           </div>
         </div>
 
@@ -957,7 +991,7 @@
           <p style="margin-bottom:8px;"><strong>1.</strong> Escolha a área principal em <strong>Gado Leiteiro</strong> ou <strong>Gado de Corte / Engorda</strong>.</p>
           <p style="margin-bottom:8px;"><strong>2.</strong> Vá em <strong>Meu Rebanho</strong> e cadastre seus animais com nome, brinco, sexo e idade em meses.</p>
           <p style="margin-bottom:8px;"><strong>3.</strong> No modo leiteiro, use <strong>Produção</strong>, <strong>Despesas</strong> e <strong>Calendário</strong> normalmente.</p>
-          <p style="margin-bottom:8px;"><strong>4.</strong> No modo corte, a base do rebanho já fica separada visualmente e as funções específicas entrarão nas próximas etapas.</p>
+          <p style="margin-bottom:8px;"><strong>4.</strong> No modo corte, o rebanho fica separado e você já pode usar as abas de sanitário, nutrição e manejo.</p>
           <p><strong>5.</strong> Seus dados ficam salvos no navegador e também na nuvem do usuário logado.</p>
         </div>
       </div>
@@ -1114,6 +1148,31 @@
 
       <div class="section-title">Lista do Rebanho (<span id="count-rebanho">0</span>)</div>
       <div id="lista-rebanho"></div>
+    </div>
+
+
+    <div id="page-sanitario-corte" class="page">
+      <div class="card">
+        <div class="section-title">🧴 Sanitário do Corte / Engorda</div>
+        <p class="muted" style="margin-bottom:14px;">Registre vacinação, vermifugação, controle de carrapato e observações sanitárias por animal.</p>
+        <div id="lista-sanitario-corte"></div>
+      </div>
+    </div>
+
+    <div id="page-nutricao-corte" class="page">
+      <div class="card">
+        <div class="section-title">🌾 Nutrição do Corte / Engorda</div>
+        <p class="muted" style="margin-bottom:14px;">Organize fase, sistema alimentar, peso estimado, consumo e observações nutricionais por animal.</p>
+        <div id="lista-nutricao-corte"></div>
+      </div>
+    </div>
+
+    <div id="page-manejo-corte" class="page">
+      <div class="card">
+        <div class="section-title">📋 Manejo do Corte / Engorda</div>
+        <p class="muted" style="margin-bottom:14px;">Faça anotações de lote, objetivo, manejo diário e observações práticas para cada animal.</p>
+        <div id="lista-manejo-corte"></div>
+      </div>
     </div>
 
     <div id="page-producao" class="page">
@@ -1588,8 +1647,15 @@ async function fazerLogin() {
         vacinaData: a?.vacinaData || '',
         vermifugoData: a?.vermifugoData || '',
         carrapatoData: a?.carrapatoData || '',
-        anotacaoRapida: a?.anotacaoRapida || ''
+        anotacaoRapida: a?.anotacaoRapida || '',
+        consumoEstimado: typeof a?.consumoEstimado === 'number' ? a.consumoEstimado : (parseFloat(a?.consumoEstimado) || 0),
+        obsSanitaria: a?.obsSanitaria || '',
+        obsNutricao: a?.obsNutricao || '',
+        loteCorte: a?.loteCorte || '',
+        objetivoCorte: a?.objetivoCorte || '',
+        obsManejo: a?.obsManejo || ''
       };
+    };
     }
 
     function getAnimaisDaArea(area = obterAreaAtual()) {
@@ -1728,9 +1794,11 @@ async function fazerLogin() {
       if (area === 'corte') {
         return [
           { icon: '🐂', label: 'Meu Rebanho', desc: 'Cadastre e acompanhe os animais da área de corte.', action: "showPage('rebanho')" },
+          { icon: '🧴', label: 'Sanitário', desc: 'Vacinação, vermífugo, carrapato e observações por animal.', action: "showPage('sanitario-corte')" },
+          { icon: '🌾', label: 'Nutrição', desc: 'Fase, sistema alimentar, peso e consumo estimado.', action: "showPage('nutricao-corte')" },
+          { icon: '📋', label: 'Manejo', desc: 'Lote, objetivo e anotações práticas do dia a dia.', action: "showPage('manejo-corte')" },
           { icon: '🩺', label: 'Veterinário', desc: 'Consulte orientações práticas quando precisar.', action: "showPage('veterinario')" },
-          { icon: '🗂', label: 'Arquivados', desc: 'Veja animais vendidos ou que faleceram.', action: "showPage('arquivados')" },
-          { icon: '☁️', label: 'Backup', desc: 'Exporte ou importe seu banco do app quando quiser.', action: "openBackupModal()" }
+          { icon: '🗂', label: 'Arquivados', desc: 'Veja animais vendidos ou que faleceram.', action: "showPage('arquivados')" }
         ];
       }
 
@@ -1786,7 +1854,7 @@ async function fazerLogin() {
             <p style="margin-bottom:8px;"><strong>1.</strong> Escolha a área principal em <strong>Gado Leiteiro</strong> ou <strong>Gado de Corte / Engorda</strong>.</p>
             <p style="margin-bottom:8px;"><strong>2.</strong> Vá em <strong>Meu Rebanho</strong> e cadastre seus animais com nome, brinco, sexo e idade em meses.</p>
             <p style="margin-bottom:8px;"><strong>3.</strong> No modo leiteiro, use <strong>Produção</strong>, <strong>Despesas</strong> e <strong>Calendário</strong> normalmente.</p>
-            <p style="margin-bottom:8px;"><strong>4.</strong> No modo corte, a base do rebanho já fica separada visualmente e as funções específicas entrarão nas próximas etapas.</p>
+            <p style="margin-bottom:8px;"><strong>4.</strong> No modo corte, o rebanho fica separado e você já pode usar as abas de sanitário, nutrição e manejo.</p>
             <p><strong>5.</strong> Seus dados ficam salvos no navegador e também na nuvem do usuário logado.</p>
           `;
         }
@@ -1806,10 +1874,27 @@ async function fazerLogin() {
     function aplicarAreaNaInterface() {
       const area = obterAreaAtual();
       const leiteiroAtivo = area !== 'corte';
+      const corteAtivo = area === 'corte';
 
       document.querySelectorAll('[data-area="leiteiro"]').forEach(el => {
         el.classList.toggle('hidden', !leiteiroAtivo);
       });
+
+      document.querySelectorAll('[data-area="corte"]').forEach(el => {
+        el.classList.toggle('hidden', !corteAtivo);
+      });
+
+      const gateProd = document.getElementById('gate-producao');
+      const gateDesp = document.getElementById('gate-despesas');
+      const gateCal = document.getElementById('gate-calendario');
+
+      if (gateProd) gateProd.classList.toggle('hidden', leiteiroAtivo);
+      if (gateDesp) gateDesp.classList.toggle('hidden', leiteiroAtivo);
+      if (gateCal) gateCal.classList.toggle('hidden', leiteiroAtivo);
+
+      atualizarHomeArea();
+      atualizarVisibilidadeCamposCadastro();
+    });
 
       const gateProd = document.getElementById('gate-producao');
       const gateDesp = document.getElementById('gate-despesas');
@@ -2003,6 +2088,27 @@ auth.onAuthStateChanged(async (user) => {
       const page = document.getElementById('page-' + id);
       if (page) page.classList.add('active');
 
+      const tab = document.querySelector(`.nav-tab[data-page="${id}"]`);
+      if (tab && !tab.classList.contains('hidden')) tab.classList.add('active');
+
+      if (id === 'inicio') atualizarHomeArea();
+      if (id === 'rebanho') renderRebanho();
+      if (id === 'producao') renderProducao();
+      if (id === 'despesas') renderDespesas();
+      if (id === 'sanitario-corte') renderSanitarioCorte();
+      if (id === 'nutricao-corte') renderNutricaoCorte();
+      if (id === 'manejo-corte') renderManejoCorte();
+      if (id === 'veterinario') renderVet();
+      if (id === 'calendario') renderCalendario();
+      if (id === 'arquivados') renderArquivados();
+    }
+
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+
+      const page = document.getElementById('page-' + id);
+      if (page) page.classList.add('active');
+
       const abas = Array.from(document.querySelectorAll('.nav-tab:not(.hidden)'));
       const tab = abas.find(t => t.textContent.trim().toLowerCase() === ({
         inicio: 'início',
@@ -2029,6 +2135,9 @@ auth.onAuthStateChanged(async (user) => {
       renderRebanho();
       renderProducao();
       renderDespesas();
+      renderSanitarioCorte();
+      renderNutricaoCorte();
+      renderManejoCorte();
       renderVet();
       renderCalendario();
       renderArquivados();
@@ -2173,6 +2282,171 @@ auth.onAuthStateChanged(async (user) => {
 
       renderTudo();
       showPage('rebanho');
+    }
+
+
+    async function atualizarCampoAnimal(id, campo, valor) {
+      const animal = DB.animais.find(a => a.id === id);
+      if (!animal) return;
+      animal[campo] = valor;
+      await salvarDB();
+      renderRebanho();
+      renderSanitarioCorte();
+      renderNutricaoCorte();
+      renderManejoCorte();
+    }
+
+    function renderSanitarioCorte() {
+      const lista = document.getElementById('lista-sanitario-corte');
+      if (!lista) return;
+      const animais = getAnimaisDaArea('corte');
+
+      if (!animais.length) {
+        lista.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">🧴</div>
+            Nenhum animal cadastrado na área de corte/engorda ainda.
+          </div>
+        `;
+        return;
+      }
+
+      lista.innerHTML = animais.map(a => `
+        <div class="cut-card">
+          <div class="cut-card-header">
+            <div>
+              <div class="cut-card-title">${a.nome}</div>
+              <div class="cut-helper">${a.categoria || 'Não definido'}${a.faseCorte ? ' · ' + a.faseCorte : ''}</div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Última vacinação</label>
+              <input type="date" value="${a.vacinaData || ''}" onchange="atualizarCampoAnimal('${a.id}','vacinaData', this.value)" />
+            </div>
+            <div class="form-group">
+              <label>Última vermifugação</label>
+              <input type="date" value="${a.vermifugoData || ''}" onchange="atualizarCampoAnimal('${a.id}','vermifugoData', this.value)" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Controle de carrapato</label>
+              <input type="date" value="${a.carrapatoData || ''}" onchange="atualizarCampoAnimal('${a.id}','carrapatoData', this.value)" />
+            </div>
+            <div class="form-group">
+              <label>Observação sanitária</label>
+              <input type="text" placeholder="Ex: mancando, tosse, tudo normal" value="${(a.obsSanitaria || '').replace(/"/g, '&quot;')}" onchange="atualizarCampoAnimal('${a.id}','obsSanitaria', this.value)" />
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderNutricaoCorte() {
+      const lista = document.getElementById('lista-nutricao-corte');
+      if (!lista) return;
+      const animais = getAnimaisDaArea('corte');
+
+      if (!animais.length) {
+        lista.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">🌾</div>
+            Nenhum animal cadastrado na área de corte/engorda ainda.
+          </div>
+        `;
+        return;
+      }
+
+      lista.innerHTML = animais.map(a => `
+        <div class="cut-card">
+          <div class="cut-card-header">
+            <div>
+              <div class="cut-card-title">${a.nome}</div>
+              <div class="cut-helper">${a.categoria || 'Não definido'}${a.sistemaAlimentar ? ' · ' + a.sistemaAlimentar : ''}</div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Fase</label>
+              <select onchange="atualizarCampoAnimal('${a.id}','faseCorte', this.value)">
+                <option value="" ${!a.faseCorte ? 'selected' : ''}>Selecione</option>
+                <option ${a.faseCorte === 'Cria' ? 'selected' : ''}>Cria</option>
+                <option ${a.faseCorte === 'Recria' ? 'selected' : ''}>Recria</option>
+                <option ${a.faseCorte === 'Engorda' ? 'selected' : ''}>Engorda</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Sistema alimentar</label>
+              <select onchange="atualizarCampoAnimal('${a.id}','sistemaAlimentar', this.value)">
+                <option value="" ${!a.sistemaAlimentar ? 'selected' : ''}>Selecione</option>
+                <option ${a.sistemaAlimentar === 'Pasto' ? 'selected' : ''}>Pasto</option>
+                <option ${a.sistemaAlimentar === 'Semi-confinamento' ? 'selected' : ''}>Semi-confinamento</option>
+                <option ${a.sistemaAlimentar === 'Confinamento' ? 'selected' : ''}>Confinamento</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Peso estimado (kg)</label>
+              <input type="number" min="0" step="0.1" value="${a.pesoEstimado || ''}" onchange="atualizarCampoAnimal('${a.id}','pesoEstimado', parseFloat(this.value) || 0)" />
+            </div>
+            <div class="form-group">
+              <label>Consumo estimado (kg/dia)</label>
+              <input type="number" min="0" step="0.1" value="${a.consumoEstimado || ''}" onchange="atualizarCampoAnimal('${a.id}','consumoEstimado', parseFloat(this.value) || 0)" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Observação nutricional</label>
+            <textarea onchange="atualizarCampoAnimal('${a.id}','obsNutricao', this.value)" placeholder="Ex: suplementação, adaptação, cocho, ganho de peso...">${a.obsNutricao || ''}</textarea>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderManejoCorte() {
+      const lista = document.getElementById('lista-manejo-corte');
+      if (!lista) return;
+      const animais = getAnimaisDaArea('corte');
+
+      if (!animais.length) {
+        lista.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📋</div>
+            Nenhum animal cadastrado na área de corte/engorda ainda.
+          </div>
+        `;
+        return;
+      }
+
+      lista.innerHTML = animais.map(a => `
+        <div class="cut-card">
+          <div class="cut-card-header">
+            <div>
+              <div class="cut-card-title">${a.nome}</div>
+              <div class="cut-helper">${a.categoria || 'Não definido'}</div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Lote / Piquete</label>
+              <input type="text" value="${(a.loteCorte || '').replace(/"/g, '&quot;')}" onchange="atualizarCampoAnimal('${a.id}','loteCorte', this.value)" placeholder="Ex: lote 1" />
+            </div>
+            <div class="form-group">
+              <label>Objetivo</label>
+              <input type="text" value="${(a.objetivoCorte || '').replace(/"/g, '&quot;')}" onchange="atualizarCampoAnimal('${a.id}','objetivoCorte', this.value)" placeholder="Ex: ganho de peso, terminação" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Anotação rápida</label>
+            <input type="text" value="${(a.anotacaoRapida || '').replace(/"/g, '&quot;')}" onchange="atualizarCampoAnimal('${a.id}','anotacaoRapida', this.value)" placeholder="Ex: comeu bem hoje" />
+          </div>
+          <div class="form-group">
+            <label>Observação de manejo</label>
+            <textarea onchange="atualizarCampoAnimal('${a.id}','obsManejo', this.value)" placeholder="Ex: apartação, comportamento, adaptação, casqueamento...">${a.obsManejo || ''}</textarea>
+          </div>
+        </div>
+      `).join('');
     }
 
     function renderRebanho() {
