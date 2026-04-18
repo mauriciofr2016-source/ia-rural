@@ -2335,7 +2335,7 @@ auth.onAuthStateChanged(async (user) => {
       const btnSalvar = document.getElementById('btn-salvar-animal');
       const btnToggle = document.getElementById('btn-toggle-form-animal');
       if (btnSalvar) btnSalvar.textContent = animalEmEdicao ? '✓ Salvar Alterações' : '✓ Salvar Animal';
-      if (btnToggle) btnToggle.textContent = animalEmEdicao ? 'Editando Animal' : '+ Cadastrar Animal';
+      if (btnToggle) btnToggle.textContent = animalEmEdicao ? 'cadastrar novo animal' : '+ Cadastrar Animal';
     }
 
     function preencherPreviewFoto(src = '') {
