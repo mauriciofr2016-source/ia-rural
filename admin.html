@@ -246,6 +246,26 @@ body{font-family:'DM Sans',sans-serif;background:#000;min-height:100vh;color:#11
       <div id="lista-historico"></div>
     </div>
 
+
+    <div class="card">
+      <div class="card-title">💬 WhatsApp de suporte</div>
+      <div class="muted" style="margin-bottom:12px">Configure aqui o número e a mensagem padrão do botão de WhatsApp exibido para os usuários no site.</div>
+
+      <div class="form-row">
+        <div class="field">
+          <label>Número do WhatsApp</label>
+          <input type="text" id="cfg-wpp-numero" placeholder="Ex: 5592999999999">
+        </div>
+        <div class="field">
+          <label>Mensagem padrão</label>
+          <input type="text" id="cfg-wpp-msg" placeholder="Ex: Olá! Preciso de ajuda com o IA Rural.">
+        </div>
+      </div>
+
+      <button class="btn btn-green" onclick="salvarConfigWhatsApp()">Salvar WhatsApp</button>
+      <div class="success-msg" id="sucesso-wpp">WhatsApp salvo com sucesso!</div>
+    </div>
+
     <div class="card" style="background:#fafafa">
       <div class="card-title">⚙️ Configurações do administrador</div>
       <div class="form-row">
@@ -863,6 +883,7 @@ async function carregarTudoAdmin() {
   const lista = await carregarUsuarios();
   await carregarFinanceiro(lista);
   await carregarHistorico();
+  await carregarConfigWhatsAppAdmin();
 }
 
 async function excluirUsuario(id, nome) {
@@ -946,6 +967,44 @@ async function salvarEdicao() {
   }
 }
 
+
+async function carregarConfigWhatsAppAdmin() {
+  try {
+    const doc = await db.collection('config_publica').doc('whatsapp').get();
+    const dados = doc.exists ? (doc.data() || {}) : {};
+    document.getElementById('cfg-wpp-numero').value = String(dados.numero || '');
+    document.getElementById('cfg-wpp-msg').value = String(dados.mensagemPadrao || 'Olá! Preciso de ajuda com o IA Rural.');
+  } catch (erro) {
+    console.error('Erro ao carregar WhatsApp:', erro);
+  }
+}
+
+async function salvarConfigWhatsApp() {
+  const numeroRaw = document.getElementById('cfg-wpp-numero').value.trim();
+  const numero = numeroRaw.replace(/\D/g, '');
+  const mensagemPadrao = document.getElementById('cfg-wpp-msg').value.trim() || 'Olá! Preciso de ajuda com o IA Rural.';
+
+  if (!numero) {
+    alert('Informe o número do WhatsApp.');
+    return;
+  }
+
+  try {
+    await db.collection('config_publica').doc('whatsapp').set({
+      numero,
+      mensagemPadrao,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+
+    const msg = document.getElementById('sucesso-wpp');
+    msg.style.display = 'block';
+    setTimeout(() => { msg.style.display = 'none'; }, 3000);
+  } catch (erro) {
+    console.error(erro);
+    alert('Erro ao salvar WhatsApp: ' + erro.message);
+  }
+}
+
 function salvarConfigAdmin() {
   const usuario = document.getElementById('cfg-usuario').value.trim();
   const senha = document.getElementById('cfg-senha').value.trim();
@@ -1007,3 +1066,4 @@ auth.onAuthStateChanged(async (user) => {
 </script>
 </body>
 </html>
+
