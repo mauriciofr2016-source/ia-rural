@@ -167,6 +167,25 @@ body{font-family:'DM Sans',sans-serif;background:#000;min-height:100vh;color:#11
         </div>
       </div>
 
+      <div class="form-row">
+        <div class="field">
+          <label>Área do usuário</label>
+          <select id="n-area">
+            <option value="leiteira">Área Leiteira</option>
+            <option value="confinamento">Confinamento</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Teste grátis</label>
+          <select id="n-teste-gratis">
+            <option value="0">Sem teste grátis</option>
+            <option value="10">Teste grátis de 10 dias</option>
+            <option value="20">Teste grátis de 20 dias</option>
+          </select>
+          <div class="senha-hint">Ao vencer, o acesso bloqueia automaticamente no login com aviso ao cliente.</div>
+        </div>
+      </div>
+
       <div class="field">
         <label>Observação (opcional)</label>
         <input type="text" id="n-obs" placeholder="Ex: pagamento via pix">
@@ -313,6 +332,25 @@ body{font-family:'DM Sans',sans-serif;background:#000;min-height:100vh;color:#11
           <option value="inativo">Inativo</option>
           <option value="bloqueado">Bloqueado</option>
         </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="field">
+        <label>Área do usuário</label>
+        <select id="edit-area">
+          <option value="leiteira">Área Leiteira</option>
+          <option value="confinamento">Confinamento</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Teste grátis</label>
+        <select id="edit-teste-gratis">
+          <option value="0">Sem teste grátis</option>
+          <option value="10">Teste grátis de 10 dias</option>
+          <option value="20">Teste grátis de 20 dias</option>
+        </select>
+        <div class="senha-hint" id="edit-teste-hint">Se alterar aqui, o prazo será recalculado a partir de hoje.</div>
       </div>
     </div>
 
@@ -474,6 +512,65 @@ function getContaBadgeClass(status) {
   return 'badge-inativo';
 }
 
+function normalizarAreaConta(valor) {
+  const area = String(valor || '').toLowerCase().trim();
+  if (area === 'confinamento' || area === 'corte') return 'confinamento';
+  return 'leiteira';
+}
+
+function nomeAreaConta(valor) {
+  return normalizarAreaConta(valor) === 'confinamento' ? 'Confinamento' : 'Área Leiteira';
+}
+
+
+function somarDiasISO(dias) {
+  const d = new Date();
+  d.setHours(23, 59, 59, 999);
+  d.setDate(d.getDate() + Number(dias || 0));
+  return d.toISOString();
+}
+
+function getTesteGratisStatus(user) {
+  const dias = Number(user.testeGratisDias || 0);
+  if (!dias || !user.testeGratisFim) return 'Sem teste grátis';
+  const fim = new Date(user.testeGratisFim);
+  if (isNaN(fim.getTime())) return `Teste grátis: ${dias} dias`;
+  const hoje = new Date();
+  const diff = Math.ceil((fim.getTime() - hoje.getTime()) / 86400000);
+  if (diff < 0) return `Teste grátis vencido em ${formatData(user.testeGratisFim)}`;
+  if (diff === 0) return `Teste grátis vence hoje (${formatData(user.testeGratisFim)})`;
+  return `Teste grátis: ${diff} dia(s) restante(s) — vence em ${formatData(user.testeGratisFim)}`;
+}
+
+async function bloquearTestesGratisVencidos(lista) {
+  const agora = new Date();
+  const updates = [];
+  for (const u of lista) {
+    const dias = Number(u.testeGratisDias || 0);
+    const fim = u.testeGratisFim ? new Date(u.testeGratisFim) : null;
+    const testeVencido = dias > 0 && fim && !isNaN(fim.getTime()) && agora > fim && u.status !== 'bloqueado';
+    if (!testeVencido) continue;
+
+    const motivo = `Seu teste grátis de ${dias} dias venceu em ${formatData(u.testeGratisFim)}. Para liberar o acesso, entre em contato com o suporte.`;
+    updates.push(db.collection('admin_usuarios').doc(u.id).update({ status: 'bloqueado', bloqueioMotivo: motivo }));
+    if (u.firebaseUid) {
+      updates.push(db.collection('users').doc(u.firebaseUid).set({
+        accountStatus: 'bloqueado',
+        bloqueioMotivo: motivo,
+        trial: {
+          enabled: true,
+          days: dias,
+          startedAt: u.testeGratisInicio || '',
+          endsAt: u.testeGratisFim || '',
+          expired: true
+        }
+      }, { merge: true }));
+    }
+  }
+  if (updates.length) await Promise.all(updates);
+  return updates.length > 0;
+}
+
 async function loginAdmin() {
   const u = document.getElementById('adm-user').value.trim().toLowerCase();
   const s = document.getElementById('adm-pass').value;
@@ -534,6 +631,11 @@ async function criarUsuario() {
   const valorMensal = Number(document.getElementById('n-valor').value || 0);
   const diaVencimento = Number(document.getElementById('n-vencimento').value || 0);
   const formaPagamento = document.getElementById('n-forma').value;
+  const areaSistema = normalizarAreaConta(document.getElementById('n-area').value);
+  const testeGratisDias = Number(document.getElementById('n-teste-gratis').value || 0);
+  const testeGratisInicio = testeGratisDias > 0 ? new Date().toISOString() : '';
+  const testeGratisFim = testeGratisDias > 0 ? somarDiasISO(testeGratisDias) : '';
+  const bloqueioMotivo = '';
 
   if (!nome) { alert('Informe o nome ou fazenda.'); return; }
   if (!usuario) { alert('Informe o nome de usuário.'); return; }
@@ -587,6 +689,12 @@ async function criarUsuario() {
       valorMensal,
       diaVencimento,
       formaPagamento,
+      area: areaSistema,
+      areaSistema,
+      testeGratisDias,
+      testeGratisInicio,
+      testeGratisFim,
+      bloqueioMotivo,
       ultimoPagamento: '',
       ultimoValorPago: 0
     };
@@ -596,6 +704,16 @@ async function criarUsuario() {
     await db.collection('users').doc(uid).set({
       username: usuario,
       accountStatus: status,
+      area: areaSistema,
+      areaSistema,
+      bloqueioMotivo,
+      trial: {
+        enabled: testeGratisDias > 0,
+        days: testeGratisDias,
+        startedAt: testeGratisInicio,
+        endsAt: testeGratisFim,
+        expired: false
+      },
       billing: {
         plano,
         valorMensal,
@@ -616,6 +734,8 @@ async function criarUsuario() {
     document.getElementById('n-valor').value = '';
     document.getElementById('n-vencimento').value = '';
     document.getElementById('n-forma').value = 'pix';
+    document.getElementById('n-area').value = 'leiteira';
+    document.getElementById('n-teste-gratis').value = '0';
 
     const msg = document.getElementById('sucesso-criar');
     msg.textContent = 'Usuário criado com sucesso!';
@@ -643,11 +763,14 @@ async function marcarPago(id) {
     await ref.update({
       ultimoPagamento: agora,
       ultimoValorPago: valor,
-      status: novoStatus
+      status: novoStatus,
+      bloqueioMotivo: ''
     });
 
     await db.collection('users').doc(u.firebaseUid).set({
       accountStatus: novoStatus,
+      areaSistema: normalizarAreaConta(u.areaSistema || u.area),
+      bloqueioMotivo: '',
       billing: {
         plano: u.plano || 'mensal',
         valorMensal: valor,
@@ -683,10 +806,12 @@ async function bloquearUsuario(id) {
 
     const u = doc.data();
 
-    await ref.update({ status: 'bloqueado' });
+    const motivo = 'Seu acesso foi bloqueado pelo administrador. Entre em contato com o suporte para regularizar.';
+    await ref.update({ status: 'bloqueado', bloqueioMotivo: motivo });
 
     await db.collection('users').doc(u.firebaseUid).set({
-      accountStatus: 'bloqueado'
+      accountStatus: 'bloqueado',
+      bloqueioMotivo: motivo
     }, { merge: true });
 
     await carregarTudoAdmin();
@@ -704,10 +829,11 @@ async function desbloquearUsuario(id) {
 
     const u = doc.data();
 
-    await ref.update({ status: 'ativo' });
+    await ref.update({ status: 'ativo', bloqueioMotivo: '' });
 
     await db.collection('users').doc(u.firebaseUid).set({
-      accountStatus: 'ativo'
+      accountStatus: 'ativo',
+      bloqueioMotivo: ''
     }, { merge: true });
 
     await carregarTudoAdmin();
@@ -722,9 +848,16 @@ async function carregarUsuarios() {
 
   try {
     const snapshot = await db.collection('admin_usuarios').get();
-    const lista = snapshot.docs
+    let lista = snapshot.docs
       .map(doc => doc.data())
       .sort((a, b) => new Date(b.dataCriacao || 0) - new Date(a.dataCriacao || 0));
+
+    if (await bloquearTestesGratisVencidos(lista)) {
+      const novoSnapshot = await db.collection('admin_usuarios').get();
+      lista = novoSnapshot.docs
+        .map(doc => doc.data())
+        .sort((a, b) => new Date(b.dataCriacao || 0) - new Date(a.dataCriacao || 0));
+    }
 
     const ativos = lista.filter(u => u.status === 'ativo').length;
     const inativos = lista.filter(u => u.status === 'inativo').length;
@@ -748,7 +881,7 @@ async function carregarUsuarios() {
           <div class="user-info">
             <div class="user-name">${u.nome} <span class="badge ${getContaBadgeClass(u.status)}">${u.status}</span></div>
             <div class="user-meta">
-              Login: <strong>${u.usuario}</strong> &nbsp;·&nbsp;
+              Login: <strong>${u.usuario}</strong> &nbsp;·&nbsp; Área: <strong>${nomeAreaConta(u.areaSistema || u.area)}</strong> &nbsp;·&nbsp;
               Senha: <span id="senha-${u.id}" style="font-family:monospace">••••••</span>
               <button class="copy-btn" onclick="toggleSenha('${u.id}','${u.senha}')">ver</button>
               <button class="copy-btn" onclick="copiarSenha('${u.senha}')">copiar</button>
@@ -764,9 +897,16 @@ async function carregarUsuarios() {
               Último pagamento: <strong>${u.ultimoPagamento ? formatData(u.ultimoPagamento) : '—'}</strong> &nbsp;·&nbsp;
               Forma: <strong>${u.formaPagamento || '—'}</strong>
             </div>
+            <div class="user-meta">
+              Teste grátis: <strong>${getTesteGratisStatus(u)}</strong>${u.bloqueioMotivo ? '&nbsp;·&nbsp; Motivo: <strong>' + u.bloqueioMotivo + '</strong>' : ''}
+            </div>
             <div style="font-size:10px;color:#9ca3af;margin-top:3px">Criado em ${formatData(u.dataCriacao)}</div>
           </div>
           <div class="user-actions">
+            <select class="btn btn-outline btn-xs" onchange="alterarAreaUsuario('${u.id}', this.value)" title="Área do usuário">
+              <option value="leiteira" ${normalizarAreaConta(u.areaSistema || u.area) === 'leiteira' ? 'selected' : ''}>Área Leiteira</option>
+              <option value="confinamento" ${normalizarAreaConta(u.areaSistema || u.area) === 'confinamento' ? 'selected' : ''}>Confinamento</option>
+            </select>
             <button class="btn btn-blue btn-xs" onclick="marcarPago('${u.id}')">Marcar pago</button>
             ${u.status === 'bloqueado'
               ? `<button class="btn btn-green btn-xs" onclick="desbloquearUsuario('${u.id}')">Desbloquear</button>`
@@ -784,6 +924,24 @@ async function carregarUsuarios() {
     console.error(erro);
     el.innerHTML = '<div class="empty-users">Erro ao carregar usuários da nuvem.</div>';
     return [];
+  }
+}
+
+
+async function alterarAreaUsuario(id, areaSistema) {
+  areaSistema = normalizarAreaConta(areaSistema);
+  if (!['leiteira','confinamento'].includes(areaSistema)) return;
+  try {
+    const ref = db.collection('admin_usuarios').doc(id);
+    const doc = await ref.get();
+    if (!doc.exists) return alert('Usuário não encontrado.');
+    const u = doc.data();
+    await ref.update({ area: areaSistema, areaSistema });
+    if (u.firebaseUid) await db.collection('users').doc(u.firebaseUid).set({ area: areaSistema, areaSistema }, { merge: true });
+    await carregarTudoAdmin();
+  } catch (erro) {
+    console.error(erro);
+    alert('Erro ao alterar área do usuário: ' + erro.message);
   }
 }
 
@@ -914,6 +1072,9 @@ async function abrirEditar(id) {
     document.getElementById('edit-valor').value = Number(u.valorMensal || 0);
     document.getElementById('edit-vencimento').value = Number(u.diaVencimento || 0) || '';
     document.getElementById('edit-forma').value = u.formaPagamento || 'pix';
+    document.getElementById('edit-area').value = normalizarAreaConta(u.areaSistema || u.area);
+    document.getElementById('edit-teste-gratis').value = String(Number(u.testeGratisDias || 0));
+    document.getElementById('edit-teste-hint').textContent = u.testeGratisFim ? getTesteGratisStatus(u) + '. Se alterar, o prazo será recalculado a partir de hoje.' : 'Se escolher 10 ou 20 dias, o prazo começa hoje.';
     document.getElementById('modal-editar').style.display = 'flex';
   } catch (erro) {
     console.error(erro);
@@ -936,6 +1097,8 @@ async function salvarEdicao() {
   const valorMensal = Number(document.getElementById('edit-valor').value || 0);
   const diaVencimento = Number(document.getElementById('edit-vencimento').value || 0);
   const formaPagamento = document.getElementById('edit-forma').value;
+  const areaSistema = normalizarAreaConta(document.getElementById('edit-area').value);
+  const testeGratisDias = Number(document.getElementById('edit-teste-gratis').value || 0);
 
   if (!nome || !usuario || !senha) {
     alert('Preencha todos os campos obrigatórios.');
@@ -947,7 +1110,15 @@ async function salvarEdicao() {
   }
 
   try {
-    await db.collection('admin_usuarios').doc(id).update({
+    const ref = db.collection('admin_usuarios').doc(id);
+    const atualDoc = await ref.get();
+    const atual = atualDoc.exists ? (atualDoc.data() || {}) : {};
+    const mudouTeste = Number(atual.testeGratisDias || 0) !== testeGratisDias;
+    const testeGratisInicio = testeGratisDias > 0 ? (mudouTeste ? new Date().toISOString() : (atual.testeGratisInicio || new Date().toISOString())) : '';
+    const testeGratisFim = testeGratisDias > 0 ? (mudouTeste ? somarDiasISO(testeGratisDias) : (atual.testeGratisFim || somarDiasISO(testeGratisDias))) : '';
+    const bloqueioMotivo = testeGratisDias > 0 ? (atual.bloqueioMotivo || '') : '';
+
+    await ref.update({
       nome,
       usuario,
       senha,
@@ -956,8 +1127,30 @@ async function salvarEdicao() {
       plano,
       valorMensal,
       diaVencimento,
-      formaPagamento
+      formaPagamento,
+      area: areaSistema,
+      areaSistema,
+      testeGratisDias,
+      testeGratisInicio,
+      testeGratisFim,
+      bloqueioMotivo
     });
+
+    if (atual.firebaseUid) {
+      await db.collection('users').doc(atual.firebaseUid).set({
+        accountStatus: status,
+        area: areaSistema,
+        areaSistema,
+        bloqueioMotivo,
+        trial: {
+          enabled: testeGratisDias > 0,
+          days: testeGratisDias,
+          startedAt: testeGratisInicio,
+          endsAt: testeGratisFim,
+          expired: false
+        }
+      }, { merge: true });
+    }
 
     fecharModalEditar();
     await carregarTudoAdmin();
@@ -1033,9 +1226,9 @@ async function exportarUsuarios() {
       return;
     }
 
-    let csv = 'Nome,Usuário,Senha,Status,Observação,Plano,Valor Mensal,Dia Vencimento,Forma Pagamento,Último Pagamento\n';
+    let csv = 'Nome,Usuário,Senha,Status,Observação,Plano,Valor Mensal,Dia Vencimento,Forma Pagamento,Área,Último Pagamento\n';
     lista.forEach(u => {
-      csv += `"${u.nome || ''}","${u.usuario || ''}","${u.senha || ''}","${u.status || ''}","${u.obs || ''}","${u.plano || ''}","${u.valorMensal || 0}","${u.diaVencimento || ''}","${u.formaPagamento || ''}","${u.ultimoPagamento ? formatData(u.ultimoPagamento) : ''}"\n`;
+      csv += `"${u.nome || ''}","${u.usuario || ''}","${u.senha || ''}","${u.status || ''}","${u.obs || ''}","${u.plano || ''}","${u.valorMensal || 0}","${u.diaVencimento || ''}","${u.formaPagamento || ''}","${nomeAreaConta(u.areaSistema || u.area)}","${u.testeGratisDias || 0}","${u.testeGratisFim ? formatData(u.testeGratisFim) : ''}","${u.ultimoPagamento ? formatData(u.ultimoPagamento) : ''}"\n`;
     });
 
     const blob = new Blob([csv], { type: 'text/csv' });
