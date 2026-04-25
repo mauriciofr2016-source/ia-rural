@@ -964,26 +964,23 @@
         grid-template-columns: 1fr;
       }
     }
+  
+    /* LANDING PROFISSIONAL POR ÁREA */
+    #landing-screen{min-height:100vh;background:#000;color:#fff;display:flex;flex-direction:column}
+    .landing-topbar{min-height:58px;border-bottom:1px solid var(--border);background:#050505;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 18px;flex-wrap:wrap}
+    .landing-brand{display:flex;align-items:center;gap:10px;font-family:'DM Serif Display',serif;font-size:24px;letter-spacing:.4px}.landing-brand .mini{font-family:'DM Sans',sans-serif;font-size:20px}
+    .landing-nav{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.landing-nav button,.landing-support{border:1px solid var(--border);background:#111;color:#fff;border-radius:999px;padding:9px 14px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:800;text-decoration:none}.landing-support{background:#25D366;color:#000;border-color:#25D366}
+    .landing-main{width:100%;max-width:1040px;margin:0 auto;padding:42px 18px 36px}.landing-hero{border:1px solid var(--border);border-radius:24px;background:linear-gradient(180deg,#050505,#0f0f0f);padding:30px;box-shadow:var(--shadow)}
+    .landing-kicker{color:#6dd56d;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px}.landing-hero h1{font-family:'DM Serif Display',serif;font-size:clamp(34px,6vw,62px);line-height:1.02;margin-bottom:12px}.landing-hero p{max-width:720px;color:var(--muted);font-size:15px;line-height:1.7}
+    .landing-area-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:24px}.landing-area-card{background:#000;border:1px solid var(--border);border-radius:20px;padding:20px;cursor:pointer;transition:.2s;text-align:left;color:#fff;font-family:'DM Sans',sans-serif}.landing-area-card:hover{border-color:#6dd56d;transform:translateY(-2px)}.landing-area-card .emoji{font-size:30px;margin-bottom:10px;display:block}.landing-area-card h2{font-size:20px;margin-bottom:7px}.landing-area-card p{font-size:13px;color:var(--muted);line-height:1.6}.landing-note{margin-top:18px;color:#cbd5e1;font-size:13px;line-height:1.6}
+    #tela-login{display:none}.login-back{margin-top:10px;background:transparent;color:#d1d5db;border:none;cursor:pointer;font-size:12px;font-family:'DM Sans',sans-serif}.login-area-chip{display:inline-flex;align-items:center;gap:6px;background:#111;border:1px solid var(--border);border-radius:999px;padding:6px 10px;color:#fff;font-size:12px;font-weight:800;margin-bottom:14px}
+    .whatsapp-float{position:static!important;z-index:auto!important;display:none;width:max-content;margin:18px auto 24px;padding:8px 12px!important;border-radius:999px!important;background:#fff!important;color:#000!important;border:1px solid #e5e7eb!important;box-shadow:none!important;text-align:center!important}.whatsapp-icon-wrap{width:24px!important;height:24px!important;background:transparent!important;color:#25D366!important}.whatsapp-icon-wrap svg{width:20px!important;height:20px!important}.whatsapp-label strong{font-size:13px!important;color:#000!important}.whatsapp-label span{display:none!important}
+
   </style>
 </head>
 <body>
-<div id="tela-login">
-<div class="login-box">
-<div class="login-logo">IA <span>Rural</span></div>
-<div class="login-tagline">Gestão inteligente do campo com rebanho, produção, despesas, veterinário e calendário em um só lugar.</div>
-<div class="login-field">
-<label>Usuário</label>
-<input id="login-usuario" onkeydown="if(event.key==='Enter')fazerLogin()" placeholder="Seu usuário" type="text"/>
-</div>
-<div class="login-field">
-<label>Senha</label>
-<input id="login-senha" onkeydown="if(event.key==='Enter')fazerLogin()" placeholder="••••••••" type="password"/>
-</div>
-<button class="login-btn" onclick="fazerLogin()">Entrar</button>
-<div class="login-error" id="login-erro">Não foi possível entrar. Verifique usuário, senha e se o domínio está autorizado no Firebase Authentication.</div>
-<div class="login-footer">IA Rural · Sistema de gestão rural inteligente</div>
-</div>
-</div>
+<div id="landing-screen"><div class="landing-topbar"><div class="landing-brand"><span>IA RURAL</span><span class="mini">🐄🥛</span><span class="mini">🐂</span></div><div class="landing-nav"><button onclick="abrirLoginArea('leiteira')">Área Leiteira</button><button onclick="abrirLoginArea('confinamento')">Confinamento</button><a class="landing-support" id="landing-whatsapp" href="#" onclick="abrirWhatsAppSuporte();return false;">WhatsApp Suporte</a></div></div><main class="landing-main"><section class="landing-hero"><div class="landing-kicker">Gestão rural inteligente</div><h1>IA Rural para leite e confinamento.</h1><p>Controle rebanho, produção, despesas, calendário e manejo em áreas separadas. Cada usuário entra direto no ambiente correto, sem misturar dados da área leiteira com os dados do confinamento.</p><div class="landing-area-grid"><button class="landing-area-card" onclick="abrirLoginArea('leiteira')"><span class="emoji">🐄🥛</span><h2>Área Leiteira</h2><p>Produção de leite, vacas, calendário reprodutivo, protocolos, despesas e controle diário.</p></button><button class="landing-area-card" onclick="abrirLoginArea('confinamento')"><span class="emoji">🐂</span><h2>Confinamento</h2><p>Animais de engorda, trato, milho, silagem, ração, despesas e controle separado.</p></button></div><div class="landing-note">Clique na área desejada para abrir o login. O sistema valida se o usuário pertence à área selecionada antes de liberar o acesso.</div></section></main></div>
+<div id="tela-login"><div class="login-box"><div class="login-logo">IA <span>Rural</span></div><div class="login-area-chip" id="login-area-chip">Área selecionada</div><div class="login-tagline">Entre com o usuário e senha da área escolhida.</div><div class="login-field"><label>Usuário</label><input id="login-usuario" onkeydown="if(event.key==='Enter')fazerLogin()" placeholder="Seu usuário" type="text"/></div><div class="login-field"><label>Senha</label><input id="login-senha" onkeydown="if(event.key==='Enter')fazerLogin()" placeholder="••••••••" type="password"/></div><button class="login-btn" onclick="fazerLogin()">Entrar</button><button class="login-back" onclick="voltarLanding()">← Voltar para escolher outra área</button><div class="login-error" id="login-erro">Selecione a área correta ou verifique usuário e senha.</div><div class="login-footer">IA Rural · Sistema de gestão rural inteligente</div></div></div>
 <div id="app-wrapper">
 <nav>
 <div class="nav-header">
@@ -999,6 +996,8 @@
 <div class="nav-tab" data-page="rebanho" onclick="showPage('rebanho')">Meu Rebanho</div>
 <div class="nav-tab" data-area="leiteiro" data-page="producao" onclick="showPage('producao')">Produção</div>
 <div class="nav-tab" data-area="leiteiro" data-page="despesas" onclick="showPage('despesas')">Despesas</div>
+<div class="nav-tab" data-area="leiteiro" data-page="protocolar-vaca" onclick="showPage('protocolar-vaca')">Protocolar Vaca</div>
+<div class="nav-tab" data-area="leiteiro" data-page="vacas-protocoladas" onclick="showPage('vacas-protocoladas')">Vacas Protocoladas</div>
 <div class="nav-tab hidden" data-area="corte" data-page="sanitario-corte" onclick="showPage('sanitario-corte')">Sanitário</div>
 <div class="nav-tab hidden" data-area="corte" data-page="nutricao-corte" onclick="showPage('nutricao-corte')">Nutrição</div>
 <div class="nav-tab hidden" data-area="corte" data-page="manejo-corte" onclick="showPage('manejo-corte')">Manejo</div>
@@ -1010,43 +1009,7 @@
 <div class="nav-tab" data-page="arquivados" onclick="showPage('arquivados')">Arquivados</div>
 </div>
 </nav>
-<div class="page active" id="page-inicio">
-<div class="welcome-hero">
-<h1>Bem-vindo ao<br/><span>IA Rural</span> 🌾</h1>
-<p class="muted">Escolha abaixo a área principal do seu sistema. O IA Rural vai ajustar a tela inicial e o menu conforme o tipo de manejo que você quer usar agora.</p>
-<div class="area-choice-grid">
-<div class="area-card" id="area-card-leiteiro" onclick="selecionarArea('leiteiro')">
-<div class="area-badge">🥛 Área leiteira</div>
-<h3>Gado Leiteiro</h3>
-<p>Use o sistema focado em rebanho leiteiro, produção, ração, calendário reprodutivo e rotina de acompanhamento diário.</p>
-</div>
-<div class="area-card" id="area-card-corte" onclick="selecionarArea('corte')">
-<div class="area-badge">🐂 Área de corte</div>
-<h3>Gado de Corte / Engorda</h3>
-<p>Entre no modo corte para organizar o rebanho dessa área desde agora, sem misturar com a rotina leiteira. As funções específicas já incluem abas de sanitário, nutrição, manejo, registrar entregas/cálculo de gastos e animais vendidos.</p>
-</div>
-</div>
-<div class="area-status-card">
-<div class="area-status-title" id="area-status-title">Área atual: ainda não selecionada</div>
-<p class="muted" id="area-status-desc">Escolha uma das duas áreas acima para o sistema adaptar a navegação inicial. Sua escolha fica salva para o usuário logado.</p>
-<div class="area-actions">
-<button class="btn btn-primary" onclick="irParaAreaPrincipal()">Abrir área selecionada</button>
-<button class="btn btn-outline" onclick="showPage('rebanho')">Ir para meu rebanho</button>
-</div>
-</div>
-<div class="features-grid" id="features-grid-home"></div>
-</div>
-<div class="card">
-<div class="section-title" id="home-guide-title">📘 Como usar o IA Rural</div>
-<div class="muted" id="home-guide-content">
-<p style="margin-bottom:8px;"><strong>1.</strong> Escolha a área principal em <strong>Gado Leiteiro</strong> ou <strong>Gado de Corte / Engorda</strong>.</p>
-<p style="margin-bottom:8px;"><strong>2.</strong> Vá em <strong>Meu Rebanho</strong> e cadastre seus animais com nome, brinco, sexo e idade em meses.</p>
-<p style="margin-bottom:8px;"><strong>3.</strong> No modo leiteiro, use <strong>Produção</strong>, <strong>Despesas</strong> e <strong>Calendário</strong> normalmente.</p>
-<p style="margin-bottom:8px;"><strong>4.</strong> No modo corte, o rebanho fica separado e você já pode usar as abas de sanitário, nutrição e manejo.</p>
-<p><strong>5.</strong> Seus dados ficam salvos no navegador e também na nuvem do usuário logado.</p>
-</div>
-</div>
-</div>
+<div class="page active" id="page-inicio"><div class="welcome-hero"><h1>Bem-vindo ao<br/><span>IA Rural</span> 🌾</h1><p class="muted" id="home-area-logada">Sistema carregado conforme a área permitida para este login.</p><div class="features-grid" id="features-grid-home"></div></div></div>
 <div class="page" id="page-rebanho">
 <div class="backup-notice">💾 Dados salvos localmente e sincronizados na nuvem para o usuário logado.</div>
 <div class="card">
@@ -1223,21 +1186,21 @@
 </div>
 <div class="page" id="page-sanitario-corte">
 <div class="card">
-<div class="section-title">🧴 Sanitário do Corte / Engorda</div>
+<div class="section-title">🧴 Sanitário do Confinamento</div>
 <p class="muted" style="margin-bottom:14px;">Registre vacinação, vermifugação, controle de carrapato e observações sanitárias por animal.</p>
 <div id="lista-sanitario-corte"></div>
 </div>
 </div>
 <div class="page" id="page-nutricao-corte">
 <div class="card">
-<div class="section-title">🌾 Nutrição do Corte / Engorda</div>
+<div class="section-title">🌾 Nutrição do Confinamento</div>
 <p class="muted" style="margin-bottom:14px;">Aqui ficam apenas os dados nutricionais de cada animal: sistema alimentar, peso, fase, consumo diário de milho, silagem e ração, além do custo diário calculado automaticamente.</p>
 <div id="lista-nutricao-corte"></div>
 </div>
 </div>
 <div class="page" id="page-manejo-corte">
 <div class="card">
-<div class="section-title">📋 Manejo do Corte / Engorda</div>
+<div class="section-title">📋 Manejo do Confinamento</div>
 <p class="muted" style="margin-bottom:14px;">Faça anotações de lote, objetivo, manejo diário e observações práticas para cada animal.</p>
 <div id="lista-manejo-corte"></div>
 </div>
@@ -1487,6 +1450,7 @@
 <div class="vet-grid" id="vet-lista"></div>
 </div>
 </div>
+<div class="page" id="page-protocolar-vaca"><div class="card" data-area="leiteiro"><div class="section-title">🐄 Protocolar Vaca</div><p class="muted" style="margin-bottom:14px;">Cadastre o protocolo reprodutivo. A data do protocolo e a data do toque entram automaticamente no calendário inteligente.</p><div class="form-row"><div class="form-group"><label>Nome ou brinco</label><input id="pv-animal" type="text" placeholder="Ex: Mimosa ou 025" /></div><div class="form-group"><label>Data do protocolo</label><input id="pv-data-protocolo" type="date" /></div></div><div class="form-row"><div class="form-group"><label>Nome do boi</label><input id="pv-boi" type="text" placeholder="Ex: Touro Imperial" /></div><div class="form-group"><label>Data do toque (exame)</label><input id="pv-data-toque" type="date" /></div></div><button class="btn btn-success" id="btn-salvar-protocolo" onclick="salvarProtocoloVaca()">✓ Salvar protocolo</button><div class="info-box hidden" id="pv-msg" style="margin-top:12px;"></div></div></div><div class="page" id="page-vacas-protocoladas"><div class="card" data-area="leiteiro"><div class="section-title">📋 Vacas Protocoladas</div><p class="muted" style="margin-bottom:14px;">Acompanhe protocolos, confirme prenhez, marque não confirmada ou crie um novo protocolo inteligente.</p><div id="lista-vacas-protocoladas"></div></div></div>
 <div class="page" id="page-calendario">
 <div class="area-gate hidden" id="gate-calendario">
 <h3>📅 Área exclusiva do leite</h3>
@@ -1625,7 +1589,8 @@
       estoqueRacao: 0,
       ultimoBackup: null,
       areaSelecionada: '',
-      entregasCorte: []
+      entregasCorte: [],
+      protocolosVacas: []
     });
 
     let DB = DB_PADRAO();
@@ -1636,9 +1601,12 @@
     let vetFilter = 'todos';
     let whatsappNumeroSuporte = '';
     let whatsappMensagemSuporte = 'Olá! Preciso de ajuda com o IA Rural.';
+    let areaLoginSelecionada = '';
+    let salvandoProtocoloVaca = false;
 
     let animalEmEdicao = null;
     const AREAS_DISPONIVEIS = ['leiteiro', 'corte'];
+    const AREAS_CONTA = ['leiteira', 'confinamento'];
 
     const VET_DB = [
       {
@@ -1864,6 +1832,8 @@ async function fazerLogin() {
       const btn = document.getElementById('btn-whatsapp');
       if (!btn) return;
       btn.style.display = whatsappNumeroSuporte ? 'inline-flex' : 'none';
+      const landing = document.getElementById('landing-whatsapp');
+      if (landing) landing.style.display = whatsappNumeroSuporte ? 'inline-flex' : 'none';
     }
 
     function abrirWhatsAppSuporte() {
@@ -1884,17 +1854,75 @@ async function fazerLogin() {
       return data.toLocaleString('pt-BR');
     }
 
+    function normalizarAreaContaValor(valor){const area=String(valor||'').toLowerCase().trim();if(area==='confinamento'||area==='corte')return 'confinamento';return 'leiteira';}
+    function areaContaParaInterna(area){return normalizarAreaContaValor(area)==='confinamento'?'corte':'leiteiro';}
+    function areaInternaParaConta(area){return area==='corte'?'confinamento':'leiteira';}
+    function nomeArea(area){return normalizarAreaContaValor(area)==='confinamento'||area==='corte'?'Confinamento':'Área Leiteira';}
+    function abrirLoginArea(area){areaLoginSelecionada=normalizarAreaContaValor(area);if(!AREAS_CONTA.includes(areaLoginSelecionada))return;const chip=document.getElementById('login-area-chip');if(chip)chip.textContent=areaLoginSelecionada==='confinamento'?'🐂 Confinamento':'🐄 Área Leiteira';document.getElementById('landing-screen').style.display='none';document.getElementById('tela-login').style.display='flex';document.getElementById('app-wrapper').style.display='none';document.getElementById('login-erro').style.display='none';document.getElementById('login-usuario').focus();}
+    function voltarLanding(){areaLoginSelecionada='';document.getElementById('login-usuario').value='';document.getElementById('login-senha').value='';document.getElementById('login-erro').style.display='none';document.getElementById('tela-login').style.display='none';document.getElementById('app-wrapper').style.display='none';document.getElementById('landing-screen').style.display='flex';carregarConfigWhatsApp();}
+    async function obterDadosAdminPorUid(uid, usuarioBusca = ''){
+      try{
+        if (uid) {
+          const docDireto = await db.collection('admin_usuarios').doc(uid).get();
+          if (docDireto.exists) return {...(docDireto.data()||{}), _docId: docDireto.id};
+
+          const snapUid = await db.collection('admin_usuarios').where('firebaseUid','==',uid).limit(1).get();
+          if(!snapUid.empty) return {...(snapUid.docs[0].data()||{}), _docId:snapUid.docs[0].id};
+        }
+
+        const usuarioNormalizado = normalizarUsuario(usuarioBusca || '');
+        if (usuarioNormalizado) {
+          const snapUsuario = await db.collection('admin_usuarios').where('usuario','==',usuarioNormalizado).limit(1).get();
+          if(!snapUsuario.empty) return {...(snapUsuario.docs[0].data()||{}), _docId:snapUsuario.docs[0].id};
+        }
+
+        return null;
+      }catch(e){
+        console.error('Erro ao consultar dados do usuário:',e);
+        return null;
+      }
+    }
+
+    async function obterDadosContaCompleta(uid, usuarioBusca = ''){
+      const admin = await obterDadosAdminPorUid(uid, usuarioBusca);
+      let userDoc = null;
+      try{
+        if (uid) {
+          const snap = await db.collection('users').doc(uid).get();
+          if (snap.exists) userDoc = snap.data() || {};
+        }
+      }catch(e){ console.error('Erro ao consultar users:', e); }
+      return { ...(userDoc || {}), ...(admin || {}), _adminDocId: admin?._docId || '' };
+    }
+
+    function normalizarAreaConta(dados){return normalizarAreaContaValor(dados?.area || dados?.areaSistema || dados?.tipoArea || 'leiteira');}
+    function formatarDataBloqueio(iso){if(!iso)return '';const d=new Date(iso);if(isNaN(d.getTime()))return '';return d.toLocaleDateString('pt-BR');}
+    async function validarTesteGratisNoLogin(dadosAdmin, uid){
+      const dias=Number(dadosAdmin?.testeGratisDias||0);
+      const fimIso=dadosAdmin?.testeGratisFim||'';
+      if(!dias||!fimIso)return {bloqueado:false,mensagem:''};
+      const fim=new Date(fimIso);
+      if(isNaN(fim.getTime()))return {bloqueado:false,mensagem:''};
+      if(new Date()<=fim)return {bloqueado:false,mensagem:''};
+      const mensagem='Seu período de teste expirou. Entre em contato para ativar seu acesso.';
+      try{
+        const adminId=dadosAdmin?._docId||dadosAdmin?.id;
+        if(adminId){await db.collection('admin_usuarios').doc(adminId).update({status:'bloqueado',bloqueioMotivo:mensagem});}
+        if(uid){await db.collection('users').doc(uid).set({accountStatus:'bloqueado',bloqueioMotivo:mensagem,trial:{enabled:true,days:dias,startedAt:dadosAdmin?.testeGratisInicio||'',endsAt:fimIso,expired:true}}, {merge:true});}
+      }catch(e){console.error('Erro ao bloquear teste grátis vencido:',e);}
+      return {bloqueado:true,mensagem};
+    }
+    function normalizarProtocoloVaca(p={}){return {id:p.id||String(Date.now()),animal:p.animal||p.nomeAnimal||'',dataProtocolo:p.dataProtocolo||'',boi:p.boi||'',dataToque:p.dataToque||'',status:p.status||'protocolada',dataCriacao:p.dataCriacao||new Date().toISOString(),historico:Array.isArray(p.historico)?p.historico:[]};}
+
     function abrirAppLogado(usuario) {
       usuarioLogado = usuario;
-      document.getElementById('nav-usuario').textContent = usuario;
+      document.getElementById('nav-usuario').textContent = usuario + (obterAreaAtual() ? ' · ' + nomeArea(obterAreaAtual()) : '');
+      document.getElementById('landing-screen').style.display = 'none';
       document.getElementById('tela-login').style.display = 'none';
       document.getElementById('app-wrapper').style.display = 'block';
       aplicarAreaNaInterface();
-      aplicarAreaNaInterface();
       showPage('inicio');
       carregarConfigWhatsApp();
-      garantirBotaoTutorial();
-      agendarTutorialAutomatico();
     }
 
     function getLocalKey() {
@@ -1932,7 +1960,8 @@ async function fazerLogin() {
         estoqueRacao: typeof obj?.estoqueRacao === 'number' ? obj.estoqueRacao : base.estoqueRacao,
         ultimoBackup: obj?.ultimoBackup || base.ultimoBackup,
         areaSelecionada: area,
-        entregasCorte: Array.isArray(obj?.entregasCorte) ? obj.entregasCorte : base.entregasCorte
+        entregasCorte: Array.isArray(obj?.entregasCorte) ? obj.entregasCorte : base.entregasCorte,
+        protocolosVacas: Array.isArray(obj?.protocolosVacas) ? obj.protocolosVacas.map(normalizarProtocoloVaca) : base.protocolosVacas
       };
     }
 
@@ -2168,7 +2197,7 @@ async function fazerLogin() {
           title.textContent = 'Área atual: Gado Leiteiro';
           desc.textContent = 'Você está no modo leiteiro. Produção, despesas e calendário permanecem ativos normalmente.';
         } else if (area === 'corte') {
-          title.textContent = 'Área atual: Gado de Corte / Engorda';
+          title.textContent = 'Área atual: Confinamento';
           desc.textContent = 'Você está no modo corte. A área já tem sanitário, nutrição, manejo, registrar entregas/cálculo de gastos e animais vendidos com cálculo automático de apoio.';
         } else {
           title.textContent = 'Área atual: ainda não selecionada';
@@ -2178,8 +2207,8 @@ async function fazerLogin() {
 
       if (guideTitle && guideContent) {
         if (area === 'corte') {
-          guideTitle.textContent = '📘 Como usar a área de corte / engorda';
-          guideContent.innerHTML = `
+          if (guideTitle) guideTitle.textContent = '📘 Como usar a área de corte / engorda';
+          if (guideContent) guideContent.innerHTML = `
             <p style="margin-bottom:8px;"><strong>1.</strong> Vá em <strong>Meu Rebanho</strong> e cadastre os animais da área de corte.</p>
             <p style="margin-bottom:8px;"><strong>2.</strong> Em <strong>Nutrição</strong>, informe fase, sistema alimentar, alimento principal, consumo e custo por kg se quiser detalhar mais.</p>
             <p style="margin-bottom:8px;"><strong>3.</strong> Em <strong>Registrar Entregas/Calculo de Gastos</strong>, registre compras de trato, acompanhe o estoque e até quando cada produto deve durar.</p>
@@ -2187,9 +2216,9 @@ async function fazerLogin() {
             <p><strong>5.</strong> Em <strong>Animais Vendidos</strong>, acompanhe os resultados consolidados de venda da área de corte.</p>
           `;
         } else {
-          guideTitle.textContent = '📘 Como usar o IA Rural';
-          guideContent.innerHTML = `
-            <p style="margin-bottom:8px;"><strong>1.</strong> Escolha a área principal em <strong>Gado Leiteiro</strong> ou <strong>Gado de Corte / Engorda</strong>.</p>
+          if (guideTitle) guideTitle.textContent = '📘 Como usar o IA Rural';
+          if (guideContent) guideContent.innerHTML = `
+            <p style="margin-bottom:8px;"><strong>1.</strong> Escolha a área principal em <strong>Gado Leiteiro</strong> ou <strong>Confinamento</strong>.</p>
             <p style="margin-bottom:8px;"><strong>2.</strong> Vá em <strong>Meu Rebanho</strong> e cadastre seus animais com nome, brinco, sexo e idade em meses.</p>
             <p style="margin-bottom:8px;"><strong>3.</strong> No modo leiteiro, use <strong>Produção</strong>, <strong>Despesas</strong> e <strong>Calendário</strong> normalmente.</p>
             <p style="margin-bottom:8px;"><strong>4.</strong> No modo corte, o rebanho fica separado e você já pode usar as abas de sanitário, nutrição e manejo.</p>
@@ -2254,15 +2283,46 @@ async function fazerLogin() {
         return;
       }
 
-      alert('Escolha primeiro se deseja entrar em Gado Leiteiro ou Gado de Corte / Engorda.');
+      alert('Escolha primeiro se deseja entrar em Gado Leiteiro ou Confinamento.');
+    }
+
+    function obterAreaContaAtualSegura() {
+      const interna = AREAS_DISPONIVEIS.includes(DB?.areaSelecionada) ? DB.areaSelecionada : areaContaParaInterna(areaLoginSelecionada || 'leiteira');
+      return areaInternaParaConta(interna);
+    }
+
+    function obterRefDadosArea(uid = usuarioFirebase?.uid) {
+      if (!uid) return null;
+      const areaConta = obterAreaContaAtualSegura();
+      return db
+        .collection('areas')
+        .doc(areaConta)
+        .collection('usuarios')
+        .doc(uid)
+        .collection('dados')
+        .doc('principal');
     }
 
     async function salvarNuvem() {
       if (!usuarioFirebase) return;
       try {
+        const areaConta = obterAreaContaAtualSegura();
+        const areaInterna = areaContaParaInterna(areaConta);
+        DB.areaSelecionada = areaInterna;
+
+        await obterRefDadosArea(usuarioFirebase.uid).set({
+          username: usuarioLogado,
+          uid: usuarioFirebase.uid,
+          area: areaConta,
+          areaSistema: areaConta,
+          appData: DB,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+
         await db.collection('users').doc(usuarioFirebase.uid).set({
           username: usuarioLogado,
-          appData: DB,
+          area: areaConta,
+          areaSistema: areaConta,
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
       } catch (e) {
@@ -2279,24 +2339,42 @@ async function fazerLogin() {
       if (!usuarioFirebase) return;
 
       try {
-        const docRef = await db.collection('users').doc(usuarioFirebase.uid).get();
+        const areaConta = obterAreaContaAtualSegura();
+        const areaInterna = areaContaParaInterna(areaConta);
+        const refArea = obterRefDadosArea(usuarioFirebase.uid);
+        const docArea = await refArea.get();
 
-        if (docRef.exists && docRef.data() && docRef.data().appData) {
-          DB = normalizarDB(docRef.data().appData);
+        if (docArea.exists && docArea.data() && docArea.data().appData) {
+          DB = normalizarDB(docArea.data().appData);
+          DB.areaSelecionada = areaInterna;
           salvarLocal();
         } else {
-          DB = carregarLocalPorUsuario(usuarioLogado || '');
-          await db.collection('users').doc(usuarioFirebase.uid).set({
+          const docAntigo = await db.collection('users').doc(usuarioFirebase.uid).get();
+          if (docAntigo.exists && docAntigo.data() && docAntigo.data().appData) {
+            DB = normalizarDB(docAntigo.data().appData);
+          } else {
+            DB = carregarLocalPorUsuario(usuarioLogado || '');
+          }
+
+          DB.areaSelecionada = areaInterna;
+          await refArea.set({
             username: usuarioLogado,
+            uid: usuarioFirebase.uid,
+            area: areaConta,
+            areaSistema: areaConta,
             appData: DB,
+            migratedFromOldUsersAppData: !!(docAntigo.exists && docAntigo.data() && docAntigo.data().appData),
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
           }, { merge: true });
+          salvarLocal();
         }
 
         renderTudo();
       } catch (e) {
         console.log('Erro ao carregar Firestore:', e);
         DB = carregarLocalPorUsuario(usuarioLogado || '');
+        DB.areaSelecionada = areaContaParaInterna(areaLoginSelecionada || 'leiteira');
         renderTudo();
       }
     }
@@ -2305,8 +2383,13 @@ async function fazerLogin() {
   const usuario = normalizarUsuario(document.getElementById('login-usuario').value);
   const senha = document.getElementById('login-senha').value;
   const erroBox = document.getElementById('login-erro');
-
   erroBox.style.display = 'none';
+
+  if (!areaLoginSelecionada) {
+    erroBox.textContent = 'Escolha primeiro Área Leiteira ou Confinamento.';
+    erroBox.style.display = 'block';
+    return;
+  }
 
   if (!usuario || !senha) {
     erroBox.textContent = 'Informe usuário e senha.';
@@ -2316,39 +2399,62 @@ async function fazerLogin() {
 
   try {
     const cred = await auth.signInWithEmailAndPassword(usuarioParaEmail(usuario), senha);
-    const uid = cred.user.uid;
+    const dadosConta = await obterDadosContaCompleta(cred.user.uid, usuario);
 
-    const adminDoc = await db.collection('admin_usuarios').where('firebaseUid', '==', uid).limit(1).get();
+    const areaPermitidaConta = normalizarAreaConta(dadosConta);
+    const areaPermitida = areaContaParaInterna(areaPermitidaConta);
 
-    if (!adminDoc.empty) {
-      const dadosAdmin = adminDoc.docs[0].data();
-
-      if (dadosAdmin.status === 'bloqueado') {
-        await auth.signOut();
-        erroBox.textContent = 'Seu acesso está bloqueado. Procure o administrador.';
-        erroBox.style.display = 'block';
-        return;
-      }
+    if (areaPermitidaConta !== areaLoginSelecionada) {
+      await auth.signOut();
+      erroBox.textContent = 'Usuário não pertence a esta área. Selecione a área correta.';
+      erroBox.style.display = 'block';
+      return;
     }
+
+    const testeGratis = await validarTesteGratisNoLogin(dadosConta, cred.user.uid);
+    if (testeGratis.bloqueado) {
+      await auth.signOut();
+      erroBox.textContent = testeGratis.mensagem;
+      erroBox.style.display = 'block';
+      return;
+    }
+
+    const statusConta = dadosConta?.status || dadosConta?.accountStatus || await obterStatusDaConta(cred.user.uid);
+    if (statusConta === 'bloqueado') {
+      await auth.signOut();
+      erroBox.textContent = dadosConta?.bloqueioMotivo || 'Seu acesso está bloqueado. Procure o administrador.';
+      erroBox.style.display = 'block';
+      return;
+    }
+
+    await db.collection('users').doc(cred.user.uid).set({
+      username: usuario,
+      accountStatus: statusConta || 'ativo',
+      area: areaPermitidaConta,
+      areaSistema: areaPermitidaConta,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
 
     usuarioLogado = usuario;
     DB = carregarLocalPorUsuario(usuario);
+    DB.areaSelecionada = areaPermitida;
+    salvarLocal();
     abrirAppLogado(usuario);
     await carregarFirestore();
+    DB.areaSelecionada = areaPermitida;
+    await salvarDB();
+    aplicarAreaNaInterface();
+    showPage(areaPermitida === 'corte' ? 'rebanho' : 'producao');
   } catch (erro) {
     console.error(erro);
-    let msg = 'Não foi possível entrar. Verifique usuário e senha.';
+    let msg = 'Selecione a área correta ou verifique se o usuário e senha estão corretos.';
     const code = erro?.code || '';
-
     if (code.includes('wrong-password')) msg = 'Senha incorreta.';
     else if (code.includes('user-not-found')) msg = 'Usuário não encontrado.';
     else if (code.includes('invalid-login-credentials')) msg = 'Usuário ou senha inválidos.';
     else if (code.includes('network-request-failed')) msg = 'Falha de conexão com a internet.';
     else if (code.includes('too-many-requests')) msg = 'Muitas tentativas. Aguarde um pouco.';
-    else if (code.includes('operation-not-allowed')) msg = 'Login por senha não habilitado no Firebase.';
-    else if (code.includes('invalid-api-key')) msg = 'Configuração do Firebase inválida.';
     else if (erro?.message) msg = erro.message;
-
     erroBox.textContent = msg;
     erroBox.style.display = 'block';
   }
@@ -2367,7 +2473,8 @@ async function fazerLogin() {
       DB = DB_PADRAO();
 
       document.getElementById('app-wrapper').style.display = 'none';
-      document.getElementById('tela-login').style.display = 'flex';
+      document.getElementById('tela-login').style.display = 'none';
+      document.getElementById('landing-screen').style.display = 'flex';
       document.getElementById('login-usuario').value = '';
       document.getElementById('login-senha').value = '';
       document.getElementById('login-erro').style.display = 'none';
@@ -2382,22 +2489,37 @@ auth.onAuthStateChanged(async (user) => {
   if (!user) return;
 
   try {
-    const statusConta = await obterStatusDaConta(user.uid);
-
-    if (statusConta === 'bloqueado') {
+    const email = user.email || '';
+    const usuario = normalizarUsuario(email.split('@')[0] || 'usuario');
+    const dadosAdmin = await obterDadosContaCompleta(user.uid, usuario);
+    const testeGratis = await validarTesteGratisNoLogin(dadosAdmin, user.uid);
+    if (testeGratis.bloqueado) {
       await auth.signOut();
       const erroBox = document.getElementById('login-erro');
-      erroBox.textContent = 'Seu acesso está bloqueado. Procure o administrador.';
+      erroBox.textContent = testeGratis.mensagem;
       erroBox.style.display = 'block';
       return;
     }
 
-    const email = user.email || '';
-    const usuario = email.split('@')[0] || 'usuario';
+    const statusConta = dadosAdmin?.status || await obterStatusDaConta(user.uid);
+
+    if (statusConta === 'bloqueado') {
+      await auth.signOut();
+      const erroBox = document.getElementById('login-erro');
+      erroBox.textContent = dadosAdmin?.bloqueioMotivo || 'Seu acesso está bloqueado. Procure o administrador.';
+      erroBox.style.display = 'block';
+      return;
+    }
+
+    const areaPermitidaConta = normalizarAreaConta(dadosAdmin);
+    const areaPermitida = areaContaParaInterna(areaPermitidaConta);
     usuarioLogado = usuario;
     DB = carregarLocalPorUsuario(usuario);
+    DB.areaSelecionada = areaPermitida;
     abrirAppLogado(usuario);
     await carregarFirestore();
+    DB.areaSelecionada = areaPermitida;
+    aplicarAreaNaInterface();
   } catch (erro) {
     console.error('Erro ao validar login do usuário:', erro);
   }
@@ -2424,6 +2546,8 @@ auth.onAuthStateChanged(async (user) => {
       if (id === 'rebanho') renderRebanho();
       if (id === 'producao') renderProducao();
       if (id === 'despesas') renderDespesas();
+      if (id === 'protocolar-vaca') renderProtocolarVaca();
+      if (id === 'vacas-protocoladas') renderVacasProtocoladas();
       if (id === 'sanitario-corte') renderSanitarioCorte();
       if (id === 'nutricao-corte') renderNutricaoCorte();
       if (id === 'manejo-corte') renderManejoCorte();
@@ -2441,6 +2565,8 @@ auth.onAuthStateChanged(async (user) => {
       renderRebanho();
       renderProducao();
       renderDespesas();
+      renderProtocolarVaca();
+      renderVacasProtocoladas();
       renderSanitarioCorte();
       renderNutricaoCorte();
       renderManejoCorte();
@@ -3089,7 +3215,7 @@ auth.onAuthStateChanged(async (user) => {
 
       const animais = getAnimaisDaArea('corte');
       if (!animais.length) {
-        painelAnimal.innerHTML = `<div class="empty-state"><div class="empty-icon">🐂</div>Nenhum animal cadastrado na área de corte/engorda ainda.</div>`;
+        painelAnimal.innerHTML = `<div class="empty-state"><div class="empty-icon">🐂</div>Nenhum animal cadastrado na área de confinamento ainda.</div>`;
       } else {
         painelAnimal.innerHTML = animais.map(a => {
           const c = obterCustosDiariosAnimal(a);
@@ -3171,7 +3297,7 @@ auth.onAuthStateChanged(async (user) => {
         lista.innerHTML = `
           <div class="empty-state">
             <div class="empty-icon">🧴</div>
-            Nenhum animal cadastrado na área de corte/engorda ainda.
+            Nenhum animal cadastrado na área de confinamento ainda.
           </div>
         `;
         return;
@@ -3219,7 +3345,7 @@ auth.onAuthStateChanged(async (user) => {
         lista.innerHTML = `
           <div class="empty-state">
             <div class="empty-icon">🌾</div>
-            Nenhum animal cadastrado na área de corte/engorda ainda.
+            Nenhum animal cadastrado na área de confinamento ainda.
           </div>
         `;
         return;
@@ -3313,7 +3439,7 @@ auth.onAuthStateChanged(async (user) => {
         lista.innerHTML = `
           <div class="empty-state">
             <div class="empty-icon">📋</div>
-            Nenhum animal cadastrado na área de corte/engorda ainda.
+            Nenhum animal cadastrado na área de confinamento ainda.
           </div>
         `;
         return;
@@ -3416,7 +3542,7 @@ auth.onAuthStateChanged(async (user) => {
 
       addSec('Identificação do animal', `
         <p><strong>Nome:</strong> ${escapeHtml(formatarCampo(animal.nome))}</p>
-        <p><strong>Área:</strong> ${area === 'leiteiro' ? 'Gado Leiteiro' : 'Gado de Corte / Engorda'}</p>
+        <p><strong>Área:</strong> ${area === 'leiteiro' ? 'Gado Leiteiro' : 'Confinamento'}</p>
         <p><strong>Brinco:</strong> ${escapeHtml(formatarCampo(animal.brinco))}</p>
         <p><strong>Sexo:</strong> ${escapeHtml(formatarCampo(animal.sexo))}</p>
         <p><strong>Categoria:</strong> ${escapeHtml(formatarCampo(animal.categoria))}</p>
@@ -3581,7 +3707,7 @@ auth.onAuthStateChanged(async (user) => {
           ${animal.foto ? `<img class="animal-photo" src="${animal.foto}" alt="Foto de ${escapeAttr(animal.nome)}" />` : `<div class="animal-avatar">${emojiAnimal(animal.categoria)}</div>`}
           <div class="animal-body">
             <div class="animal-name">${escapeHtml(animal.nome)} ${animal.brinco ? `<span style="font-size:11px;color:var(--muted);font-weight:400;">· Brinco ${escapeHtml(animal.brinco)}</span>` : ''}</div>
-            <div class="animal-meta">${area === 'leiteiro' ? 'Área leiteira' : 'Área corte/engorda'} · ${escapeHtml(animal.categoria || 'Não definido')}</div>
+            <div class="animal-meta">${area === 'leiteiro' ? 'Área leiteira' : 'Área confinamento'} · ${escapeHtml(animal.categoria || 'Não definido')}</div>
             <div class="rec-grid" style="margin-top:12px;">
               <div class="rec-box"><h5>Mãe</h5><p>${escapeHtml(formatarCampo(genealogia.mae))}</p></div>
               <div class="rec-box"><h5>Pai</h5><p>${escapeHtml(formatarCampo(genealogia.pai))}</p></div>
@@ -4039,6 +4165,68 @@ auth.onAuthStateChanged(async (user) => {
       return d.toLocaleDateString('pt-BR');
     }
 
+    function renderProtocolarVaca() {
+      const hoje = new Date().toISOString().slice(0,10);
+      const dp = document.getElementById('pv-data-protocolo');
+      if (dp && !dp.value) dp.value = hoje;
+    }
+
+    async function salvarProtocoloVaca() {
+      if (salvandoProtocoloVaca) return;
+      const btn = document.getElementById('btn-salvar-protocolo');
+      const msg = document.getElementById('pv-msg');
+      const animal = document.getElementById('pv-animal').value.trim();
+      const dataProtocolo = document.getElementById('pv-data-protocolo').value;
+      const boi = document.getElementById('pv-boi').value.trim();
+      const dataToque = document.getElementById('pv-data-toque').value;
+      if (!animal || !dataProtocolo || !boi || !dataToque) { alert('Preencha nome/brinco, data do protocolo, nome do boi e data do toque.'); return; }
+      salvandoProtocoloVaca = true;
+      if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+      try {
+        DB.protocolosVacas.unshift(normalizarProtocoloVaca({ id: 'pv_' + Date.now(), animal, dataProtocolo, boi, dataToque, status: 'protocolada', dataCriacao: new Date().toISOString(), historico: [] }));
+        await salvarDB();
+        document.getElementById('pv-animal').value = '';
+        document.getElementById('pv-boi').value = '';
+        document.getElementById('pv-data-toque').value = '';
+        if (msg) { msg.textContent = 'Protocolo salvo e enviado automaticamente para o calendário.'; msg.classList.remove('hidden'); setTimeout(() => msg.classList.add('hidden'), 3500); }
+        renderVacasProtocoladas(); renderCalendario();
+      } finally {
+        salvandoProtocoloVaca = false;
+        if (btn) { btn.disabled = false; btn.textContent = '✓ Salvar protocolo'; }
+      }
+    }
+
+    function renderVacasProtocoladas() {
+      const lista = document.getElementById('lista-vacas-protocoladas');
+      if (!lista) return;
+      const protocolos = (DB.protocolosVacas || []).map(normalizarProtocoloVaca);
+      if (!protocolos.length) { lista.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div>Nenhuma vaca protocolada ainda.</div>'; return; }
+      lista.innerHTML = protocolos.map(p => '<div class="event-item"><h4>' + escapeHtml(p.animal) + ' <span class="tag">' + escapeHtml(p.status) + '</span></h4><p><strong>Data protocolo:</strong> ' + formatarData(new Date(p.dataProtocolo + 'T12:00:00')) + '</p><p><strong>Boi usado:</strong> ' + escapeHtml(p.boi) + '</p><p><strong>Data do toque:</strong> ' + formatarData(new Date(p.dataToque + 'T12:00:00')) + '</p><div class="animal-actions"><button class="btn btn-success btn-sm" onclick="atualizarStatusProtocolo(\'' + p.id + '\',\'Prenhez confirmada\')">✅ Prenhez confirmada</button><button class="btn btn-danger btn-sm" onclick="atualizarStatusProtocolo(\'' + p.id + '\',\'Não confirmada\')">❌ Não confirmada</button><button class="btn btn-outline btn-sm" onclick="novoProtocoloInteligente(\'' + p.id + '\')">🔁 Novo protocolo</button></div></div>').join('');
+    }
+
+    async function atualizarStatusProtocolo(id, status) {
+      const p = DB.protocolosVacas.find(item => item.id === id);
+      if (!p) return;
+      p.status = status;
+      p.historico = Array.isArray(p.historico) ? p.historico : [];
+      p.historico.push({ status, data: new Date().toISOString() });
+      await salvarDB(); renderVacasProtocoladas(); renderCalendario();
+    }
+
+    async function novoProtocoloInteligente(id) {
+      const p = DB.protocolosVacas.find(item => item.id === id);
+      if (!p) return;
+      const alterar = confirm('Alterar nome do boi?\n\nOK = alterar nome do boi\nCancelar = usar o mesmo boi');
+      let boi = p.boi;
+      if (alterar) { const novoBoi = prompt('Digite o nome do novo boi:', p.boi || ''); if (novoBoi === null) return; boi = novoBoi.trim() || p.boi; }
+      const dataProtocolo = prompt('Digite a nova data do protocolo (AAAA-MM-DD):', new Date().toISOString().slice(0,10));
+      if (!dataProtocolo) return;
+      const dataToque = prompt('Digite a nova data do toque (AAAA-MM-DD):', p.dataToque || '');
+      if (!dataToque) return;
+      DB.protocolosVacas.unshift(normalizarProtocoloVaca({ id: 'pv_' + Date.now(), animal: p.animal, dataProtocolo, boi, dataToque, status: 'novo protocolo', dataCriacao: new Date().toISOString(), historico: [{ status: 'Criado a partir de novo protocolo', protocoloAnterior: id, data: new Date().toISOString() }] }));
+      await salvarDB(); renderVacasProtocoladas(); renderCalendario();
+    }
+
     function renderCalendario() {
       const lista = document.getElementById('lista-calendario');
       const vacinas = document.getElementById('lista-vacinas');
@@ -4074,6 +4262,8 @@ auth.onAuthStateChanged(async (user) => {
         }
       });
 
+      (DB.protocolosVacas || []).forEach(p => { const prot = normalizarProtocoloVaca(p); if (prot.dataProtocolo) { const data = new Date(prot.dataProtocolo + 'T12:00:00'); if (!isNaN(data.getTime())) eventos.push({ titulo: 'Protocolo de ' + prot.animal, sub: 'Boi usado: ' + prot.boi, data }); } if (prot.dataToque) { const data = new Date(prot.dataToque + 'T12:00:00'); if (!isNaN(data.getTime())) eventos.push({ titulo: 'Toque / exame de ' + prot.animal, sub: 'Verificar confirmação de prenhez. Boi: ' + prot.boi, data }); } });
+
       eventos = eventos.sort((a, b) => a.data - b.data);
 
       if (!eventos.length) {
@@ -4081,7 +4271,7 @@ auth.onAuthStateChanged(async (user) => {
           <div class="empty-state">
             <div class="empty-icon">📅</div>
             Nenhum evento calculado ainda.<br />
-            Marque animais prenhes com data de confirmação.
+            Marque animais prenhes ou cadastre protocolos de vaca.
           </div>
         `;
       } else {
@@ -4268,13 +4458,13 @@ auth.onAuthStateChanged(async (user) => {
       },
       {
         title: 'Escolha da área principal',
-        text: 'Aqui o usuário escolhe se quer trabalhar na área leiteira ou na área de corte/engorda. O menu se adapta sozinho.',
+        text: 'Aqui o usuário escolhe se quer trabalhar na área leiteira ou na área de confinamento. O menu se adapta sozinho.',
         page: 'inicio',
         selector: '#area-card-leiteiro',
         before: async () => { await selecionarArea('leiteiro'); }
       },
       {
-        title: 'Área de corte / engorda',
+        title: 'Confinamento / engorda',
         text: 'Se escolher corte, aparecem abas próprias como sanitário, nutrição, manejo, gastos e animais vendidos.',
         page: 'inicio',
         selector: '#area-card-corte',
@@ -4619,7 +4809,9 @@ auth.onAuthStateChanged(async (user) => {
 
     aplicarAreaNaInterface();
     renderTudo();
+    carregarConfigWhatsApp();
   </script>
 </body>
 </html>
+
 
