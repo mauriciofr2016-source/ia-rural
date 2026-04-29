@@ -2545,12 +2545,16 @@ async function fazerLogin() {
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
 
-        await db.collection('users').doc(usuarioFirebase.uid).set({
-          username: usuarioLogado,
-          area: areaConta,
-          areaSistema: areaConta,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
+        try {
+          await db.collection('users').doc(usuarioFirebase.uid).set({
+            username: usuarioLogado,
+            area: areaConta,
+            areaSistema: areaConta,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          }, { merge: true });
+        } catch (perfilErro) {
+          console.warn('Perfil do usuário não foi atualizado, mas os dados principais foram salvos:', perfilErro);
+        }
       } catch (e) {
         console.error('Erro ao salvar na nuvem:', e);
         alert('Não foi possível salvar os dados na nuvem. Verifique sua internet e tente novamente antes de sair da página.');
@@ -2641,46 +2645,78 @@ async function fazerLogin() {
     }
 
     async function salvarAnimal() {
-      const area = obterAreaAtual() || 'leiteiro';
-      const nome = document.getElementById('a-nome').value.trim();
-      const brinco = document.getElementById('a-brinco').value.trim();
-      const sexo = document.getElementById('a-sexo').value;
-      const dataNascimento = document.getElementById('a-data-nascimento').value;
-      const castrado = document.getElementById('a-castrado')?.value === 'sim';
-      const prenha = document.getElementById('a-prenha').value === 'sim';
-      const dataPrenha = document.getElementById('a-data-prenha').value;
-      const lactacao = document.getElementById('a-lactacao').value === 'sim';
-      const faseCorte = document.getElementById('a-fase-corte').value;
-      const pesoEstimado = parseFloat(document.getElementById('a-peso').value) || 0;
-      const pesoInicial = parseFloat(document.getElementById('a-peso-inicial').value) || 0;
-      const dataPesoInicial = document.getElementById('a-data-peso-inicial').value;
-      const sistemaAlimentar = document.getElementById('a-sistema-alimentar').value;
-      const genealogia = {
-        mae: document.getElementById('a-mae').value.trim(),
-        pai: document.getElementById('a-pai').value.trim(),
-        avoMaterna: document.getElementById('a-avo-materna').value.trim(),
-        avoMaterno: document.getElementById('a-avo-materno').value.trim(),
-        avoPaterna: document.getElementById('a-avo-paterna').value.trim(),
-        avoPaterno: document.getElementById('a-avo-paterno').value.trim()
-      };
-      const vacinaData = document.getElementById('a-vacina').value;
-      const vermifugoData = document.getElementById('a-vermifugo').value;
-      const carrapatoData = document.getElementById('a-carrapato').value;
-      const obs = document.getElementById('a-obs').value.trim();
-      const fotoNova = await lerFotoAnimalBase64();
+      const btnSalvar = document.getElementById('btn-salvar-animal');
 
-      if (!nome) return alert('Informe o nome do animal.');
+      try {
+        if (!usuarioFirebase || !usuarioFirebase.uid) {
+          alert('Você precisa estar logado para salvar o animal.');
+          return;
+        }
 
-      const idade = dataNascimento ? calcularIdadeEmMeses(dataNascimento) : NaN;
+        const area = obterAreaAtual() || 'leiteiro';
+        const nome = document.getElementById('a-nome')?.value.trim() || '';
+        const brinco = document.getElementById('a-brinco')?.value.trim() || '';
+        const sexo = document.getElementById('a-sexo')?.value || '';
+        const dataNascimento = document.getElementById('a-data-nascimento')?.value || '';
+        const castrado = document.getElementById('a-castrado')?.value === 'sim';
+        const prenha = document.getElementById('a-prenha')?.value === 'sim';
+        const dataPrenha = document.getElementById('a-data-prenha')?.value || '';
+        const lactacao = document.getElementById('a-lactacao')?.value === 'sim';
+        const faseCorte = document.getElementById('a-fase-corte')?.value || '';
+        const pesoEstimado = parseFloat(document.getElementById('a-peso')?.value) || 0;
+        const pesoInicial = parseFloat(document.getElementById('a-peso-inicial')?.value) || 0;
+        const dataPesoInicial = document.getElementById('a-data-peso-inicial')?.value || '';
+        const sistemaAlimentar = document.getElementById('a-sistema-alimentar')?.value || '';
+        const genealogia = {
+          mae: document.getElementById('a-mae')?.value.trim() || '',
+          pai: document.getElementById('a-pai')?.value.trim() || '',
+          avoMaterna: document.getElementById('a-avo-materna')?.value.trim() || '',
+          avoMaterno: document.getElementById('a-avo-materno')?.value.trim() || '',
+          avoPaterna: document.getElementById('a-avo-paterna')?.value.trim() || '',
+          avoPaterno: document.getElementById('a-avo-paterno')?.value.trim() || ''
+        };
+        const vacinaData = document.getElementById('a-vacina')?.value || '';
+        const vermifugoData = document.getElementById('a-vermifugo')?.value || '';
+        const carrapatoData = document.getElementById('a-carrapato')?.value || '';
+        const obs = document.getElementById('a-obs')?.value.trim() || '';
 
-      if (!sexo) return alert('Selecione o sexo.');
-      if (!dataNascimento || !Number.isFinite(idade) || idade < 0) return alert('Informe a data de nascimento para calcular a categoria automaticamente.');
+        if (!nome) {
+          alert('Informe o nome do animal.');
+          return;
+        }
 
-      const categoria = getCategoriaPorArea(area, sexo, Number.isFinite(idade) ? idade : NaN, castrado);
+        if (!sexo) {
+          alert('Selecione o sexo do animal.');
+          return;
+        }
 
-      if (animalEmEdicao) {
-        const idx = DB.animais.findIndex(a => a.id === animalEmEdicao);
-        if (idx >= 0) {
+        if (!dataNascimento) {
+          alert('Informe a data de nascimento para o sistema calcular a categoria automaticamente.');
+          return;
+        }
+
+        const idade = calcularIdadeEmMeses(dataNascimento);
+        if (!Number.isFinite(idade) || idade < 0) {
+          alert('A data de nascimento informada não é válida.');
+          return;
+        }
+
+        if (btnSalvar) {
+          btnSalvar.disabled = true;
+          btnSalvar.textContent = animalEmEdicao ? 'Salvando edição...' : 'Salvando animal...';
+        }
+
+        const categoria = getCategoriaPorArea(area, sexo, idade, castrado);
+        const fotoNova = await lerFotoAnimalBase64();
+        const agoraIso = new Date().toISOString();
+
+        if (animalEmEdicao) {
+          const idx = DB.animais.findIndex(a => a.id === animalEmEdicao);
+          if (idx < 0) {
+            alert('Animal não encontrado para edição. Atualize a página e tente novamente.');
+            return;
+          }
+
           const animalAtual = normalizarAnimal(DB.animais[idx]);
           DB.animais[idx] = normalizarAnimal({
             ...animalAtual,
@@ -2688,7 +2724,7 @@ async function fazerLogin() {
             nome,
             brinco,
             sexo,
-            idadeMeses: Number.isFinite(idade) ? idade : 0,
+            idadeMeses: idade,
             dataNascimento,
             categoria,
             castrado,
@@ -2703,53 +2739,66 @@ async function fazerLogin() {
             pesoInicial: area === 'corte' ? pesoInicial : 0,
             dataPesoInicial: area === 'corte' ? dataPesoInicial : '',
             genealogia,
-            dataEntradaConfinamento: area === 'corte' ? (animalAtual.dataEntradaConfinamento || animalAtual.dataCadastro || new Date().toISOString()) : '',
+            dataEntradaConfinamento: area === 'corte' ? (animalAtual.dataEntradaConfinamento || animalAtual.dataCadastro || agoraIso) : '',
             vacinaData: area === 'corte' ? vacinaData : '',
             vermifugoData: area === 'corte' ? vermifugoData : '',
-            carrapatoData: area === 'corte' ? carrapatoData : ''
+            carrapatoData: area === 'corte' ? carrapatoData : '',
+            atualizadoEm: agoraIso
           });
+        } else {
+          const novoId = `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+          const animal = normalizarAnimal({
+            id: novoId,
+            area,
+            nome,
+            brinco,
+            sexo,
+            idadeMeses: idade,
+            dataNascimento,
+            categoria,
+            castrado,
+            prenha: area === 'leiteiro' ? prenha : false,
+            dataPrenha: area === 'leiteiro' && prenha ? dataPrenha : '',
+            lactacao: area === 'leiteiro' ? lactacao : false,
+            obs,
+            foto: fotoNova,
+            faseCorte: area === 'corte' ? faseCorte : '',
+            pesoEstimado: area === 'corte' ? pesoEstimado : 0,
+            sistemaAlimentar: area === 'corte' ? sistemaAlimentar : '',
+            pesoInicial: area === 'corte' ? pesoInicial : 0,
+            dataPesoInicial: area === 'corte' ? dataPesoInicial : '',
+            genealogia,
+            dataEntradaConfinamento: area === 'corte' ? agoraIso : '',
+            vacinaData: area === 'corte' ? vacinaData : '',
+            vermifugoData: area === 'corte' ? vermifugoData : '',
+            carrapatoData: area === 'corte' ? carrapatoData : '',
+            dataCadastro: agoraIso,
+            criadoEm: agoraIso
+          });
+          DB.animais.push(animal);
         }
-      } else {
-        const animal = normalizarAnimal({
-          id: Date.now().toString(),
-          area,
-          nome,
-          brinco,
-          sexo,
-          idadeMeses: Number.isFinite(idade) ? idade : 0,
-          dataNascimento,
-          categoria,
-          castrado,
-          prenha: area === 'leiteiro' ? prenha : false,
-          dataPrenha: area === 'leiteiro' && prenha ? dataPrenha : '',
-          lactacao: area === 'leiteiro' ? lactacao : false,
-          obs,
-          foto: fotoNova,
-          faseCorte: area === 'corte' ? faseCorte : '',
-          pesoEstimado: area === 'corte' ? pesoEstimado : 0,
-          sistemaAlimentar: area === 'corte' ? sistemaAlimentar : '',
-          pesoInicial: area === 'corte' ? pesoInicial : 0,
-          dataPesoInicial: area === 'corte' ? dataPesoInicial : '',
-          genealogia,
-          dataEntradaConfinamento: area === 'corte' ? new Date().toISOString() : '',
-          vacinaData: area === 'corte' ? vacinaData : '',
-          vermifugoData: area === 'corte' ? vermifugoData : '',
-          carrapatoData: area === 'corte' ? carrapatoData : '',
-          dataCadastro: new Date().toISOString()
-        });
-        DB.animais.push(animal);
+
+        salvarLocal();
+        await salvarNuvem();
+
+        animalEmEdicao = null;
+        limparFormularioAnimal();
+        document.getElementById('form-animal')?.classList.add('hidden');
+        atualizarTextoFormularioAnimal();
+        renderTudo();
+        showPage('rebanho');
+        alert('Animal salvo com sucesso.');
+      } catch (e) {
+        console.error('Erro ao salvar animal:', e);
+        alert('Erro ao salvar animal. Verifique a internet, as regras do Firebase e tente novamente.');
+      } finally {
+        if (btnSalvar) {
+          btnSalvar.disabled = false;
+          btnSalvar.textContent = '✓ Salvar Animal';
+        }
       }
-
-      await salvarDB();
-
-      animalEmEdicao = null;
-      limparFormularioAnimal();
-      document.getElementById('form-animal').classList.add('hidden');
-      atualizarTextoFormularioAnimal();
-
-      renderTudo();
-      showPage('rebanho');
     }
+
 
     async function atualizarCampoAnimal(id, campo, valor) {
       const animal = DB.animais.find(a => a.id === id);
