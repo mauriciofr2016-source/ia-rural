@@ -2629,15 +2629,90 @@ async function fazerLogin() {
     async function salvarAnimal() {
       const btnSalvar = document.getElementById('btn-salvar-animal');
 
-      const pegarValor = (id) => {
+      const setBotao = (salvando) => {
+        if (!btnSalvar) return;
+        btnSalvar.disabled = !!salvando;
+        btnSalvar.textContent = salvando ? (animalEmEdicao ? 'Salvando edição...' : 'Salvando animal...') : '✓ Salvar Animal';
+      };
+
+      const valor = (id) => {
         const el = document.getElementById(id);
         return el && typeof el.value === 'string' ? el.value.trim() : '';
       };
 
-      const restaurarBotao = () => {
-        if (btnSalvar) {
-          btnSalvar.disabled = false;
-          btnSalvar.textContent = '✓ Salvar Animal';
+      const salvarLocalSeguro = () => {
+        try {
+          if (typeof salvarLocal === 'function') {
+            salvarLocal();
+          } else {
+            const chave = typeof getLocalKey === 'function'
+              ? getLocalKey()
+              : 'ia_rural_db_' + String(usuarioLogado || 'anonimo').toLowerCase().replace(/\s+/g, '_');
+            localStorage.setItem(chave, JSON.stringify(DB));
+          }
+          return true;
+        } catch (erroLocal) {
+          console.error('Erro ao salvar no navegador/localStorage:', erroLocal);
+          return false;
+        }
+      };
+
+      const tentarSalvarAnimalNaNuvem = async (animal) => {
+        try {
+          if ((!usuarioFirebase || !usuarioFirebase.uid) && auth.currentUser) {
+            usuarioFirebase = auth.currentUser;
+          }
+          if (!usuarioFirebase || !usuarioFirebase.uid || !animal || !animal.id || !db) return false;
+
+          const areaInterna = AREAS_DISPONIVEIS.includes(animal.area) ? animal.area : (obterAreaAtual() || 'leiteiro');
+          DB.areaSelecionada = areaInterna;
+          const areaConta = typeof areaInternaParaConta === 'function'
+            ? areaInternaParaConta(areaInterna)
+            : (areaInterna === 'corte' ? 'confinamento' : 'leiteira');
+
+          const idLimpo = typeof limparIdFirestore === 'function'
+            ? limparIdFirestore(animal.id)
+            : String(animal.id).replace(/[\/]/g, '_');
+
+          const animalLimpo = typeof limparParaFirestore === 'function'
+            ? limparParaFirestore(animal)
+            : JSON.parse(JSON.stringify(animal));
+
+          // Caminho principal do IA Rural: cada animal como documento individual.
+          await db
+            .collection('areas')
+            .doc(areaConta)
+            .collection('usuarios')
+            .doc(usuarioFirebase.uid)
+            .collection('animais')
+            .doc(idLimpo)
+            .set(animalLimpo, { merge: true });
+
+          // Atualiza também o documento principal sem colocar a lista de animais dentro dele.
+          try {
+            await db
+              .collection('areas')
+              .doc(areaConta)
+              .collection('usuarios')
+              .doc(usuarioFirebase.uid)
+              .collection('dados')
+              .doc('principal')
+              .set({
+                uid: usuarioFirebase.uid,
+                username: usuarioLogado || '',
+                area: areaConta,
+                areaSistema: areaConta,
+                armazenamentoAnimais: 'subcolecoes',
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+              }, { merge: true });
+          } catch (erroPrincipal) {
+            console.warn('Animal salvo na nuvem, mas não atualizou documento principal:', erroPrincipal);
+          }
+
+          return true;
+        } catch (erroNuvem) {
+          console.error('Erro ao salvar animal individual na nuvem:', erroNuvem);
+          return false;
         }
       };
 
@@ -2656,84 +2731,94 @@ async function fazerLogin() {
         if (!Array.isArray(DB.arquivados)) DB.arquivados = [];
         if (!Array.isArray(DB.protocolosVacas)) DB.protocolosVacas = [];
 
-        const area = obterAreaAtual() || areaContaParaInterna(areaLoginSelecionada || 'leiteira') || 'leiteiro';
+        const area = AREAS_DISPONIVEIS.includes(obterAreaAtual())
+          ? obterAreaAtual()
+          : (areaLoginSelecionada === 'confinamento' ? 'corte' : 'leiteiro');
         DB.areaSelecionada = area;
 
-        const nome = pegarValor('a-nome');
-        const brinco = pegarValor('a-brinco');
-        const sexo = pegarValor('a-sexo');
-        const dataNascimento = pegarValor('a-data-nascimento');
-        const castrado = pegarValor('a-castrado') === 'sim';
-        const prenha = pegarValor('a-prenha') === 'sim';
-        const dataPrenha = pegarValor('a-data-prenha');
-        const lactacao = pegarValor('a-lactacao') === 'sim';
-        const faseCorte = pegarValor('a-fase-corte');
-        const pesoEstimado = parseFloat(pegarValor('a-peso')) || 0;
-        const pesoInicial = parseFloat(pegarValor('a-peso-inicial')) || 0;
-        const dataPesoInicial = pegarValor('a-data-peso-inicial');
-        const sistemaAlimentar = pegarValor('a-sistema-alimentar');
-        const vacinaData = pegarValor('a-vacina');
-        const vermifugoData = pegarValor('a-vermifugo');
-        const carrapatoData = pegarValor('a-carrapato');
-        const obs = pegarValor('a-obs');
-
-        const genealogia = {
-          mae: pegarValor('a-mae'),
-          pai: pegarValor('a-pai'),
-          avoMaterna: pegarValor('a-avo-materna'),
-          avoMaterno: pegarValor('a-avo-materno'),
-          avoPaterna: pegarValor('a-avo-paterna'),
-          avoPaterno: pegarValor('a-avo-paterno')
-        };
+        const nome = valor('a-nome');
+        const brinco = valor('a-brinco');
+        const sexo = valor('a-sexo');
+        const dataNascimento = valor('a-data-nascimento');
+        const castrado = valor('a-castrado') === 'sim';
+        const prenha = valor('a-prenha') === 'sim';
+        const dataPrenha = valor('a-data-prenha');
+        const lactacao = valor('a-lactacao') === 'sim';
+        const faseCorte = valor('a-fase-corte');
+        const pesoEstimado = parseFloat(valor('a-peso')) || 0;
+        const pesoInicial = parseFloat(valor('a-peso-inicial')) || 0;
+        const dataPesoInicial = valor('a-data-peso-inicial');
+        const sistemaAlimentar = valor('a-sistema-alimentar');
+        const vacinaData = valor('a-vacina');
+        const vermifugoData = valor('a-vermifugo');
+        const carrapatoData = valor('a-carrapato');
+        const obs = valor('a-obs');
 
         if (!nome) {
           alert('Informe o nome do animal.');
           return;
         }
-
         if (!sexo) {
           alert('Selecione o sexo do animal.');
           return;
         }
-
         if (!dataNascimento) {
           alert('Informe a data de nascimento para o sistema calcular a categoria automaticamente.');
           return;
         }
 
-        const idade = calcularIdadeEmMeses(dataNascimento);
+        let idade = 0;
+        try {
+          idade = typeof calcularIdadeEmMeses === 'function' ? calcularIdadeEmMeses(dataNascimento) : 0;
+        } catch (_) {
+          idade = 0;
+        }
         if (!Number.isFinite(idade) || idade < 0) {
           alert('A data de nascimento informada não é válida.');
           return;
         }
 
-        if (btnSalvar) {
-          btnSalvar.disabled = true;
-          btnSalvar.textContent = animalEmEdicao ? 'Salvando edição...' : 'Salvando animal...';
+        setBotao(true);
+
+        let categoria = '';
+        try {
+          categoria = typeof getCategoriaPorArea === 'function'
+            ? getCategoriaPorArea(area, sexo, idade, castrado)
+            : (sexo === 'Fêmea' ? (idade < 12 ? 'Bezerra' : idade < 24 ? 'Novilha' : 'Vaca') : (idade < 12 ? 'Bezerro' : idade < 24 ? 'Garrote' : (castrado ? 'Boi' : 'Touro')));
+        } catch (_) {
+          categoria = sexo === 'Fêmea' ? (idade < 12 ? 'Bezerra' : idade < 24 ? 'Novilha' : 'Vaca') : (idade < 12 ? 'Bezerro' : idade < 24 ? 'Garrote' : (castrado ? 'Boi' : 'Touro'));
         }
 
-        const categoria = getCategoriaPorArea(area, sexo, idade, castrado);
         let fotoNova = '';
         try {
-          fotoNova = await lerFotoAnimalBase64();
+          fotoNova = typeof lerFotoAnimalBase64 === 'function' ? await lerFotoAnimalBase64() : '';
         } catch (fotoErro) {
-          console.warn('Foto ignorada porque não foi possível ler o arquivo:', fotoErro);
+          console.warn('Foto ignorada por erro de leitura:', fotoErro);
           fotoNova = '';
         }
 
         const agoraIso = new Date().toISOString();
-        let animalParaSalvar;
+        const genealogia = {
+          mae: valor('a-mae'),
+          pai: valor('a-pai'),
+          avoMaterna: valor('a-avo-materna'),
+          avoMaterno: valor('a-avo-materno'),
+          avoPaterna: valor('a-avo-paterna'),
+          avoPaterno: valor('a-avo-paterno')
+        };
+
+        let animalFinal;
 
         if (animalEmEdicao) {
-          const idx = DB.animais.findIndex(a => a.id === animalEmEdicao);
+          const idx = DB.animais.findIndex(a => a && a.id === animalEmEdicao);
           if (idx < 0) {
             alert('Animal não encontrado para edição. Atualize a página e tente novamente.');
             return;
           }
-
-          const animalAtual = normalizarAnimal(DB.animais[idx]);
-          animalParaSalvar = normalizarAnimal({
-            ...animalAtual,
+          const atual = DB.animais[idx] || {};
+          animalFinal = {
+            ...atual,
+            id: atual.id || animalEmEdicao,
             area,
             nome,
             brinco,
@@ -2746,24 +2831,24 @@ async function fazerLogin() {
             dataPrenha: area === 'leiteiro' && prenha ? dataPrenha : '',
             lactacao: area === 'leiteiro' ? lactacao : false,
             obs,
-            foto: fotoNova || animalAtual.foto || '',
+            foto: fotoNova || atual.foto || '',
             faseCorte: area === 'corte' ? faseCorte : '',
             pesoEstimado: area === 'corte' ? pesoEstimado : 0,
             sistemaAlimentar: area === 'corte' ? sistemaAlimentar : '',
             pesoInicial: area === 'corte' ? pesoInicial : 0,
             dataPesoInicial: area === 'corte' ? dataPesoInicial : '',
             genealogia,
-            dataEntradaConfinamento: area === 'corte' ? (animalAtual.dataEntradaConfinamento || animalAtual.dataCadastro || agoraIso) : '',
+            dataEntradaConfinamento: area === 'corte' ? (atual.dataEntradaConfinamento || atual.dataCadastro || agoraIso) : '',
             vacinaData: area === 'corte' ? vacinaData : '',
             vermifugoData: area === 'corte' ? vermifugoData : '',
             carrapatoData: area === 'corte' ? carrapatoData : '',
             atualizadoEm: agoraIso
-          });
-          DB.animais[idx] = animalParaSalvar;
+          };
+          try { animalFinal = typeof normalizarAnimal === 'function' ? normalizarAnimal(animalFinal) : animalFinal; } catch (_) {}
+          DB.animais[idx] = animalFinal;
         } else {
-          const novoId = `animal_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
-          animalParaSalvar = normalizarAnimal({
-            id: novoId,
+          animalFinal = {
+            id: 'animal_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10),
             area,
             nome,
             brinco,
@@ -2789,52 +2874,28 @@ async function fazerLogin() {
             carrapatoData: area === 'corte' ? carrapatoData : '',
             dataCadastro: agoraIso,
             criadoEm: agoraIso
-          });
-          DB.animais.push(animalParaSalvar);
+          };
+          try { animalFinal = typeof normalizarAnimal === 'function' ? normalizarAnimal(animalFinal) : animalFinal; } catch (_) {}
+          DB.animais.push(animalFinal);
         }
 
-        try {
-          salvarLocal();
-        } catch (localErro) {
-          console.error('Erro ao salvar localmente:', localErro);
-        }
-
-        let sincronizouNuvem = false;
-        try {
-          const refUsuarioArea = obterRefUsuarioArea(usuarioFirebase.uid);
-          if (refUsuarioArea && animalParaSalvar && animalParaSalvar.id) {
-            await refUsuarioArea
-              .collection('animais')
-              .doc(limparIdFirestore(animalParaSalvar.id))
-              .set(limparParaFirestore(animalParaSalvar), { merge: true });
-            sincronizouNuvem = true;
-          }
-        } catch (nuvemErro) {
-          console.error('Erro técnico ao salvar animal individual na nuvem:', nuvemErro);
-          sincronizouNuvem = false;
-        }
+        salvarLocalSeguro();
+        const nuvemOk = await tentarSalvarAnimalNaNuvem(animalFinal);
 
         animalEmEdicao = null;
+        try { if (typeof limparFormularioAnimal === 'function') limparFormularioAnimal(); } catch (e) { console.warn('Falha ao limpar formulário:', e); }
+        try { document.getElementById('form-animal')?.classList.add('hidden'); } catch (_) {}
+        try { if (typeof atualizarTextoFormularioAnimal === 'function') atualizarTextoFormularioAnimal(); } catch (e) { console.warn('Falha ao atualizar formulário:', e); }
+        try { if (typeof renderTudo === 'function') renderTudo(); } catch (e) { console.warn('Falha ao renderizar:', e); }
+        try { if (typeof showPage === 'function') showPage('rebanho'); } catch (e) { console.warn('Falha ao abrir rebanho:', e); }
 
-        try { limparFormularioAnimal(); } catch (e) { console.warn('Falha ao limpar formulário:', e); }
-        try { document.getElementById('form-animal')?.classList.add('hidden'); } catch (e) {}
-        try { atualizarTextoFormularioAnimal(); } catch (e) { console.warn('Falha ao atualizar texto do formulário:', e); }
-        try { renderTudo(); } catch (e) { console.warn('Falha ao renderizar tudo:', e); }
-        try { showPage('rebanho'); } catch (e) { console.warn('Falha ao abrir rebanho:', e); }
-
-        if (sincronizouNuvem) {
-          alert('Animal salvo com sucesso.');
-        } else {
-          alert('Animal salvo neste computador, mas a nuvem não confirmou. Verifique as regras do Firebase/conexão antes de cadastrar muitos animais.');
-        }
-      } catch (e) {
-        console.error('Erro inesperado ao salvar animal:', e);
-        try { salvarLocal(); } catch (_) {}
-        try { renderTudo(); } catch (_) {}
-        try { showPage('rebanho'); } catch (_) {}
-        alert('Não foi possível finalizar o cadastro. Abra o console do navegador para ver o erro técnico.');
+        alert(nuvemOk ? 'Animal salvo com sucesso.' : 'Animal salvo neste computador. A nuvem não confirmou agora; confira as regras/conexão antes de cadastrar muitos animais.');
+      } catch (erroGeral) {
+        console.error('Erro real ao salvar animal:', erroGeral);
+        salvarLocalSeguro();
+        alert('Não foi possível salvar este animal. Erro técnico: ' + (erroGeral && erroGeral.message ? erroGeral.message : erroGeral));
       } finally {
-        restaurarBotao();
+        setBotao(false);
       }
     }
 
