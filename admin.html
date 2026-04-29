@@ -490,10 +490,11 @@ function isPaidThisMonth(iso) {
 }
 
 function getStatusPagamento(user) {
+  // Verifica pagamento deste mês primeiro, independente de valor/vencimento
+  if (isPaidThisMonth(user.ultimoPagamento)) return 'pago';
   const valor = Number(user.valorMensal || 0);
   const vencimento = Number(user.diaVencimento || 0);
   if (!valor || !vencimento) return 'pendente';
-  if (isPaidThisMonth(user.ultimoPagamento)) return 'pago';
   const due = getDueDateForCurrentMonth(vencimento);
   const now = new Date();
   if (now > due) return 'vencido';
