@@ -1965,6 +1965,46 @@ async function fazerLogin() {
       };
     }
 
+
+
+    function mesclarListasPorIdSeguro(principal = [], secundaria = [], idsArquivados = new Set()) {
+      const mapa = new Map();
+
+      [...(Array.isArray(secundaria) ? secundaria : []), ...(Array.isArray(principal) ? principal : [])].forEach((item) => {
+        if (!item) return;
+        const id = item.id || item._id || item.nome || `${Date.now()}_${Math.random()}`;
+        if (idsArquivados.has(id)) return;
+        mapa.set(id, { ...item, id });
+      });
+
+      return Array.from(mapa.values()).map(normalizarAnimal);
+    }
+
+    function mesclarDBSeguro(principal, secundaria) {
+      const dbPrincipal = normalizarDB(principal || {});
+      const dbSecundaria = normalizarDB(secundaria || {});
+
+      const arquivadosPorId = new Map();
+      [...dbSecundaria.arquivados, ...dbPrincipal.arquivados].forEach((item) => {
+        if (!item) return;
+        const id = item.id || item._id || item.nome || `${Date.now()}_${Math.random()}`;
+        arquivadosPorId.set(id, { ...item, id });
+      });
+
+      const idsArquivados = new Set(Array.from(arquivadosPorId.keys()));
+
+      return normalizarDB({
+        ...dbSecundaria,
+        ...dbPrincipal,
+        animais: mesclarListasPorIdSeguro(dbPrincipal.animais, dbSecundaria.animais, idsArquivados),
+        arquivados: Array.from(arquivadosPorId.values()).map(normalizarAnimal),
+        producao: { ...(dbSecundaria.producao || {}), ...(dbPrincipal.producao || {}) },
+        entregas: Array.isArray(dbPrincipal.entregas) && dbPrincipal.entregas.length ? dbPrincipal.entregas : dbSecundaria.entregas,
+        entregasCorte: Array.isArray(dbPrincipal.entregasCorte) && dbPrincipal.entregasCorte.length ? dbPrincipal.entregasCorte : dbSecundaria.entregasCorte,
+        protocolosVacas: Array.isArray(dbPrincipal.protocolosVacas) && dbPrincipal.protocolosVacas.length ? dbPrincipal.protocolosVacas : dbSecundaria.protocolosVacas
+      });
+    }
+
     function obterAreaAtual() {
       return AREAS_DISPONIVEIS.includes(DB?.areaSelecionada) ? DB.areaSelecionada : '';
     }
@@ -2310,7 +2350,13 @@ async function fazerLogin() {
         const areaInterna = areaContaParaInterna(areaConta);
         DB.areaSelecionada = areaInterna;
 
-        await obterRefDadosArea(usuarioFirebase.uid).set({
+        const refDadosArea = obterRefDadosArea(usuarioFirebase.uid);
+        const docAtual = await refDadosArea.get();
+        if (docAtual.exists && docAtual.data() && docAtual.data().appData) {
+          DB = mesclarDBSeguro(DB, docAtual.data().appData);
+        }
+
+        await refDadosArea.set({
           username: usuarioLogado,
           uid: usuarioFirebase.uid,
           area: areaConta,
@@ -2345,8 +2391,17 @@ async function fazerLogin() {
         const docArea = await refArea.get();
 
         if (docArea.exists && docArea.data() && docArea.data().appData) {
-          DB = normalizarDB(docArea.data().appData);
+          const dadosLocais = carregarLocalPorUsuario(usuarioLogado || '');
+          DB = mesclarDBSeguro(docArea.data().appData, dadosLocais);
           DB.areaSelecionada = areaInterna;
+          await refArea.set({
+            username: usuarioLogado,
+            uid: usuarioFirebase.uid,
+            area: areaConta,
+            areaSistema: areaConta,
+            appData: DB,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          }, { merge: true });
           salvarLocal();
         } else {
           const docAntigo = await db.collection('users').doc(usuarioFirebase.uid).get();
