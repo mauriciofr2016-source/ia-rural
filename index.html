@@ -1925,6 +1925,21 @@ async function fazerLogin() {
       carregarConfigWhatsApp();
     }
 
+    function toggleForm(id) {
+  const form = document.getElementById(id);
+
+  if (!form) {
+    console.error("Formulário não encontrado:", id);
+    return;
+  }
+
+  if (form.style.display === "none" || form.style.display === "") {
+    form.style.display = "block";
+  } else {
+    form.style.display = "none";
+  }
+}
+
     function showPage(id) {
       const area = obterAreaAtual();
       const paginasBloqueadasNoCorte = ['producao', 'despesas', 'calendario', 'protocolar-vaca', 'vacas-protocoladas'];
