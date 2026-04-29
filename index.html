@@ -1791,6 +1791,7 @@ async function fazerLogin() {
       return;
     }
 
+    usuarioFirebase = cred.user;
     usuarioLogado = usuario;
     DB = carregarLocalPorUsuario(usuario);
     abrirAppLogado(usuario);
@@ -2648,6 +2649,10 @@ async function fazerLogin() {
       const btnSalvar = document.getElementById('btn-salvar-animal');
 
       try {
+        if ((!usuarioFirebase || !usuarioFirebase.uid) && auth.currentUser) {
+          usuarioFirebase = auth.currentUser;
+        }
+
         if (!usuarioFirebase || !usuarioFirebase.uid) {
           alert('Você precisa estar logado para salvar o animal.');
           return;
