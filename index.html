@@ -2784,7 +2784,11 @@ async function fazerLogin() {
         }
 
         salvarLocal();
-        await salvarNuvem();
+        try {
+  await salvarNuvem();
+} catch (e) {
+  console.warn("Falha ao salvar na nuvem, salvando apenas local:", e);
+}
 
         animalEmEdicao = null;
         limparFormularioAnimal();
