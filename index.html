@@ -2438,6 +2438,22 @@ async function fazerLogin() {
       return String(id || `${prefixo}_${Date.now()}_${Math.random()}`).replace(/[\/]/g, '_');
     }
 
+
+    function limparParaFirestore(valor) {
+      if (valor === undefined) return null;
+      if (valor === null) return null;
+      if (valor instanceof Date) return valor;
+      if (Array.isArray(valor)) return valor.map(limparParaFirestore).filter(v => v !== undefined);
+      if (typeof valor === 'object') {
+        const limpo = {};
+        Object.entries(valor).forEach(([chave, item]) => {
+          if (item !== undefined) limpo[chave] = limparParaFirestore(item);
+        });
+        return limpo;
+      }
+      return valor;
+    }
+
     async function carregarColecaoProtocolosVacas() {
       if (!usuarioFirebase) return [];
       const refUsuarioArea = obterRefUsuarioArea(usuarioFirebase.uid);
@@ -2467,7 +2483,7 @@ async function fazerLogin() {
         const protocolo = normalizarProtocoloVaca(item || {});
         const id = normalizarIdDocumentoFirestore(protocolo.id, 'pv');
         protocolo.id = id;
-        batch.set(col.doc(id), protocolo, { merge: true });
+        batch.set(col.doc(id), limparParaFirestore(protocolo), { merge: true });
         operacoes++;
       });
 
@@ -2503,7 +2519,7 @@ async function fazerLogin() {
         const animal = normalizarAnimal(item || {});
         const id = limparIdFirestore(animal.id);
         animal.id = id;
-        batch.set(col.doc(id), animal, { merge: true });
+        batch.set(col.doc(id), limparParaFirestore(animal), { merge: true });
         operacoes++;
       });
 
@@ -2517,49 +2533,35 @@ async function fazerLogin() {
     }
 
     async function salvarNuvem() {
-      if (!usuarioFirebase) return;
+      if ((!usuarioFirebase || !usuarioFirebase.uid) && auth.currentUser) {
+        usuarioFirebase = auth.currentUser;
+      }
+      if (!usuarioFirebase || !usuarioFirebase.uid) return false;
+
       try {
         const areaConta = obterAreaContaAtualSegura();
         const areaInterna = areaContaParaInterna(areaConta);
         DB.areaSelecionada = areaInterna;
 
         const refDadosArea = obterRefDadosArea(usuarioFirebase.uid);
-        const docAtual = await refDadosArea.get();
-        if (docAtual.exists && docAtual.data() && docAtual.data().appData) {
-          DB = mesclarDBSeguro(DB, {
-            ...(docAtual.data().appData || {}),
-            animais: [],
-            arquivados: [],
-            protocolosVacas: []
-          });
-        }
+        if (!refDadosArea) return false;
 
         await salvarDadosSeparadosNaNuvem();
 
-        await refDadosArea.set({
-          username: usuarioLogado,
+        await refDadosArea.set(limparParaFirestore({
+          username: usuarioLogado || '',
           uid: usuarioFirebase.uid,
           area: areaConta,
           areaSistema: areaConta,
           appData: prepararAppDataPrincipal(DB),
           armazenamentoAnimais: 'subcolecoes',
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
+        }), { merge: true });
 
-        try {
-          await db.collection('users').doc(usuarioFirebase.uid).set({
-            username: usuarioLogado,
-            area: areaConta,
-            areaSistema: areaConta,
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-          }, { merge: true });
-        } catch (perfilErro) {
-          console.warn('Perfil do usuário não foi atualizado, mas os dados principais foram salvos:', perfilErro);
-        }
+        return true;
       } catch (e) {
         console.error('Erro ao salvar na nuvem:', e);
-        alert('Não foi possível salvar os dados na nuvem. Verifique sua internet e tente novamente antes de sair da página.');
-        throw e;
+        return false;
       }
     }
 
@@ -2569,71 +2571,48 @@ async function fazerLogin() {
     }
 
     async function carregarFirestore() {
-      if (!usuarioFirebase) return;
+      if ((!usuarioFirebase || !usuarioFirebase.uid) && auth.currentUser) {
+        usuarioFirebase = auth.currentUser;
+      }
+      if (!usuarioFirebase || !usuarioFirebase.uid) return;
+
+      const dadosLocais = carregarLocalPorUsuario(usuarioLogado || '');
 
       try {
         const areaConta = obterAreaContaAtualSegura();
         const areaInterna = areaContaParaInterna(areaConta);
         const refArea = obterRefDadosArea(usuarioFirebase.uid);
-        const docArea = await refArea.get();
-        const dadosLocais = carregarLocalPorUsuario(usuarioLogado || '');
+
+        let appDataNuvem = {};
+        if (refArea) {
+          const docArea = await refArea.get();
+          if (docArea.exists && docArea.data() && docArea.data().appData) {
+            appDataNuvem = docArea.data().appData || {};
+          }
+        }
+
         const animaisSeparados = await carregarColecaoAnimais('animais');
         const arquivadosSeparados = await carregarColecaoAnimais('arquivados');
         const protocolosSeparados = await carregarColecaoProtocolosVacas();
 
-        if (docArea.exists && docArea.data() && docArea.data().appData) {
-          const appDataNuvem = docArea.data().appData || {};
-          DB = mesclarDBSeguro(
-            {
-              ...appDataNuvem,
-              animais: animaisSeparados.length ? animaisSeparados : (appDataNuvem.animais || []),
-              arquivados: arquivadosSeparados.length ? arquivadosSeparados : (appDataNuvem.arquivados || []),
-              protocolosVacas: protocolosSeparados.length ? protocolosSeparados : (appDataNuvem.protocolosVacas || [])
-            },
-            dadosLocais
-          );
-          DB.areaSelecionada = areaInterna;
-          await salvarDadosSeparadosNaNuvem();
-          await refArea.set({
-            username: usuarioLogado,
-            uid: usuarioFirebase.uid,
-            area: areaConta,
-            areaSistema: areaConta,
-            appData: prepararAppDataPrincipal(DB),
-            armazenamentoAnimais: 'subcolecoes',
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-          }, { merge: true });
-          salvarLocal();
-        } else {
-          const docAntigo = await db.collection('users').doc(usuarioFirebase.uid).get();
-          if (docAntigo.exists && docAntigo.data() && docAntigo.data().appData) {
-            DB = normalizarDB(docAntigo.data().appData);
-          } else {
-            DB = dadosLocais;
-          }
+        DB = mesclarDBSeguro(
+          {
+            ...appDataNuvem,
+            animais: animaisSeparados.length ? animaisSeparados : (appDataNuvem.animais || []),
+            arquivados: arquivadosSeparados.length ? arquivadosSeparados : (appDataNuvem.arquivados || []),
+            protocolosVacas: protocolosSeparados.length ? protocolosSeparados : (appDataNuvem.protocolosVacas || [])
+          },
+          dadosLocais
+        );
 
-          DB.areaSelecionada = areaInterna;
-          await salvarDadosSeparadosNaNuvem();
-          await refArea.set({
-            username: usuarioLogado,
-            uid: usuarioFirebase.uid,
-            area: areaConta,
-            areaSistema: areaConta,
-            appData: prepararAppDataPrincipal(DB),
-            armazenamentoAnimais: 'subcolecoes',
-            migratedFromOldUsersAppData: !!(docAntigo.exists && docAntigo.data() && docAntigo.data().appData),
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-          }, { merge: true });
-          salvarLocal();
-        }
-
+        DB.areaSelecionada = areaInterna;
+        salvarLocal();
         renderTudo();
       } catch (e) {
         console.error('Erro ao carregar Firestore:', e);
-        alert('Não foi possível carregar os dados da nuvem. Vou mostrar os dados salvos neste computador, mas confira a internet antes de cadastrar novos animais.');
-        DB = carregarLocalPorUsuario(usuarioLogado || '');
+        DB = dadosLocais;
         DB.areaSelecionada = areaContaParaInterna(areaLoginSelecionada || 'leiteira');
+        salvarLocal();
         renderTudo();
       }
     }
@@ -2784,11 +2763,8 @@ async function fazerLogin() {
         }
 
         salvarLocal();
-        try {
-  await salvarNuvem();
-} catch (e) {
-  console.warn("Falha ao salvar na nuvem, salvando apenas local:", e);
-}
+        const sincronizouNuvem = await salvarNuvem();
+        if (!sincronizouNuvem) console.warn('Animal salvo localmente; sincronização com a nuvem não confirmou agora.');
 
         animalEmEdicao = null;
         limparFormularioAnimal();
