@@ -2551,6 +2551,23 @@ async function fazerLogin() {
       if (operacoes > 0) await batch.commit();
     }
 
+    function renderTudo() {
+      try { renderRebanho(); } catch(e) {}
+      try { renderProducao(); } catch(e) {}
+      try { renderDespesas(); } catch(e) {}
+      try { renderCalendario(); } catch(e) {}
+      try { renderVacasProtocoladas(); } catch(e) {}
+      try { renderVet(); } catch(e) {}
+      try { renderArquivados(); } catch(e) {}
+      try { renderGenealogia(); } catch(e) {}
+      try { renderDespesasCorte(); } catch(e) {}
+      try { renderSanitarioCorte(); } catch(e) {}
+      try { renderNutricaoCorte(); } catch(e) {}
+      try { renderManejoCorte(); } catch(e) {}
+      try { renderVendidosCorte(); } catch(e) {}
+      try { renderListaProdutosCorte(); } catch(e) {}
+    }
+
     async function carregarColecaoAnimais(nomeColecao) {
       if (!usuarioFirebase) return [];
       const areaConta = obterAreaContaAtualSegura();
@@ -2578,9 +2595,6 @@ async function fazerLogin() {
 
       const refUsuarioArea = obterRefUsuarioArea(uid);
       if (refUsuarioArea) await carregarSnap(refUsuarioArea.collection(nomeColecao), `subcoleção principal ${nomeColecao}`);
-      await carregarSnap(db.collection('areas').doc(areaConta).collection(uid).doc(nomeColecao).collection('lista'), `subcoleção antiga ${nomeColecao}`);
-      await carregarSnap(db.collection('areas').doc(areaConta).collection('usuarios').doc(uid).collection(nomeColecao), `subcoleção usuarios ${nomeColecao}`);
-      await carregarSnap(db.collection('users').doc(uid).collection(nomeColecao), `subcoleção users ${nomeColecao}`);
 
       return Array.from(porId.values());
     }
@@ -2668,6 +2682,22 @@ async function fazerLogin() {
       const dadosLocais = carregarLocalPorUsuario(usuarioLogado || '');
 
       try {
+        // Busca a área real do usuário direto no Firestore antes de qualquer outra coisa.
+        // Isso garante que em aba anônima (sem localStorage) o caminho correto seja usado.
+        try {
+          const userDoc = await db.collection('users').doc(usuarioFirebase.uid).get();
+          if (userDoc.exists) {
+            const userData = userDoc.data() || {};
+            const areaSistemaFirestore = userData.areaSistema || userData.area || '';
+            if (areaSistemaFirestore && AREAS_CONTA.includes(areaSistemaFirestore)) {
+              areaLoginSelecionada = areaSistemaFirestore;
+              DB.areaSelecionada = areaContaParaInterna(areaSistemaFirestore);
+            }
+          }
+        } catch (erroArea) {
+          console.warn('Nao foi possivel buscar area do usuario:', erroArea);
+        }
+
         const areaConta = obterAreaContaAtualSegura();
         const areaInterna = areaContaParaInterna(areaConta);
         const refArea = obterRefDadosArea(usuarioFirebase.uid);
