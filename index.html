@@ -1925,6 +1925,40 @@ async function fazerLogin() {
       carregarConfigWhatsApp();
     }
 
+    function showPage(id) {
+      const area = obterAreaAtual();
+      const paginasBloqueadasNoCorte = ['producao', 'despesas', 'calendario', 'protocolar-vaca', 'vacas-protocoladas'];
+
+      if (area === 'corte' && paginasBloqueadasNoCorte.includes(id)) {
+        id = 'inicio';
+      }
+
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+
+      const page = document.getElementById('page-' + id);
+      if (page) page.classList.add('active');
+
+      const tab = document.querySelector(`.nav-tab[data-page="${id}"]`);
+      if (tab && !tab.classList.contains('hidden')) tab.classList.add('active');
+
+      if (id === 'inicio') atualizarHomeArea();
+      if (id === 'rebanho') renderRebanho();
+      if (id === 'producao') renderProducao();
+      if (id === 'despesas') renderDespesas();
+      if (id === 'protocolar-vaca') renderProtocolarVaca();
+      if (id === 'vacas-protocoladas') renderVacasProtocoladas();
+      if (id === 'sanitario-corte') renderSanitarioCorte();
+      if (id === 'nutricao-corte') renderNutricaoCorte();
+      if (id === 'manejo-corte') renderManejoCorte();
+      if (id === 'despesas-corte') renderDespesasCorte();
+      if (id === 'vendidos-corte') renderVendidosCorte();
+      if (id === 'veterinario') renderVet();
+      if (id === 'genealogia') renderGenealogia();
+      if (id === 'calendario') renderCalendario();
+      if (id === 'arquivados') renderArquivados();
+    }
+
     function getLocalKey() {
       return `ia_rural_db_${normalizarUsuario(usuarioLogado || 'anonimo')}`;
     }
