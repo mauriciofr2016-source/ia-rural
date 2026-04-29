@@ -3092,6 +3092,29 @@ async function fazerLogin() {
       renderListaProdutosCorte();
     }
 
+    async function excluirEntregaCorte(indice) {
+      if (!Array.isArray(DB.entregasCorte)) DB.entregasCorte = [];
+      const i = parseInt(indice, 10);
+      if (isNaN(i) || i < 0 || i >= DB.entregasCorte.length) {
+        alert('Entrega não encontrada para excluir.');
+        return;
+      }
+
+      const item = DB.entregasCorte[i];
+      const nomeProduto = item?.produto || item?.tipo || 'esta entrega';
+      const dataFmt = item?.data ? new Date(item.data + 'T12:00:00').toLocaleDateString('pt-BR') : '';
+      const confirmar = confirm(`Deseja excluir ${nomeProduto}${dataFmt ? ' de ' + dataFmt : ''} do histórico?`);
+      if (!confirmar) return;
+
+      DB.entregasCorte.splice(i, 1);
+      await salvarDB();
+      renderDespesasCorte();
+      renderNutricaoCorte();
+      renderVendidosCorte();
+      renderListaProdutosCorte();
+      alert('Entrega excluída com sucesso.');
+    }
+
     function renderDespesasCorte() {
       const painel = document.getElementById('painel-estoque-corte');
       const historico = document.getElementById('historico-corte');
@@ -3170,7 +3193,7 @@ async function fazerLogin() {
         </div>
       `;
 
-      const entregas = getEntregasCorte().slice().sort((a,b) => new Date(b.data) - new Date(a.data));
+      const entregas = getEntregasCorte().map((e, indiceOriginal) => ({ ...e, indiceOriginal })).sort((a,b) => new Date(b.data) - new Date(a.data));
       if (!entregas.length) {
         historico.innerHTML = `
           <div class="empty-state">
@@ -3187,6 +3210,7 @@ async function fazerLogin() {
             <p>Total em kg: <strong>${(parseFloat(e.totalKg)||0).toFixed(1).replace('.', ',')} kg</strong></p>
             <p>Compra: <strong>R$ ${formatCurrencyBR(e.precoTotal || 0)}</strong></p>
             <p>Custo médio: <strong>R$ ${formatCurrencyBR((parseFloat(e.precoTotal)||0) / Math.max(parseFloat(e.totalKg)||1,1))}/kg</strong></p>
+            <button class="btn btn-danger" onclick="excluirEntregaCorte(${e.indiceOriginal})">Excluir</button>
           </div>
         `).join('');
       }
@@ -3944,6 +3968,27 @@ async function fazerLogin() {
       renderDespesas();
     }
 
+    async function excluirEntregaRacao(indice) {
+      if (!Array.isArray(DB.entregas)) DB.entregas = [];
+      const i = parseInt(indice, 10);
+      if (isNaN(i) || i < 0 || i >= DB.entregas.length) {
+        alert('Entrega não encontrada para excluir.');
+        return;
+      }
+
+      const item = DB.entregas[i];
+      const totalKg = parseFloat(item?.totalKg) || 0;
+      const dataFmt = item?.data ? new Date(item.data + 'T12:00:00').toLocaleDateString('pt-BR') : '';
+      const confirmar = confirm(`Deseja excluir a entrega${dataFmt ? ' de ' + dataFmt : ''} do histórico?`);
+      if (!confirmar) return;
+
+      DB.entregas.splice(i, 1);
+      DB.estoqueRacao = Math.max(0, (parseFloat(DB.estoqueRacao) || 0) - totalKg);
+      await salvarDB();
+      renderDespesas();
+      alert('Entrega excluída com sucesso.');
+    }
+
     function getConsumoDiario() {
       let total = 0;
       DB.animais.filter(a => (a.area || 'leiteiro') === 'leiteiro' && a.lactacao).forEach(a => {
@@ -3998,13 +4043,14 @@ async function fazerLogin() {
       }
 
       historico.innerHTML = DB.entregas
-        .slice()
+        .map((e, indiceOriginal) => ({ ...e, indiceOriginal }))
         .sort((a, b) => new Date(b.data) - new Date(a.data))
         .map(e => `
           <div class="delivery-item">
             <h4>${new Date(e.data + 'T12:00:00').toLocaleDateString('pt-BR')}</h4>
             <p>${e.sacos} saco(s) de ${e.tipoKg} kg</p>
             <p>Total: <strong>${e.totalKg} kg</strong></p>
+            <button class="btn btn-danger" onclick="excluirEntregaRacao(${e.indiceOriginal})">Excluir</button>
           </div>
         `).join('');
     }
