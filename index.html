@@ -1035,9 +1035,9 @@
 <option>Macho</option>
 </select>
 </div>
-<div class="form-group" style="display:none;">
-<label>Idade em meses (calculada automaticamente)</label>
-<input id="a-idade" oninput="atualizarCategoria()" placeholder="Calculada pela data de nascimento" type="number"/>
+<div class="form-group hidden">
+<label>Idade em meses (campo interno)</label>
+<input id="a-idade" placeholder="Calculado automaticamente pela data de nascimento" type="number"/>
 </div>
 </div>
 <div class="form-row">
@@ -1063,7 +1063,7 @@
 </div>
 <div class="form-group">
 <label>Categoria (calculada automaticamente)</label>
-<div class="info-box" id="a-categoria-box">Preencha sexo e data de nascimento para calcular a categoria automaticamente.</div>
+<div class="info-box" id="a-categoria-box">Informe sexo e data de nascimento. A categoria será calculada automaticamente.</div>
 </div>
 <div class="area-only" id="bloco-leiteiro-form">
 <div class="form-row">
@@ -1926,19 +1926,40 @@ async function fazerLogin() {
     }
 
     function toggleForm(id) {
-  const form = document.getElementById(id);
+      const form = document.getElementById(id);
+      if (!form) {
+        console.error('Formulário não encontrado:', id);
+        return;
+      }
+      form.classList.toggle('hidden');
+      if (!form.classList.contains('hidden')) {
+        atualizarVisibilidadeCamposCadastro();
+        atualizarCategoria();
+        const primeiroCampo = form.querySelector('input, select, textarea');
+        if (primeiroCampo) primeiroCampo.focus();
+      }
+    }
 
-  if (!form) {
-    console.error("Formulário não encontrado:", id);
-    return;
-  }
+    function atualizarCategoria() {
+      const area = obterAreaAtual() || 'leiteiro';
+      const sexo = document.getElementById('a-sexo')?.value || '';
+      const dataNascimento = document.getElementById('a-data-nascimento')?.value || '';
+      const castrado = document.getElementById('a-castrado')?.value === 'sim';
+      const box = document.getElementById('a-categoria-box');
+      const idadeInput = document.getElementById('a-idade');
 
-  if (form.style.display === "none" || form.style.display === "") {
-    form.style.display = "block";
-  } else {
-    form.style.display = "none";
-  }
-}
+      let idade = NaN;
+      if (dataNascimento) idade = calcularIdadeEmMeses(dataNascimento);
+      if (idadeInput) idadeInput.value = Number.isFinite(idade) ? idade : '';
+
+      if (!sexo || !dataNascimento || !Number.isFinite(idade)) {
+        if (box) box.textContent = 'Informe sexo e data de nascimento. A categoria será calculada automaticamente.';
+        return;
+      }
+
+      const categoria = getCategoriaPorArea(area, sexo, idade, castrado);
+      if (box) box.textContent = `${categoria} · ${idade} meses pela data de nascimento`;
+    }
 
     function showPage(id) {
       const area = obterAreaAtual();
@@ -2029,17 +2050,6 @@ async function fazerLogin() {
       return Array.from(mapa.values()).map(normalizarAnimal);
     }
 
-    function mesclarProtocolosVacasSeguro(principal = [], secundaria = []) {
-      const mapa = new Map();
-      [...(Array.isArray(secundaria) ? secundaria : []), ...(Array.isArray(principal) ? principal : [])].forEach((item) => {
-        if (!item) return;
-        const protocolo = normalizarProtocoloVaca(item);
-        const id = protocolo.id || `pv_${Date.now()}_${Math.random()}`;
-        mapa.set(id, { ...protocolo, id });
-      });
-      return Array.from(mapa.values()).map(normalizarProtocoloVaca);
-    }
-
     function mesclarDBSeguro(principal, secundaria) {
       const dbPrincipal = normalizarDB(principal || {});
       const dbSecundaria = normalizarDB(secundaria || {});
@@ -2061,7 +2071,7 @@ async function fazerLogin() {
         producao: { ...(dbSecundaria.producao || {}), ...(dbPrincipal.producao || {}) },
         entregas: Array.isArray(dbPrincipal.entregas) && dbPrincipal.entregas.length ? dbPrincipal.entregas : dbSecundaria.entregas,
         entregasCorte: Array.isArray(dbPrincipal.entregasCorte) && dbPrincipal.entregasCorte.length ? dbPrincipal.entregasCorte : dbSecundaria.entregasCorte,
-        protocolosVacas: mesclarProtocolosVacasSeguro(dbPrincipal.protocolosVacas, dbSecundaria.protocolosVacas)
+        protocolosVacas: Array.isArray(dbPrincipal.protocolosVacas) && dbPrincipal.protocolosVacas.length ? dbPrincipal.protocolosVacas : dbSecundaria.protocolosVacas
       });
     }
 
@@ -2132,9 +2142,9 @@ async function fazerLogin() {
     }
 
     function calcularIdadeEmMeses(dataNascimento) {
-      if (!dataNascimento) return NaN;
+      if (!dataNascimento) return 0;
       const nasc = new Date(dataNascimento + 'T12:00:00');
-      if (isNaN(nasc.getTime())) return NaN;
+      if (isNaN(nasc.getTime())) return 0;
       const hoje = new Date();
       let meses = (hoje.getFullYear() - nasc.getFullYear()) * 12;
       meses += hoje.getMonth() - nasc.getMonth();
@@ -2142,30 +2152,23 @@ async function fazerLogin() {
       return Math.max(0, meses);
     }
 
-    function getCategoria(sexo, idadeMeses) {
-      if (!sexo || !Number.isFinite(idadeMeses) || idadeMeses < 0) return 'Não definido';
-      if (sexo === 'Fêmea') {
-        if (idadeMeses < 12) return 'Bezerra';
-        if (idadeMeses < 24) return 'Novilha';
-        return 'Vaca';
-      }
-      if (idadeMeses < 12) return 'Bezerro';
-      if (idadeMeses < 24) return 'Garrote';
-      return 'Boi';
-    }
-
     function getCategoriaPorArea(area, sexo, idadeMeses, castrado = false) {
-      if (!sexo || !Number.isFinite(idadeMeses) || idadeMeses < 0) return 'Não definido';
+      if (!sexo || idadeMeses === null || idadeMeses === undefined || Number.isNaN(idadeMeses) || idadeMeses < 0) {
+        return 'Não definido';
+      }
+
       if (area === 'corte') {
         if (sexo === 'Fêmea') {
-          if (idadeMeses < 12) return 'Bezerra';
-          if (idadeMeses < 24) return 'Novilha';
+          if (idadeMeses <= 8) return 'Bezerra';
+          if (idadeMeses <= 24) return 'Novilha';
           return 'Vaca';
         }
-        if (idadeMeses < 12) return 'Bezerro';
-        if (idadeMeses < 24) return 'Garrote';
+
+        if (idadeMeses <= 8) return 'Bezerro';
+        if (idadeMeses <= 24) return 'Garrote';
         return castrado ? 'Boi' : 'Touro';
       }
+
       return getCategoria(sexo, idadeMeses);
     }
 
@@ -2254,7 +2257,7 @@ async function fazerLogin() {
       document.getElementById('a-carrapato').value = '';
       document.getElementById('a-obs').value = '';
       document.getElementById('a-foto').value = '';
-      document.getElementById('a-categoria-box').textContent = 'Preencha sexo e data de nascimento para calcular a categoria automaticamente.';
+      document.getElementById('a-categoria-box').textContent = 'Informe sexo e data de nascimento. A categoria será calculada automaticamente.';
       document.getElementById('campo-data-prenha').classList.add('hidden');
       document.getElementById('preview-foto-box')?.classList.add('hidden');
       document.getElementById('preview-foto-img').src = '';
@@ -2575,16 +2578,15 @@ async function fazerLogin() {
 
         if (docArea.exists && docArea.data() && docArea.data().appData) {
           const appDataNuvem = docArea.data().appData || {};
-          const dadosNuvemCompletos = mesclarDBSeguro(
+          DB = mesclarDBSeguro(
             {
               ...appDataNuvem,
-              animais: mesclarListasPorIdSeguro(animaisSeparados, appDataNuvem.animais || []),
-              arquivados: mesclarListasPorIdSeguro(arquivadosSeparados, appDataNuvem.arquivados || []),
-              protocolosVacas: mesclarProtocolosVacasSeguro(protocolosSeparados, appDataNuvem.protocolosVacas || [])
+              animais: animaisSeparados.length ? animaisSeparados : (appDataNuvem.animais || []),
+              arquivados: arquivadosSeparados.length ? arquivadosSeparados : (appDataNuvem.arquivados || []),
+              protocolosVacas: protocolosSeparados.length ? protocolosSeparados : (appDataNuvem.protocolosVacas || [])
             },
             dadosLocais
           );
-          DB = dadosNuvemCompletos;
           DB.areaSelecionada = areaInterna;
           await salvarDadosSeparadosNaNuvem();
           await refArea.set({
@@ -2644,7 +2646,6 @@ async function fazerLogin() {
       const brinco = document.getElementById('a-brinco').value.trim();
       const sexo = document.getElementById('a-sexo').value;
       const dataNascimento = document.getElementById('a-data-nascimento').value;
-      const idadeInformada = calcularIdadeEmMeses(dataNascimento);
       const castrado = document.getElementById('a-castrado')?.value === 'sim';
       const prenha = document.getElementById('a-prenha').value === 'sim';
       const dataPrenha = document.getElementById('a-data-prenha').value;
@@ -2670,12 +2671,12 @@ async function fazerLogin() {
 
       if (!nome) return alert('Informe o nome do animal.');
 
-      const idade = Number.isFinite(idadeInformada) ? idadeInformada : NaN;
+      const idade = dataNascimento ? calcularIdadeEmMeses(dataNascimento) : NaN;
 
       if (!sexo) return alert('Selecione o sexo.');
-      if (!dataNascimento || !Number.isFinite(idade) || idade < 0) return alert('Informe a data de nascimento para o sistema calcular a categoria automaticamente.');
+      if (!dataNascimento || !Number.isFinite(idade) || idade < 0) return alert('Informe a data de nascimento para calcular a categoria automaticamente.');
 
-      const categoria = getCategoriaPorArea(area, sexo, idade, castrado);
+      const categoria = getCategoriaPorArea(area, sexo, Number.isFinite(idade) ? idade : NaN, castrado);
 
       if (animalEmEdicao) {
         const idx = DB.animais.findIndex(a => a.id === animalEmEdicao);
@@ -3704,7 +3705,6 @@ async function fazerLogin() {
 
             <div class="animal-meta">
               ${a.sexo || 'Sexo não informado'}
-              ${a.idadeMeses || a.dataNascimento ? `· ${a.idadeMeses || calcularIdadeEmMeses(a.dataNascimento)} meses` : ''}
               ${a.dataNascimento ? `· Nasc.: ${new Date(a.dataNascimento + 'T12:00:00').toLocaleDateString('pt-BR')}` : ''}
             </div>
 
@@ -4109,9 +4109,10 @@ async function fazerLogin() {
     }
 
     async function excluirProtocoloVaca(id) {
-      const protocolo = DB.protocolosVacas.find(item => item.id === id);
-      if (!protocolo) return;
-      if (!confirm('Deseja excluir este protocolo de ' + (protocolo.animal || 'vaca') + '?')) return;
+      const p = DB.protocolosVacas.find(item => item.id === id);
+      if (!p) return;
+      const nome = p.animal || 'esta vaca protocolada';
+      if (!confirm(`Excluir o protocolo de ${nome}?`)) return;
       DB.protocolosVacas = DB.protocolosVacas.filter(item => item.id !== id);
       await salvarDB();
       renderVacasProtocoladas();
@@ -4155,11 +4156,13 @@ async function fazerLogin() {
             const secagem = addDias(parto, -60);
             const preParto = addDias(parto, -20);
 
-            eventos.push({
-              titulo: `Secagem de ${a.nome}`,
-              sub: `Início recomendado do período seco.`,
-              data: secagem
-            });
+            if (a.lactacao) {
+              eventos.push({
+                titulo: `Secagem de ${a.nome}`,
+                sub: `Início recomendado do período seco para animal em lactação.`,
+                data: secagem
+              });
+            }
 
             eventos.push({
               titulo: `Pré-parto de ${a.nome}`,
