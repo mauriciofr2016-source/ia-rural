@@ -3827,6 +3827,28 @@ async function fazerLogin() {
       if (alvo) alvo.innerHTML = '<div class="empty-state"><div class="empty-icon">🌳</div>Digite o nome do animal para visualizar a árvore genealógica e baixar o PDF completo.</div>';
     }
 
+
+
+    function emojiAnimal(categoria) {
+      const c = String(categoria || '').toLowerCase();
+      if (c.includes('bezerra') || c.includes('bezerro')) return '🐄';
+      if (c.includes('novilha')) return '🐄';
+      if (c.includes('vaca')) return '🐄';
+      if (c.includes('garrote') || c.includes('boi') || c.includes('touro')) return '🐂';
+      return (typeof obterAreaAtual === 'function' && obterAreaAtual() === 'corte') ? '🐂' : '🐄';
+    }
+
+    function tagClass(categoria) {
+      const c = String(categoria || '').toLowerCase();
+      if (c.includes('bezerra') || c.includes('bezerro')) return 'tag-bezerro';
+      if (c.includes('novilha')) return 'tag-novilha';
+      if (c.includes('vaca')) return 'tag-vaca';
+      if (c.includes('garrote')) return 'tag-garrote';
+      if (c.includes('boi')) return 'tag-boi';
+      if (c.includes('touro')) return 'tag-touro';
+      return '';
+    }
+
     function renderGenealogia() {
       const alvo = document.getElementById('genealogia-resultado');
       if (!alvo) return;
@@ -3845,8 +3867,13 @@ async function fazerLogin() {
     function renderRebanho() {
       const area = obterAreaAtual() || 'leiteiro';
       const lista = document.getElementById('lista-rebanho');
-      const animaisDaArea = getAnimaisDaArea(area);
-      document.getElementById('count-rebanho').textContent = animaisDaArea.length;
+      const contador = document.getElementById('count-rebanho');
+      if (!lista) return;
+
+      const animaisDaArea = (typeof getAnimaisDaArea === 'function' ? getAnimaisDaArea(area) : [])
+        .filter(a => a && typeof a === 'object');
+
+      if (contador) contador.textContent = animaisDaArea.length;
 
       if (!animaisDaArea.length) {
         lista.innerHTML = `
@@ -3859,63 +3886,76 @@ async function fazerLogin() {
         return;
       }
 
-      lista.innerHTML = animaisDaArea.map(a => {
-        const rec = area === 'corte' ? gerarRecomendacoesCorte(a) : null;
-        const avatar = a.foto
-          ? `<img class="animal-photo" src="${a.foto}" alt="Foto de ${a.nome}" />`
-          : `<div class="animal-avatar">${emojiAnimal(a.categoria)}</div>`;
+      try {
+        lista.innerHTML = animaisDaArea.map(a => {
+          const nomeSeguro = escapeHtml(a.nome || 'Animal sem nome');
+          const nomeAttr = escapeAttr(a.nome || 'Animal');
+          const brincoSeguro = escapeHtml(a.brinco || '');
+          const sexoSeguro = escapeHtml(a.sexo || 'Sexo não informado');
+          const categoriaSeguro = escapeHtml(a.categoria || 'Não definido');
+          const obsSeguro = escapeHtml(a.obs || '');
+          const anotacaoSeguro = escapeHtml(a.anotacaoRapida || '');
+          const idAttr = escapeAttr(a.id || '');
+          const nomeJs = String(a.nome || 'Animal').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+          const rec = area === 'corte' && typeof gerarRecomendacoesCorte === 'function' ? gerarRecomendacoesCorte(a) : null;
+          const avatar = a.foto
+            ? `<img class="animal-photo" src="${escapeAttr(a.foto)}" alt="Foto de ${nomeAttr}" />`
+            : `<div class="animal-avatar">${emojiAnimal(a.categoria)}</div>`;
 
-        return `
-        <div class="animal-item">
-          ${avatar}
+          return `
+          <div class="animal-item">
+            ${avatar}
 
-          <div class="animal-body">
-            <div class="animal-name">
-              ${a.nome}
-              ${a.brinco ? `<span style="font-size:11px;color:var(--muted);font-weight:400;">· Brinco ${a.brinco}</span>` : ''}
-            </div>
-
-            <div class="animal-meta">
-              ${a.sexo || 'Sexo não informado'}
-              ${a.dataNascimento ? `· Nasc.: ${new Date(a.dataNascimento + 'T12:00:00').toLocaleDateString('pt-BR')}` : ''}
-            </div>
-
-            <div class="tag-wrap">
-              <span class="tag ${tagClass(a.categoria)}">${a.categoria || 'Não definido'}</span>
-              ${a.prenha ? `<span class="tag tag-prenha">🤰 Prenha</span>` : ''}
-              ${a.lactacao ? `<span class="tag tag-lactacao">🥛 Lactação</span>` : ''}
-              ${area === 'corte' && a.faseCorte ? `<span class="tag" style="background:#111111;color:#ffffff;">${a.faseCorte}</span>` : ''}
-              ${area === 'corte' && a.sistemaAlimentar ? `<span class="tag" style="background:#111111;color:#ffffff;">${a.sistemaAlimentar}</span>` : ''}
-            </div>
-
-            ${a.obs ? `<div class="animal-obs">${a.obs}</div>` : ''}
-            ${a.anotacaoRapida ? `<div class="note-badge">📝 ${a.anotacaoRapida}</div>` : ''}
-
-            ${area === 'corte' ? `
-              <div class="rec-grid">
-                <div class="rec-box">
-                  <h5>🩺 Veterinário</h5>
-                  <p>${rec.veterinario}</p>
-                </div>
-                <div class="rec-box">
-                  <h5>🧴 Sanitário</h5>
-                  <p>${rec.sanitario}</p>
-                </div>
-                <div class="rec-box">
-                  <h5>🌾 Nutricional</h5>
-                  <p>${rec.nutricional}</p>
-                </div>
+            <div class="animal-body">
+              <div class="animal-name">
+                ${nomeSeguro}
+                ${brincoSeguro ? `<span style="font-size:11px;color:var(--muted);font-weight:400;">· Brinco ${brincoSeguro}</span>` : ''}
               </div>
-            ` : ''}
 
-            <div class="animal-actions">
-              <button class="btn btn-outline btn-sm" onclick="abrirEdicaoAnimal('${a.id}')">Editar</button>
-              <button class="btn btn-outline btn-sm" onclick="editarAnotacaoRapida('${a.id}', '${a.nome.replace(/'/g, "\\'")}')">📝 Anotar</button>
-              <button class="btn btn-outline btn-sm" onclick="abrirExcluir('${a.id}', '${a.nome.replace(/'/g, "\\'")}')">Excluir</button>
+              <div class="animal-meta">
+                ${sexoSeguro}
+                ${a.dataNascimento ? `· Nasc.: ${new Date(a.dataNascimento + 'T12:00:00').toLocaleDateString('pt-BR')}` : ''}
+              </div>
+
+              <div class="tag-wrap">
+                <span class="tag ${tagClass(a.categoria)}">${categoriaSeguro}</span>
+                ${a.prenha ? `<span class="tag tag-prenha">🤰 Prenha</span>` : ''}
+                ${a.lactacao ? `<span class="tag tag-lactacao">🥛 Lactação</span>` : ''}
+                ${area === 'corte' && a.faseCorte ? `<span class="tag" style="background:#111111;color:#ffffff;">${escapeHtml(a.faseCorte)}</span>` : ''}
+                ${area === 'corte' && a.sistemaAlimentar ? `<span class="tag" style="background:#111111;color:#ffffff;">${escapeHtml(a.sistemaAlimentar)}</span>` : ''}
+              </div>
+
+              ${obsSeguro ? `<div class="animal-obs">${obsSeguro}</div>` : ''}
+              ${anotacaoSeguro ? `<div class="note-badge">📝 ${anotacaoSeguro}</div>` : ''}
+
+              ${area === 'corte' && rec ? `
+                <div class="rec-grid">
+                  <div class="rec-box"><h5>🩺 Veterinário</h5><p>${escapeHtml(rec.veterinario || '')}</p></div>
+                  <div class="rec-box"><h5>🧴 Sanitário</h5><p>${escapeHtml(rec.sanitario || '')}</p></div>
+                  <div class="rec-box"><h5>🌾 Nutricional</h5><p>${escapeHtml(rec.nutricional || '')}</p></div>
+                </div>
+              ` : ''}
+
+              <div class="animal-actions">
+                <button class="btn btn-outline btn-sm" onclick="abrirEdicaoAnimal('${idAttr}')">Editar</button>
+                <button class="btn btn-outline btn-sm" onclick="editarAnotacaoRapida('${idAttr}', '${nomeJs}')">📝 Anotar</button>
+                <button class="btn btn-outline btn-sm" onclick="abrirExcluir('${idAttr}', '${nomeJs}')">Excluir</button>
+              </div>
             </div>
           </div>
-        </div>
-      `}).join('');
+        `}).join('');
+      } catch (erroRenderRebanho) {
+        console.error('Erro ao renderizar rebanho:', erroRenderRebanho, animaisDaArea);
+        lista.innerHTML = animaisDaArea.map(a => `
+          <div class="animal-item">
+            <div class="animal-avatar">🐄</div>
+            <div class="animal-body">
+              <div class="animal-name">${escapeHtml(a?.nome || 'Animal sem nome')}</div>
+              <div class="animal-meta">${escapeHtml(a?.categoria || 'Animal cadastrado')}</div>
+            </div>
+          </div>
+        `).join('');
+      }
     }
 
     async function editarAnotacaoRapida(id, nome) {
