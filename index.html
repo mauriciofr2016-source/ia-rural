@@ -2000,23 +2000,52 @@ async function fazerLogin() {
       return `ia_rural_db_${normalizarUsuario(usuarioLogado || 'anonimo')}`;
     }
 
+    function getLocalKeysPossiveis(usuario = usuarioLogado || '') {
+      const bruto = String(usuario || '').trim();
+      const normalizado = normalizarUsuario(bruto || 'anonimo');
+      const uid = usuarioFirebase?.uid || auth.currentUser?.uid || '';
+      const keys = [
+        `ia_rural_db_${normalizado}`,
+        `ia_rural_db_${bruto}`,
+        uid ? `ia_rural_db_uid_${uid}` : '',
+        uid ? `ia_rural_db_${uid}` : '',
+        getLocalKey()
+      ].filter(Boolean);
+      return Array.from(new Set(keys));
+    }
+
     function salvarLocal() {
       try {
-        localStorage.setItem(getLocalKey(), JSON.stringify(DB));
+        const payload = JSON.stringify(DB);
+        getLocalKeysPossiveis(usuarioLogado || '').forEach(chave => {
+          try { localStorage.setItem(chave, payload); } catch (_) {}
+        });
       } catch (e) {
         console.log('Erro localStorage:', e);
       }
     }
 
     function carregarLocalPorUsuario(usuario) {
-      try {
-        const raw = localStorage.getItem(`ia_rural_db_${usuario}`);
-        if (!raw) return DB_PADRAO();
-        const parsed = JSON.parse(raw);
-        return normalizarDB(parsed);
-      } catch (e) {
-        return DB_PADRAO();
+      const keys = getLocalKeysPossiveis(usuario || usuarioLogado || '');
+      let melhor = null;
+      let melhorQtd = -1;
+
+      for (const chave of keys) {
+        try {
+          const raw = localStorage.getItem(chave);
+          if (!raw) continue;
+          const parsed = normalizarDB(JSON.parse(raw));
+          const qtd = (parsed.animais?.length || 0) + (parsed.protocolosVacas?.length || 0) + (parsed.entregas?.length || 0) + (parsed.entregasCorte?.length || 0);
+          if (qtd > melhorQtd) {
+            melhor = parsed;
+            melhorQtd = qtd;
+          }
+        } catch (e) {
+          console.warn('Falha ao ler backup local:', chave, e);
+        }
       }
+
+      return melhor || DB_PADRAO();
     }
 
     function normalizarDB(obj) {
@@ -2494,8 +2523,22 @@ async function fazerLogin() {
       if (!usuarioFirebase) return [];
       const refUsuarioArea = obterRefUsuarioArea(usuarioFirebase.uid);
       if (!refUsuarioArea) return [];
-      const snap = await refUsuarioArea.collection(nomeColecao).get();
-      return snap.docs.map(doc => normalizarAnimal({ id: doc.id, ...(doc.data() || {}) }));
+      try {
+        const snap = await refUsuarioArea.collection(nomeColecao).get();
+        const lista = snap.docs.map(doc => normalizarAnimal({ id: doc.id, ...(doc.data() || {}) }));
+        if (lista.length) return lista;
+      } catch (e) {
+        console.warn('Não foi possível carregar subcoleção principal:', nomeColecao, e);
+      }
+
+      // Compatibilidade com versões antigas que salvaram direto em areas/{area}/{uid}/{colecao}
+      try {
+        const areaConta = obterAreaContaAtualSegura();
+        const snapAntigo = await db.collection('areas').doc(areaConta).collection(usuarioFirebase.uid).doc(nomeColecao).collection('lista').get();
+        return snapAntigo.docs.map(doc => normalizarAnimal({ id: doc.id, ...(doc.data() || {}) }));
+      } catch (e) {
+        return [];
+      }
     }
 
     async function sincronizarColecaoAnimais(nomeColecao, lista) {
@@ -2597,15 +2640,23 @@ async function fazerLogin() {
         const arquivadosSeparados = await carregarColecaoAnimais('arquivados');
         const protocolosSeparados = await carregarColecaoProtocolosVacas();
 
-        DB = mesclarDBSeguro(
-          {
-            ...appDataNuvem,
-            animais: animaisSeparados.length ? animaisSeparados : (appDataNuvem.animais || []),
-            arquivados: arquivadosSeparados.length ? arquivadosSeparados : (appDataNuvem.arquivados || []),
-            protocolosVacas: protocolosSeparados.length ? protocolosSeparados : (appDataNuvem.protocolosVacas || [])
-          },
-          dadosLocais
-        );
+        const nuvemNormalizada = {
+          ...appDataNuvem,
+          animais: animaisSeparados.length ? animaisSeparados : (appDataNuvem.animais || []),
+          arquivados: arquivadosSeparados.length ? arquivadosSeparados : (appDataNuvem.arquivados || []),
+          protocolosVacas: protocolosSeparados.length ? protocolosSeparados : (appDataNuvem.protocolosVacas || [])
+        };
+
+        DB = mesclarDBSeguro(nuvemNormalizada, dadosLocais);
+
+        // Segurança contra perda visual após Ctrl+F5: se a nuvem vier vazia por regra/conexão,
+        // mantemos o que já estava salvo neste navegador em vez de zerar a lista.
+        if ((!nuvemNormalizada.animais || !nuvemNormalizada.animais.length) && dadosLocais.animais && dadosLocais.animais.length && (!DB.animais || !DB.animais.length)) {
+          DB.animais = dadosLocais.animais.map(normalizarAnimal);
+        }
+        if ((!nuvemNormalizada.protocolosVacas || !nuvemNormalizada.protocolosVacas.length) && dadosLocais.protocolosVacas && dadosLocais.protocolosVacas.length && (!DB.protocolosVacas || !DB.protocolosVacas.length)) {
+          DB.protocolosVacas = dadosLocais.protocolosVacas.map(normalizarProtocoloVaca);
+        }
 
         DB.areaSelecionada = areaInterna;
         salvarLocal();
@@ -2881,6 +2932,8 @@ async function fazerLogin() {
 
         salvarLocalSeguro();
         const nuvemOk = await tentarSalvarAnimalNaNuvem(animalFinal);
+        // Salva novamente após a tentativa de nuvem para garantir persistência no navegador antes de limpar/renderizar.
+        salvarLocalSeguro();
 
         animalEmEdicao = null;
         try { if (typeof limparFormularioAnimal === 'function') limparFormularioAnimal(); } catch (e) { console.warn('Falha ao limpar formulário:', e); }
