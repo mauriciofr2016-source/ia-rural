@@ -2628,10 +2628,19 @@ async function fazerLogin() {
 
     async function salvarAnimal() {
       const btnSalvar = document.getElementById('btn-salvar-animal');
-      let animalFoiGravadoNoDB = false;
+
+      function valorCampo(id) {
+        const el = document.getElementById(id);
+        return el && typeof el.value === 'string' ? el.value.trim() : '';
+      }
+
+      function valorSelect(id) {
+        const el = document.getElementById(id);
+        return el ? (el.value || '') : '';
+      }
 
       try {
-        if ((!usuarioFirebase || !usuarioFirebase.uid) && auth.currentUser) {
+        if ((!usuarioFirebase || !usuarioFirebase.uid) && auth && auth.currentUser) {
           usuarioFirebase = auth.currentUser;
         }
 
@@ -2640,32 +2649,39 @@ async function fazerLogin() {
           return;
         }
 
-        const area = obterAreaAtual() || 'leiteiro';
-        const nome = (document.getElementById('a-nome')?.value || '').trim();
-        const brinco = (document.getElementById('a-brinco')?.value || '').trim();
-        const sexo = document.getElementById('a-sexo')?.value || '';
-        const dataNascimento = document.getElementById('a-data-nascimento')?.value || '';
-        const castrado = document.getElementById('a-castrado')?.value === 'sim';
-        const prenha = document.getElementById('a-prenha')?.value === 'sim';
-        const dataPrenha = document.getElementById('a-data-prenha')?.value || '';
-        const lactacao = document.getElementById('a-lactacao')?.value === 'sim';
-        const faseCorte = document.getElementById('a-fase-corte')?.value || '';
-        const pesoEstimado = parseFloat(document.getElementById('a-peso')?.value) || 0;
-        const pesoInicial = parseFloat(document.getElementById('a-peso-inicial')?.value) || 0;
-        const dataPesoInicial = document.getElementById('a-data-peso-inicial')?.value || '';
-        const sistemaAlimentar = document.getElementById('a-sistema-alimentar')?.value || '';
+        if (!DB || typeof DB !== 'object') DB = DB_PADRAO();
+        if (!Array.isArray(DB.animais)) DB.animais = [];
+        if (!Array.isArray(DB.arquivados)) DB.arquivados = [];
+        if (!Array.isArray(DB.protocolosVacas)) DB.protocolosVacas = [];
+
+        const area = obterAreaAtual() || areaContaParaInterna(areaLoginSelecionada || 'leiteira') || 'leiteiro';
+        DB.areaSelecionada = area;
+
+        const nome = valorCampo('a-nome');
+        const brinco = valorCampo('a-brinco');
+        const sexo = valorSelect('a-sexo');
+        const dataNascimento = valorSelect('a-data-nascimento');
+        const castrado = valorSelect('a-castrado') === 'sim';
+        const prenha = valorSelect('a-prenha') === 'sim';
+        const dataPrenha = valorSelect('a-data-prenha');
+        const lactacao = valorSelect('a-lactacao') === 'sim';
+        const faseCorte = valorSelect('a-fase-corte');
+        const pesoEstimado = parseFloat(valorSelect('a-peso')) || 0;
+        const pesoInicial = parseFloat(valorSelect('a-peso-inicial')) || 0;
+        const dataPesoInicial = valorSelect('a-data-peso-inicial');
+        const sistemaAlimentar = valorSelect('a-sistema-alimentar');
         const genealogia = {
-          mae: (document.getElementById('a-mae')?.value || '').trim(),
-          pai: (document.getElementById('a-pai')?.value || '').trim(),
-          avoMaterna: (document.getElementById('a-avo-materna')?.value || '').trim(),
-          avoMaterno: (document.getElementById('a-avo-materno')?.value || '').trim(),
-          avoPaterna: (document.getElementById('a-avo-paterna')?.value || '').trim(),
-          avoPaterno: (document.getElementById('a-avo-paterno')?.value || '').trim()
+          mae: valorCampo('a-mae'),
+          pai: valorCampo('a-pai'),
+          avoMaterna: valorCampo('a-avo-materna'),
+          avoMaterno: valorCampo('a-avo-materno'),
+          avoPaterna: valorCampo('a-avo-paterna'),
+          avoPaterno: valorCampo('a-avo-paterno')
         };
-        const vacinaData = document.getElementById('a-vacina')?.value || '';
-        const vermifugoData = document.getElementById('a-vermifugo')?.value || '';
-        const carrapatoData = document.getElementById('a-carrapato')?.value || '';
-        const obs = (document.getElementById('a-obs')?.value || '').trim();
+        const vacinaData = valorSelect('a-vacina');
+        const vermifugoData = valorSelect('a-vermifugo');
+        const carrapatoData = valorSelect('a-carrapato');
+        const obs = valorCampo('a-obs');
 
         if (!nome) {
           alert('Informe o nome do animal.');
@@ -2698,11 +2714,12 @@ async function fazerLogin() {
         try {
           fotoNova = await lerFotoAnimalBase64();
         } catch (fotoErro) {
-          console.warn('Não foi possível ler a foto do animal. O cadastro continuará sem foto nova.', fotoErro);
+          console.warn('Foto ignorada porque não foi possível ler o arquivo:', fotoErro);
           fotoNova = '';
         }
 
         const agoraIso = new Date().toISOString();
+        let animalParaSalvar = null;
 
         if (animalEmEdicao) {
           const idx = DB.animais.findIndex(a => a.id === animalEmEdicao);
@@ -2712,7 +2729,7 @@ async function fazerLogin() {
           }
 
           const animalAtual = normalizarAnimal(DB.animais[idx]);
-          DB.animais[idx] = normalizarAnimal({
+          animalParaSalvar = normalizarAnimal({
             ...animalAtual,
             area,
             nome,
@@ -2739,9 +2756,10 @@ async function fazerLogin() {
             carrapatoData: area === 'corte' ? carrapatoData : '',
             atualizadoEm: agoraIso
           });
+          DB.animais[idx] = animalParaSalvar;
         } else {
-          const novoId = `1777474862364_${Math.random().toString(36).slice(2, 10)}`;
-          const animal = normalizarAnimal({
+          const novoId = `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+          animalParaSalvar = normalizarAnimal({
             id: novoId,
             area,
             nome,
@@ -2769,20 +2787,30 @@ async function fazerLogin() {
             dataCadastro: agoraIso,
             criadoEm: agoraIso
           });
-          DB.animais.push(animal);
+          DB.animais.push(animalParaSalvar);
         }
 
-        animalFoiGravadoNoDB = true;
-
+        // Primeiro salva no navegador para nunca perder o cadastro por erro de internet/regras.
         try {
           salvarLocal();
         } catch (localErro) {
-          console.error('Erro ao salvar no navegador:', localErro);
+          console.error('Erro ao salvar localmente:', localErro);
         }
 
-        const sincronizouNuvem = await salvarNuvem();
-        if (!sincronizouNuvem) {
-          console.warn('Animal cadastrado localmente. A nuvem não confirmou a sincronização agora.');
+        let sincronizouNuvem = false;
+        try {
+          const refUsuarioArea = obterRefUsuarioArea(usuarioFirebase.uid);
+          if (refUsuarioArea && animalParaSalvar && animalParaSalvar.id) {
+            await refUsuarioArea
+              .collection('animais')
+              .doc(limparIdFirestore(animalParaSalvar.id))
+              .set(limparParaFirestore(animalParaSalvar), { merge: true });
+          }
+          await salvarNuvem();
+          sincronizouNuvem = true;
+        } catch (nuvemErro) {
+          console.error('Erro técnico ao sincronizar animal na nuvem:', nuvemErro);
+          sincronizouNuvem = false;
         }
 
         animalEmEdicao = null;
@@ -2791,17 +2819,20 @@ async function fazerLogin() {
         atualizarTextoFormularioAnimal();
         renderTudo();
         showPage('rebanho');
-        alert(sincronizouNuvem ? 'Animal salvo com sucesso.' : 'Animal salvo neste computador. Para salvar na nuvem, publique as regras do Firebase que enviei junto no ZIP.');
+
+        if (sincronizouNuvem) {
+          alert('Animal salvo com sucesso.');
+        } else {
+          alert('Animal salvo no sistema. A internet ou as regras do Firebase impediram apenas a confirmação da nuvem agora.');
+        }
       } catch (e) {
-        console.error('Erro ao salvar animal:', e);
-        if (animalFoiGravadoNoDB) {
-          try { salvarLocal(); } catch (_) {}
+        console.error('Erro inesperado ao salvar animal:', e);
+        try {
+          salvarLocal();
           renderTudo();
           showPage('rebanho');
-          alert('Animal salvo neste computador, mas a sincronização com a nuvem falhou. Publique as regras do Firebase que enviei junto no ZIP.');
-        } else {
-          alert('Não foi possível salvar o animal. Veja o console do navegador para o erro técnico.');
-        }
+        } catch (_) {}
+        alert('O cadastro foi protegido localmente, mas ocorreu um erro inesperado. Abra o console se precisar ver o detalhe técnico.');
       } finally {
         if (btnSalvar) {
           btnSalvar.disabled = false;
