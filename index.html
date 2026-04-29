@@ -2567,7 +2567,9 @@ async function fazerLogin() {
 
     async function salvarDB() {
       salvarLocal();
-      await salvarNuvem();
+      const ok = await salvarNuvem();
+      if (!ok) console.warn('salvarDB: dados salvos localmente, mas a nuvem não confirmou sincronização.');
+      return ok;
     }
 
     async function carregarFirestore() {
@@ -2626,6 +2628,7 @@ async function fazerLogin() {
 
     async function salvarAnimal() {
       const btnSalvar = document.getElementById('btn-salvar-animal');
+      let animalFoiGravadoNoDB = false;
 
       try {
         if ((!usuarioFirebase || !usuarioFirebase.uid) && auth.currentUser) {
@@ -2633,13 +2636,13 @@ async function fazerLogin() {
         }
 
         if (!usuarioFirebase || !usuarioFirebase.uid) {
-          alert('Você precisa estar logado para salvar o animal.');
+          alert('Você precisa estar logado para salvar o animal. Saia e entre novamente.');
           return;
         }
 
         const area = obterAreaAtual() || 'leiteiro';
-        const nome = document.getElementById('a-nome')?.value.trim() || '';
-        const brinco = document.getElementById('a-brinco')?.value.trim() || '';
+        const nome = (document.getElementById('a-nome')?.value || '').trim();
+        const brinco = (document.getElementById('a-brinco')?.value || '').trim();
         const sexo = document.getElementById('a-sexo')?.value || '';
         const dataNascimento = document.getElementById('a-data-nascimento')?.value || '';
         const castrado = document.getElementById('a-castrado')?.value === 'sim';
@@ -2652,17 +2655,17 @@ async function fazerLogin() {
         const dataPesoInicial = document.getElementById('a-data-peso-inicial')?.value || '';
         const sistemaAlimentar = document.getElementById('a-sistema-alimentar')?.value || '';
         const genealogia = {
-          mae: document.getElementById('a-mae')?.value.trim() || '',
-          pai: document.getElementById('a-pai')?.value.trim() || '',
-          avoMaterna: document.getElementById('a-avo-materna')?.value.trim() || '',
-          avoMaterno: document.getElementById('a-avo-materno')?.value.trim() || '',
-          avoPaterna: document.getElementById('a-avo-paterna')?.value.trim() || '',
-          avoPaterno: document.getElementById('a-avo-paterno')?.value.trim() || ''
+          mae: (document.getElementById('a-mae')?.value || '').trim(),
+          pai: (document.getElementById('a-pai')?.value || '').trim(),
+          avoMaterna: (document.getElementById('a-avo-materna')?.value || '').trim(),
+          avoMaterno: (document.getElementById('a-avo-materno')?.value || '').trim(),
+          avoPaterna: (document.getElementById('a-avo-paterna')?.value || '').trim(),
+          avoPaterno: (document.getElementById('a-avo-paterno')?.value || '').trim()
         };
         const vacinaData = document.getElementById('a-vacina')?.value || '';
         const vermifugoData = document.getElementById('a-vermifugo')?.value || '';
         const carrapatoData = document.getElementById('a-carrapato')?.value || '';
-        const obs = document.getElementById('a-obs')?.value.trim() || '';
+        const obs = (document.getElementById('a-obs')?.value || '').trim();
 
         if (!nome) {
           alert('Informe o nome do animal.');
@@ -2691,7 +2694,14 @@ async function fazerLogin() {
         }
 
         const categoria = getCategoriaPorArea(area, sexo, idade, castrado);
-        const fotoNova = await lerFotoAnimalBase64();
+        let fotoNova = '';
+        try {
+          fotoNova = await lerFotoAnimalBase64();
+        } catch (fotoErro) {
+          console.warn('Não foi possível ler a foto do animal. O cadastro continuará sem foto nova.', fotoErro);
+          fotoNova = '';
+        }
+
         const agoraIso = new Date().toISOString();
 
         if (animalEmEdicao) {
@@ -2730,7 +2740,7 @@ async function fazerLogin() {
             atualizadoEm: agoraIso
           });
         } else {
-          const novoId = `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+          const novoId = `1777474862364_${Math.random().toString(36).slice(2, 10)}`;
           const animal = normalizarAnimal({
             id: novoId,
             area,
@@ -2762,9 +2772,18 @@ async function fazerLogin() {
           DB.animais.push(animal);
         }
 
-        salvarLocal();
+        animalFoiGravadoNoDB = true;
+
+        try {
+          salvarLocal();
+        } catch (localErro) {
+          console.error('Erro ao salvar no navegador:', localErro);
+        }
+
         const sincronizouNuvem = await salvarNuvem();
-        if (!sincronizouNuvem) console.warn('Animal salvo localmente; sincronização com a nuvem não confirmou agora.');
+        if (!sincronizouNuvem) {
+          console.warn('Animal cadastrado localmente. A nuvem não confirmou a sincronização agora.');
+        }
 
         animalEmEdicao = null;
         limparFormularioAnimal();
@@ -2772,10 +2791,17 @@ async function fazerLogin() {
         atualizarTextoFormularioAnimal();
         renderTudo();
         showPage('rebanho');
-        alert('Animal salvo com sucesso.');
+        alert(sincronizouNuvem ? 'Animal salvo com sucesso.' : 'Animal salvo neste computador. Para salvar na nuvem, publique as regras do Firebase que enviei junto no ZIP.');
       } catch (e) {
         console.error('Erro ao salvar animal:', e);
-        alert('Erro ao salvar animal. Verifique a internet, as regras do Firebase e tente novamente.');
+        if (animalFoiGravadoNoDB) {
+          try { salvarLocal(); } catch (_) {}
+          renderTudo();
+          showPage('rebanho');
+          alert('Animal salvo neste computador, mas a sincronização com a nuvem falhou. Publique as regras do Firebase que enviei junto no ZIP.');
+        } else {
+          alert('Não foi possível salvar o animal. Veja o console do navegador para o erro técnico.');
+        }
       } finally {
         if (btnSalvar) {
           btnSalvar.disabled = false;
@@ -2783,7 +2809,6 @@ async function fazerLogin() {
         }
       }
     }
-
 
     async function atualizarCampoAnimal(id, campo, valor) {
       const animal = DB.animais.find(a => a.id === id);
