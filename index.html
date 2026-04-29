@@ -2343,6 +2343,108 @@ async function fazerLogin() {
         .doc('principal');
     }
 
+
+    function obterRefUsuarioArea(uid = usuarioFirebase?.uid) {
+      if (!uid) return null;
+      const areaConta = obterAreaContaAtualSegura();
+      return db
+        .collection('areas')
+        .doc(areaConta)
+        .collection('usuarios')
+        .doc(uid);
+    }
+
+    function limparIdFirestore(id) {
+      return String(id || `${Date.now()}_${Math.random()}`).replace(/[\/]/g, '_');
+    }
+
+    function prepararAppDataPrincipal(dbAtual) {
+      const limpo = normalizarDB(dbAtual || {});
+      return { ...limpo, animais: [], arquivados: [], protocolosVacas: [] };
+    }
+
+    function normalizarIdDocumentoFirestore(id, prefixo = 'doc') {
+      return String(id || `${prefixo}_${Date.now()}_${Math.random()}`).replace(/[\/]/g, '_');
+    }
+
+    async function carregarColecaoProtocolosVacas() {
+      if (!usuarioFirebase) return [];
+      const refUsuarioArea = obterRefUsuarioArea(usuarioFirebase.uid);
+      if (!refUsuarioArea) return [];
+      const snap = await refUsuarioArea.collection('protocolosVacas').get();
+      return snap.docs.map(doc => normalizarProtocoloVaca({ id: doc.id, ...(doc.data() || {}) }));
+    }
+
+    async function sincronizarColecaoProtocolosVacas(lista) {
+      if (!usuarioFirebase) return;
+      const refUsuarioArea = obterRefUsuarioArea(usuarioFirebase.uid);
+      if (!refUsuarioArea) return;
+      const col = refUsuarioArea.collection('protocolosVacas');
+      const snap = await col.get();
+      const idsAtuais = new Set((Array.isArray(lista) ? lista : []).map(item => normalizarIdDocumentoFirestore(item.id, 'pv')));
+      let batch = db.batch();
+      let operacoes = 0;
+
+      snap.docs.forEach(doc => {
+        if (!idsAtuais.has(doc.id)) {
+          batch.delete(doc.ref);
+          operacoes++;
+        }
+      });
+
+      (Array.isArray(lista) ? lista : []).forEach(item => {
+        const protocolo = normalizarProtocoloVaca(item || {});
+        const id = normalizarIdDocumentoFirestore(protocolo.id, 'pv');
+        protocolo.id = id;
+        batch.set(col.doc(id), protocolo, { merge: true });
+        operacoes++;
+      });
+
+      if (operacoes > 0) await batch.commit();
+    }
+
+    async function carregarColecaoAnimais(nomeColecao) {
+      if (!usuarioFirebase) return [];
+      const refUsuarioArea = obterRefUsuarioArea(usuarioFirebase.uid);
+      if (!refUsuarioArea) return [];
+      const snap = await refUsuarioArea.collection(nomeColecao).get();
+      return snap.docs.map(doc => normalizarAnimal({ id: doc.id, ...(doc.data() || {}) }));
+    }
+
+    async function sincronizarColecaoAnimais(nomeColecao, lista) {
+      if (!usuarioFirebase) return;
+      const refUsuarioArea = obterRefUsuarioArea(usuarioFirebase.uid);
+      if (!refUsuarioArea) return;
+      const col = refUsuarioArea.collection(nomeColecao);
+      const snap = await col.get();
+      const idsAtuais = new Set((Array.isArray(lista) ? lista : []).map(item => limparIdFirestore(item.id)));
+      let batch = db.batch();
+      let operacoes = 0;
+
+      snap.docs.forEach(doc => {
+        if (!idsAtuais.has(doc.id)) {
+          batch.delete(doc.ref);
+          operacoes++;
+        }
+      });
+
+      (Array.isArray(lista) ? lista : []).forEach(item => {
+        const animal = normalizarAnimal(item || {});
+        const id = limparIdFirestore(animal.id);
+        animal.id = id;
+        batch.set(col.doc(id), animal, { merge: true });
+        operacoes++;
+      });
+
+      if (operacoes > 0) await batch.commit();
+    }
+
+    async function salvarDadosSeparadosNaNuvem() {
+      await sincronizarColecaoAnimais('animais', DB.animais);
+      await sincronizarColecaoAnimais('arquivados', DB.arquivados);
+      await sincronizarColecaoProtocolosVacas(DB.protocolosVacas);
+    }
+
     async function salvarNuvem() {
       if (!usuarioFirebase) return;
       try {
@@ -2353,15 +2455,23 @@ async function fazerLogin() {
         const refDadosArea = obterRefDadosArea(usuarioFirebase.uid);
         const docAtual = await refDadosArea.get();
         if (docAtual.exists && docAtual.data() && docAtual.data().appData) {
-          DB = mesclarDBSeguro(DB, docAtual.data().appData);
+          DB = mesclarDBSeguro(DB, {
+            ...(docAtual.data().appData || {}),
+            animais: [],
+            arquivados: [],
+            protocolosVacas: []
+          });
         }
+
+        await salvarDadosSeparadosNaNuvem();
 
         await refDadosArea.set({
           username: usuarioLogado,
           uid: usuarioFirebase.uid,
           area: areaConta,
           areaSistema: areaConta,
-          appData: DB,
+          appData: prepararAppDataPrincipal(DB),
+          armazenamentoAnimais: 'subcolecoes',
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
 
@@ -2372,7 +2482,9 @@ async function fazerLogin() {
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
       } catch (e) {
-        console.log('Erro ao salvar na nuvem:', e);
+        console.error('Erro ao salvar na nuvem:', e);
+        alert('Não foi possível salvar os dados na nuvem. Verifique sua internet e tente novamente antes de sair da página.');
+        throw e;
       }
     }
 
@@ -2389,17 +2501,31 @@ async function fazerLogin() {
         const areaInterna = areaContaParaInterna(areaConta);
         const refArea = obterRefDadosArea(usuarioFirebase.uid);
         const docArea = await refArea.get();
+        const dadosLocais = carregarLocalPorUsuario(usuarioLogado || '');
+        const animaisSeparados = await carregarColecaoAnimais('animais');
+        const arquivadosSeparados = await carregarColecaoAnimais('arquivados');
+        const protocolosSeparados = await carregarColecaoProtocolosVacas();
 
         if (docArea.exists && docArea.data() && docArea.data().appData) {
-          const dadosLocais = carregarLocalPorUsuario(usuarioLogado || '');
-          DB = mesclarDBSeguro(docArea.data().appData, dadosLocais);
+          const appDataNuvem = docArea.data().appData || {};
+          DB = mesclarDBSeguro(
+            {
+              ...appDataNuvem,
+              animais: animaisSeparados.length ? animaisSeparados : (appDataNuvem.animais || []),
+              arquivados: arquivadosSeparados.length ? arquivadosSeparados : (appDataNuvem.arquivados || []),
+              protocolosVacas: protocolosSeparados.length ? protocolosSeparados : (appDataNuvem.protocolosVacas || [])
+            },
+            dadosLocais
+          );
           DB.areaSelecionada = areaInterna;
+          await salvarDadosSeparadosNaNuvem();
           await refArea.set({
             username: usuarioLogado,
             uid: usuarioFirebase.uid,
             area: areaConta,
             areaSistema: areaConta,
-            appData: DB,
+            appData: prepararAppDataPrincipal(DB),
+            armazenamentoAnimais: 'subcolecoes',
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
           }, { merge: true });
           salvarLocal();
@@ -2408,16 +2534,18 @@ async function fazerLogin() {
           if (docAntigo.exists && docAntigo.data() && docAntigo.data().appData) {
             DB = normalizarDB(docAntigo.data().appData);
           } else {
-            DB = carregarLocalPorUsuario(usuarioLogado || '');
+            DB = dadosLocais;
           }
 
           DB.areaSelecionada = areaInterna;
+          await salvarDadosSeparadosNaNuvem();
           await refArea.set({
             username: usuarioLogado,
             uid: usuarioFirebase.uid,
             area: areaConta,
             areaSistema: areaConta,
-            appData: DB,
+            appData: prepararAppDataPrincipal(DB),
+            armazenamentoAnimais: 'subcolecoes',
             migratedFromOldUsersAppData: !!(docAntigo.exists && docAntigo.data() && docAntigo.data().appData),
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -2427,354 +2555,12 @@ async function fazerLogin() {
 
         renderTudo();
       } catch (e) {
-        console.log('Erro ao carregar Firestore:', e);
+        console.error('Erro ao carregar Firestore:', e);
+        alert('Não foi possível carregar os dados da nuvem. Vou mostrar os dados salvos neste computador, mas confira a internet antes de cadastrar novos animais.');
         DB = carregarLocalPorUsuario(usuarioLogado || '');
         DB.areaSelecionada = areaContaParaInterna(areaLoginSelecionada || 'leiteira');
         renderTudo();
       }
-    }
-
-   async function fazerLogin() {
-  const usuario = normalizarUsuario(document.getElementById('login-usuario').value);
-  const senha = document.getElementById('login-senha').value;
-  const erroBox = document.getElementById('login-erro');
-  erroBox.style.display = 'none';
-
-  if (!areaLoginSelecionada) {
-    erroBox.textContent = 'Escolha primeiro Área Leiteira ou Confinamento.';
-    erroBox.style.display = 'block';
-    return;
-  }
-
-  if (!usuario || !senha) {
-    erroBox.textContent = 'Informe usuário e senha.';
-    erroBox.style.display = 'block';
-    return;
-  }
-
-  try {
-    const cred = await auth.signInWithEmailAndPassword(usuarioParaEmail(usuario), senha);
-    const dadosConta = await obterDadosContaCompleta(cred.user.uid, usuario);
-
-    const areaPermitidaConta = normalizarAreaConta(dadosConta);
-    const areaPermitida = areaContaParaInterna(areaPermitidaConta);
-
-    if (areaPermitidaConta !== areaLoginSelecionada) {
-      await auth.signOut();
-      erroBox.textContent = 'Usuário não pertence a esta área. Selecione a área correta.';
-      erroBox.style.display = 'block';
-      return;
-    }
-
-    const testeGratis = await validarTesteGratisNoLogin(dadosConta, cred.user.uid);
-    if (testeGratis.bloqueado) {
-      await auth.signOut();
-      erroBox.textContent = testeGratis.mensagem;
-      erroBox.style.display = 'block';
-      return;
-    }
-
-    const statusConta = dadosConta?.status || dadosConta?.accountStatus || await obterStatusDaConta(cred.user.uid);
-    if (statusConta === 'bloqueado') {
-      await auth.signOut();
-      erroBox.textContent = dadosConta?.bloqueioMotivo || 'Seu acesso está bloqueado. Procure o administrador.';
-      erroBox.style.display = 'block';
-      return;
-    }
-
-    await db.collection('users').doc(cred.user.uid).set({
-      username: usuario,
-      accountStatus: statusConta || 'ativo',
-      area: areaPermitidaConta,
-      areaSistema: areaPermitidaConta,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
-
-    usuarioLogado = usuario;
-    DB = carregarLocalPorUsuario(usuario);
-    DB.areaSelecionada = areaPermitida;
-    salvarLocal();
-    abrirAppLogado(usuario);
-    await carregarFirestore();
-    DB.areaSelecionada = areaPermitida;
-    await salvarDB();
-    aplicarAreaNaInterface();
-    showPage(areaPermitida === 'corte' ? 'rebanho' : 'producao');
-  } catch (erro) {
-    console.error(erro);
-    let msg = 'Selecione a área correta ou verifique se o usuário e senha estão corretos.';
-    const code = erro?.code || '';
-    if (code.includes('wrong-password')) msg = 'Senha incorreta.';
-    else if (code.includes('user-not-found')) msg = 'Usuário não encontrado.';
-    else if (code.includes('invalid-login-credentials')) msg = 'Usuário ou senha inválidos.';
-    else if (code.includes('network-request-failed')) msg = 'Falha de conexão com a internet.';
-    else if (code.includes('too-many-requests')) msg = 'Muitas tentativas. Aguarde um pouco.';
-    else if (erro?.message) msg = erro.message;
-    erroBox.textContent = msg;
-    erroBox.style.display = 'block';
-  }
-}
-    async function fazerLogout() {
-      if (!confirm('Deseja sair do IA Rural?')) return;
-
-      try {
-        await auth.signOut();
-      } catch (e) {
-        console.log(e);
-      }
-
-      usuarioFirebase = null;
-      usuarioLogado = null;
-      DB = DB_PADRAO();
-
-      document.getElementById('app-wrapper').style.display = 'none';
-      document.getElementById('tela-login').style.display = 'none';
-      document.getElementById('landing-screen').style.display = 'flex';
-      document.getElementById('login-usuario').value = '';
-      document.getElementById('login-senha').value = '';
-      document.getElementById('login-erro').style.display = 'none';
-      limparHighlightTutorial();
-      const tutorialOverlay = document.getElementById('tutorial-overlay');
-      if (tutorialOverlay) tutorialOverlay.style.display = 'none';
-    }
-
-auth.onAuthStateChanged(async (user) => {
-  usuarioFirebase = user || null;
-
-  if (!user) return;
-
-  try {
-    const email = user.email || '';
-    const usuario = normalizarUsuario(email.split('@')[0] || 'usuario');
-    const dadosAdmin = await obterDadosContaCompleta(user.uid, usuario);
-    const testeGratis = await validarTesteGratisNoLogin(dadosAdmin, user.uid);
-    if (testeGratis.bloqueado) {
-      await auth.signOut();
-      const erroBox = document.getElementById('login-erro');
-      erroBox.textContent = testeGratis.mensagem;
-      erroBox.style.display = 'block';
-      return;
-    }
-
-    const statusConta = dadosAdmin?.status || await obterStatusDaConta(user.uid);
-
-    if (statusConta === 'bloqueado') {
-      await auth.signOut();
-      const erroBox = document.getElementById('login-erro');
-      erroBox.textContent = dadosAdmin?.bloqueioMotivo || 'Seu acesso está bloqueado. Procure o administrador.';
-      erroBox.style.display = 'block';
-      return;
-    }
-
-    const areaPermitidaConta = normalizarAreaConta(dadosAdmin);
-    const areaPermitida = areaContaParaInterna(areaPermitidaConta);
-    usuarioLogado = usuario;
-    DB = carregarLocalPorUsuario(usuario);
-    DB.areaSelecionada = areaPermitida;
-    abrirAppLogado(usuario);
-    await carregarFirestore();
-    DB.areaSelecionada = areaPermitida;
-    aplicarAreaNaInterface();
-  } catch (erro) {
-    console.error('Erro ao validar login do usuário:', erro);
-  }
-});
-    
-    function showPage(id) {
-      const area = obterAreaAtual();
-      const paginasBloqueadasNoCorte = ['producao', 'despesas', 'calendario'];
-
-      if (area === 'corte' && paginasBloqueadasNoCorte.includes(id)) {
-        id = 'inicio';
-      }
-
-      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-
-      const page = document.getElementById('page-' + id);
-      if (page) page.classList.add('active');
-
-      const tab = document.querySelector(`.nav-tab[data-page="${id}"]`);
-      if (tab && !tab.classList.contains('hidden')) tab.classList.add('active');
-
-      if (id === 'inicio') atualizarHomeArea();
-      if (id === 'rebanho') renderRebanho();
-      if (id === 'producao') renderProducao();
-      if (id === 'despesas') renderDespesas();
-      if (id === 'protocolar-vaca') renderProtocolarVaca();
-      if (id === 'vacas-protocoladas') renderVacasProtocoladas();
-      if (id === 'sanitario-corte') renderSanitarioCorte();
-      if (id === 'nutricao-corte') renderNutricaoCorte();
-      if (id === 'manejo-corte') renderManejoCorte();
-      if (id === 'despesas-corte') renderDespesasCorte();
-      if (id === 'vendidos-corte') renderVendidosCorte();
-      if (id === 'veterinario') renderVet();
-      if (id === 'genealogia') renderGenealogia();
-      if (id === 'calendario') renderCalendario();
-      if (id === 'arquivados') renderArquivados();
-    }
-
-
-    function renderTudo() {
-      aplicarAreaNaInterface();
-      renderRebanho();
-      renderProducao();
-      renderDespesas();
-      renderProtocolarVaca();
-      renderVacasProtocoladas();
-      renderSanitarioCorte();
-      renderNutricaoCorte();
-      renderManejoCorte();
-      renderDespesasCorte();
-      renderVendidosCorte();
-      renderVet();
-      renderGenealogia();
-      renderCalendario();
-      renderArquivados();
-      renderListaProdutosCorte();
-      toggleCompraFields('milho');
-      calcCompraProduto('milho');
-      calcCompraProduto('silagem');
-      calcCompraProduto('racao');
-      atualizarUltimoBackup();
-      atualizarTextoFormularioAnimal();
-    }
-
-    function toggleForm(id) {
-      const el = document.getElementById(id);
-      el.classList.toggle('hidden');
-      if (id === 'form-animal' && !el.classList.contains('hidden')) {
-        atualizarVisibilidadeCamposCadastro();
-        atualizarCategoria();
-      }
-    }
-
-    function togglePrenha() {
-      const v = document.getElementById('a-prenha').value;
-      const campo = document.getElementById('campo-data-prenha');
-      if (v === 'sim') campo.classList.remove('hidden');
-      else campo.classList.add('hidden');
-    }
-
-    function getCategoria(sexo, idadeMeses) {
-      if (sexo === 'Fêmea') {
-        if (idadeMeses <= 8) return 'Bezerra';
-        if (idadeMeses <= 30) return 'Novilha';
-        return 'Vaca';
-      } else {
-        if (idadeMeses <= 8) return 'Bezerro';
-        if (idadeMeses <= 30) return 'Garrote';
-        return 'Touro';
-      }
-    }
-
-    function atualizarCategoria() {
-      const area = obterAreaAtual() || 'leiteiro';
-      const sexo = document.getElementById('a-sexo').value;
-      const idadeDigitada = parseInt(document.getElementById('a-idade').value);
-      const dataNascimento = document.getElementById('a-data-nascimento').value;
-      const castrado = document.getElementById('a-castrado')?.value === 'sim';
-      const box = document.getElementById('a-categoria-box');
-
-      let idade = Number.isFinite(idadeDigitada) ? idadeDigitada : NaN;
-      if ((!Number.isFinite(idade) || idade < 0) && dataNascimento) {
-        idade = calcularIdadeEmMeses(dataNascimento);
-        if (Number.isFinite(idade) && idade >= 0) {
-          document.getElementById('a-idade').value = idade;
-        }
-      }
-
-      if (!sexo || !Number.isFinite(idade) || idade < 0) {
-        box.textContent = area === 'corte'
-          ? 'No corte, sexo e idade são opcionais. Quando preencher, a categoria será calculada automaticamente.'
-          : 'Preencha sexo e idade acima';
-        return;
-      }
-
-      const cat = getCategoriaPorArea(area, sexo, idade, castrado);
-      box.textContent = cat;
-    }
-
-    function tagClass(cat) {
-      const map = {
-        'Vaca': 'tag-vaca',
-        'Touro': 'tag-touro',
-        'Novilha': 'tag-novilha',
-        'Garrote': 'tag-garrote',
-        'Bezerro': 'tag-bezerro',
-        'Bezerra': 'tag-bezerra'
-      };
-      return map[cat] || 'tag-bezerro';
-    }
-
-    function emojiAnimal(cat) {
-      if (cat === 'Touro') return '🐂';
-      if (cat === 'Bezerro' || cat === 'Bezerra') return '🐮';
-      return '🐄';
-    }
-
-    function atualizarTextoFormularioAnimal() {
-      const btnSalvar = document.getElementById('btn-salvar-animal');
-      const btnToggle = document.getElementById('btn-toggle-form-animal');
-      if (btnSalvar) btnSalvar.textContent = animalEmEdicao ? '✓ Salvar Alterações' : '✓ Salvar Animal';
-      if (btnToggle) btnToggle.textContent = animalEmEdicao ? 'Editando Animal' : '+ Cadastrar Animal';
-    }
-
-    function preencherPreviewFoto(src = '') {
-      const box = document.getElementById('preview-foto-box');
-      const img = document.getElementById('preview-foto-img');
-      if (!box || !img) return;
-      if (src) {
-        img.src = src;
-        box.classList.remove('hidden');
-      } else {
-        img.src = '';
-        box.classList.add('hidden');
-      }
-    }
-
-    function abrirEdicaoAnimal(id) {
-      const animal = DB.animais.find(a => a.id === id);
-      if (!animal) return;
-
-      animalEmEdicao = id;
-      document.getElementById('a-nome').value = animal.nome || '';
-      document.getElementById('a-brinco').value = animal.brinco || '';
-      document.getElementById('a-sexo').value = animal.sexo || '';
-      document.getElementById('a-idade').value = animal.idadeMeses || '';
-      document.getElementById('a-data-nascimento').value = animal.dataNascimento || '';
-      document.getElementById('a-castrado').value = animal.castrado ? 'sim' : 'nao';
-      document.getElementById('a-prenha').value = animal.prenha ? 'sim' : 'nao';
-      document.getElementById('a-data-prenha').value = animal.dataPrenha || '';
-      document.getElementById('a-lactacao').value = animal.lactacao ? 'sim' : 'nao';
-      document.getElementById('a-fase-corte').value = animal.faseCorte || '';
-      document.getElementById('a-peso').value = animal.pesoEstimado || '';
-      document.getElementById('a-peso-inicial').value = animal.pesoInicial || '';
-      document.getElementById('a-data-peso-inicial').value = animal.dataPesoInicial || '';
-      document.getElementById('a-sistema-alimentar').value = animal.sistemaAlimentar || '';
-      document.getElementById('a-mae').value = animal.genealogia?.mae || '';
-      document.getElementById('a-pai').value = animal.genealogia?.pai || '';
-      document.getElementById('a-avo-materna').value = animal.genealogia?.avoMaterna || '';
-      document.getElementById('a-avo-materno').value = animal.genealogia?.avoMaterno || '';
-      document.getElementById('a-avo-paterna').value = animal.genealogia?.avoPaterna || '';
-      document.getElementById('a-avo-paterno').value = animal.genealogia?.avoPaterno || '';
-      document.getElementById('a-vacina').value = animal.vacinaData || '';
-      document.getElementById('a-vermifugo').value = animal.vermifugoData || '';
-      document.getElementById('a-carrapato').value = animal.carrapatoData || '';
-      document.getElementById('a-obs').value = animal.obs || '';
-      document.getElementById('a-foto').value = '';
-      preencherPreviewFoto(animal.foto || '');
-      togglePrenha();
-      atualizarVisibilidadeCamposCadastro();
-      atualizarCategoria();
-      atualizarTextoFormularioAnimal();
-
-      const form = document.getElementById('form-animal');
-      if (form.classList.contains('hidden')) {
-        form.classList.remove('hidden');
-      }
-
-      form.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     function cancelarEdicaoAnimal() {
