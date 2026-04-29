@@ -2702,6 +2702,19 @@ async function fazerLogin() {
 
         DB.areaSelecionada = areaInterna;
         salvarLocal();
+
+        // Se este navegador tinha dados locais e a nuvem estava vazia/bloqueada antes,
+        // tenta subir o backup local para a nuvem agora que as regras corretas foram publicadas.
+        try {
+          const temLocalParaResgatar = (dadosLocais.animais && dadosLocais.animais.length) || (dadosLocais.protocolosVacas && dadosLocais.protocolosVacas.length);
+          const nuvemSemAnimais = !animaisSeparados.length && !(appDataNuvem.animais && appDataNuvem.animais.length);
+          if (temLocalParaResgatar && nuvemSemAnimais && typeof salvarDadosSeparadosNaNuvem === 'function') {
+            await salvarDadosSeparadosNaNuvem();
+          }
+        } catch (erroResgateNuvem) {
+          console.warn('Não foi possível enviar backup local para a nuvem agora:', erroResgateNuvem);
+        }
+
         renderTudo();
       } catch (e) {
         console.error('Erro ao carregar Firestore:', e);
@@ -2781,15 +2794,13 @@ async function fazerLogin() {
             }
           };
 
-          const resultados = [];
-          resultados.push(await salvarEm(
+          // Caminho único e seguro da nuvem. Não usa mais caminhos antigos que podem ser bloqueados pelas regras.
+          const okAnimal = await salvarEm(
             db.collection('areas').doc(areaConta).collection('usuarios').doc(usuarioFirebase.uid).collection('animais').doc(idLimpo),
-            'areas/' + areaConta + '/usuarios/' + usuarioFirebase.uid + '/animais'
-          ));
-          resultados.push(await salvarEm(
-            db.collection('areas').doc(areaConta).collection(usuarioFirebase.uid).doc('animais').collection('lista').doc(idLimpo),
-            'areas/' + areaConta + '/' + usuarioFirebase.uid + '/animais/lista'
-          ));
+            'areas/' + areaConta + '/usuarios/' + usuarioFirebase.uid + '/animais/' + idLimpo
+          );
+
+          if (!okAnimal) return false;
 
           try {
             await db
@@ -2811,7 +2822,7 @@ async function fazerLogin() {
             console.warn('Animal salvo na subcoleção, mas não atualizou documento principal:', erroPrincipal);
           }
 
-          return resultados.some(Boolean);
+          return true;
         } catch (erroNuvem) {
           console.error('Erro ao salvar animal individual na nuvem:', erroNuvem);
           return false;
