@@ -2004,11 +2004,16 @@ async function fazerLogin() {
       const bruto = String(usuario || '').trim();
       const normalizado = normalizarUsuario(bruto || 'anonimo');
       const uid = usuarioFirebase?.uid || auth.currentUser?.uid || '';
+      const areaAtual = AREAS_DISPONIVEIS.includes(DB?.areaSelecionada) ? DB.areaSelecionada : '';
+      const areaConta = areaAtual ? areaInternaParaConta(areaAtual) : (areaLoginSelecionada || 'leiteira');
       const keys = [
         `ia_rural_db_${normalizado}`,
         `ia_rural_db_${bruto}`,
         uid ? `ia_rural_db_uid_${uid}` : '',
         uid ? `ia_rural_db_${uid}` : '',
+        uid ? `ia_rural_db_uid_${uid}_${areaConta}` : '',
+        uid ? `ia_rural_db_backup_uid_${uid}` : '',
+        normalizado ? `ia_rural_db_backup_usuario_${normalizado}` : '',
         getLocalKey()
       ].filter(Boolean);
       return Array.from(new Set(keys));
@@ -2020,6 +2025,13 @@ async function fazerLogin() {
         getLocalKeysPossiveis(usuarioLogado || '').forEach(chave => {
           try { localStorage.setItem(chave, payload); } catch (_) {}
         });
+        try {
+          const uid = usuarioFirebase?.uid || auth.currentUser?.uid || '';
+          if (uid) localStorage.setItem(`ia_rural_db_backup_uid_${uid}`, payload);
+          const usuario = normalizarUsuario(usuarioLogado || '');
+          if (usuario) localStorage.setItem(`ia_rural_db_backup_usuario_${usuario}`, payload);
+          localStorage.setItem('ia_rural_db_ultimo_backup', payload);
+        } catch (_) {}
       } catch (e) {
         console.log('Erro localStorage:', e);
       }
@@ -2030,12 +2042,12 @@ async function fazerLogin() {
       let melhor = null;
       let melhorQtd = -1;
 
-      for (const chave of keys) {
+      const tentarLerChave = (chave) => {
         try {
           const raw = localStorage.getItem(chave);
-          if (!raw) continue;
+          if (!raw) return;
           const parsed = normalizarDB(JSON.parse(raw));
-          const qtd = (parsed.animais?.length || 0) + (parsed.protocolosVacas?.length || 0) + (parsed.entregas?.length || 0) + (parsed.entregasCorte?.length || 0);
+          const qtd = (parsed.animais?.length || 0) + (parsed.protocolosVacas?.length || 0) + (parsed.entregas?.length || 0) + (parsed.entregasCorte?.length || 0) + (parsed.arquivados?.length || 0);
           if (qtd > melhorQtd) {
             melhor = parsed;
             melhorQtd = qtd;
@@ -2043,6 +2055,17 @@ async function fazerLogin() {
         } catch (e) {
           console.warn('Falha ao ler backup local:', chave, e);
         }
+      };
+
+      keys.forEach(tentarLerChave);
+
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const chave = localStorage.key(i);
+          if (chave && chave.startsWith('ia_rural_db_')) tentarLerChave(chave);
+        }
+      } catch (e) {
+        console.warn('Falha ao varrer backups locais:', e);
       }
 
       return melhor || DB_PADRAO();
@@ -2521,24 +2544,36 @@ async function fazerLogin() {
 
     async function carregarColecaoAnimais(nomeColecao) {
       if (!usuarioFirebase) return [];
-      const refUsuarioArea = obterRefUsuarioArea(usuarioFirebase.uid);
-      if (!refUsuarioArea) return [];
-      try {
-        const snap = await refUsuarioArea.collection(nomeColecao).get();
-        const lista = snap.docs.map(doc => normalizarAnimal({ id: doc.id, ...(doc.data() || {}) }));
-        if (lista.length) return lista;
-      } catch (e) {
-        console.warn('Não foi possível carregar subcoleção principal:', nomeColecao, e);
-      }
+      const areaConta = obterAreaContaAtualSegura();
+      const uid = usuarioFirebase.uid;
+      const porId = new Map();
 
-      // Compatibilidade com versões antigas que salvaram direto em areas/{area}/{uid}/{colecao}
-      try {
-        const areaConta = obterAreaContaAtualSegura();
-        const snapAntigo = await db.collection('areas').doc(areaConta).collection(usuarioFirebase.uid).doc(nomeColecao).collection('lista').get();
-        return snapAntigo.docs.map(doc => normalizarAnimal({ id: doc.id, ...(doc.data() || {}) }));
-      } catch (e) {
-        return [];
-      }
+      const adicionarLista = (lista) => {
+        (Array.isArray(lista) ? lista : []).forEach(item => {
+          if (!item) return;
+          const normalizado = normalizarAnimal(item);
+          const id = limparIdFirestore(normalizado.id || item.id || item._id || `1777479305352_${Math.random()}`);
+          normalizado.id = id;
+          porId.set(id, normalizado);
+        });
+      };
+
+      const carregarSnap = async (ref, rotulo) => {
+        try {
+          const snap = await ref.get();
+          adicionarLista(snap.docs.map(doc => ({ id: doc.id, ...(doc.data() || {}) })));
+        } catch (e) {
+          console.warn('Não foi possível carregar ' + rotulo + ':', e);
+        }
+      };
+
+      const refUsuarioArea = obterRefUsuarioArea(uid);
+      if (refUsuarioArea) await carregarSnap(refUsuarioArea.collection(nomeColecao), `subcoleção principal ${nomeColecao}`);
+      await carregarSnap(db.collection('areas').doc(areaConta).collection(uid).doc(nomeColecao).collection('lista'), `subcoleção antiga ${nomeColecao}`);
+      await carregarSnap(db.collection('areas').doc(areaConta).collection('usuarios').doc(uid).collection(nomeColecao), `subcoleção usuarios ${nomeColecao}`);
+      await carregarSnap(db.collection('users').doc(uid).collection(nomeColecao), `subcoleção users ${nomeColecao}`);
+
+      return Array.from(porId.values());
     }
 
     async function sincronizarColecaoAnimais(nomeColecao, lista) {
@@ -2649,6 +2684,13 @@ async function fazerLogin() {
 
         DB = mesclarDBSeguro(nuvemNormalizada, dadosLocais);
 
+        if ((!DB.animais || !DB.animais.length) && dadosLocais.animais && dadosLocais.animais.length) {
+          DB.animais = dadosLocais.animais.map(normalizarAnimal);
+        }
+        if ((!DB.protocolosVacas || !DB.protocolosVacas.length) && dadosLocais.protocolosVacas && dadosLocais.protocolosVacas.length) {
+          DB.protocolosVacas = dadosLocais.protocolosVacas.map(normalizarProtocoloVaca);
+        }
+
         // Segurança contra perda visual após Ctrl+F5: se a nuvem vier vazia por regra/conexão,
         // mantemos o que já estava salvo neste navegador em vez de zerar a lista.
         if ((!nuvemNormalizada.animais || !nuvemNormalizada.animais.length) && dadosLocais.animais && dadosLocais.animais.length && (!DB.animais || !DB.animais.length)) {
@@ -2729,17 +2771,26 @@ async function fazerLogin() {
             ? limparParaFirestore(animal)
             : JSON.parse(JSON.stringify(animal));
 
-          // Caminho principal do IA Rural: cada animal como documento individual.
-          await db
-            .collection('areas')
-            .doc(areaConta)
-            .collection('usuarios')
-            .doc(usuarioFirebase.uid)
-            .collection('animais')
-            .doc(idLimpo)
-            .set(animalLimpo, { merge: true });
+          const salvarEm = async (ref, rotulo) => {
+            try {
+              await ref.set(animalLimpo, { merge: true });
+              return true;
+            } catch (e) {
+              console.warn('Falha ao salvar animal em ' + rotulo + ':', e);
+              return false;
+            }
+          };
 
-          // Atualiza também o documento principal sem colocar a lista de animais dentro dele.
+          const resultados = [];
+          resultados.push(await salvarEm(
+            db.collection('areas').doc(areaConta).collection('usuarios').doc(usuarioFirebase.uid).collection('animais').doc(idLimpo),
+            'areas/' + areaConta + '/usuarios/' + usuarioFirebase.uid + '/animais'
+          ));
+          resultados.push(await salvarEm(
+            db.collection('areas').doc(areaConta).collection(usuarioFirebase.uid).doc('animais').collection('lista').doc(idLimpo),
+            'areas/' + areaConta + '/' + usuarioFirebase.uid + '/animais/lista'
+          ));
+
           try {
             await db
               .collection('areas')
@@ -2757,10 +2808,10 @@ async function fazerLogin() {
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
               }, { merge: true });
           } catch (erroPrincipal) {
-            console.warn('Animal salvo na nuvem, mas não atualizou documento principal:', erroPrincipal);
+            console.warn('Animal salvo na subcoleção, mas não atualizou documento principal:', erroPrincipal);
           }
 
-          return true;
+          return resultados.some(Boolean);
         } catch (erroNuvem) {
           console.error('Erro ao salvar animal individual na nuvem:', erroNuvem);
           return false;
