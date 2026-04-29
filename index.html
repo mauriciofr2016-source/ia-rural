@@ -2222,7 +2222,16 @@ async function fazerLogin() {
         return castrado ? 'Boi' : 'Touro';
       }
 
-      return getCategoria(sexo, idadeMeses);
+      // Área leiteira
+      if (sexo === 'Fêmea') {
+        if (idadeMeses < 12) return 'Bezerra';
+        if (idadeMeses < 24) return 'Novilha';
+        return 'Vaca';
+      }
+      // Macho leiteiro
+      if (idadeMeses < 12) return 'Bezerro';
+      if (idadeMeses < 24) return 'Garrote';
+      return castrado ? 'Boi' : 'Touro';
     }
 
     function gerarRecomendacoesCorte(animal) {
@@ -2994,6 +3003,12 @@ async function fazerLogin() {
 
         salvarLocalSeguro();
         const nuvemOk = await tentarSalvarAnimalNaNuvem(animalFinal);
+        // Se a tentativa individual falhou, tenta sincronizar todos os dados na nuvem como fallback
+        if (!nuvemOk) {
+          try {
+            if (typeof salvarNuvem === 'function') await salvarNuvem();
+          } catch (_) {}
+        }
         // Salva novamente após a tentativa de nuvem para garantir persistência no navegador antes de limpar/renderizar.
         salvarLocalSeguro();
 
