@@ -994,9 +994,13 @@
 
     /* Fábrica de Ração - adicionado sem alterar a lógica principal */
     .formula-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-top:12px}
-    .formula-item{border:1px solid var(--border);border-radius:14px;padding:12px;background:rgba(255,255,255,.03)}
+    .formula-item{border:1px solid var(--border);border-radius:14px;padding:12px;background:rgba(255,255,255,.03);color:#fff}
     .formula-item label{display:block;font-weight:800;margin-bottom:6px;color:#fff}
     .formula-item small{display:block;color:var(--muted);font-size:11px;margin-top:5px;line-height:1.35}
+    .formula-item.formula-item-light{background:#f8fafc!important;color:#0f172a!important;border-color:#e2e8f0!important}
+    .formula-item.formula-item-light label{color:#0f172a!important}
+    .formula-item.formula-item-light small{color:#475569!important}
+    .formula-item.formula-item-light input{background:#fff!important;color:#0f172a!important;border:1px solid #94a3b8!important}
     .formula-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:14px}
     .formula-summary .info-box{min-height:62px;display:flex;flex-direction:column;justify-content:center}
     .formula-history{display:grid;gap:10px;margin-top:12px}
@@ -1453,7 +1457,7 @@
 <div class="info-box" id="d-total-calc">—</div>
 </div>
 </div>
-<button class="btn btn-success" onclick="salvarEntregaRacao()">+ Registrar Entrega</button>
+<button class="btn btn-success" onclick="salvarEntregaRacao(this)">+ Registrar Entrega</button>
 </div>
 <div class="card" data-area="leiteiro">
 <div class="section-title">📊 Estoque Atual de Ração</div>
@@ -1473,8 +1477,8 @@
 <p class="muted" style="margin-bottom:12px;">Informe quanto comprou de cada ingrediente e quanto pagou. O sistema calcula o preço por kg automaticamente e usa esses valores para calcular o custo da ração fabricada.</p>
 <div class="formula-grid" id="fr-estoque-ingredientes"></div>
 <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;">
-  <button class="btn btn-success" onclick="salvarEstoqueIngredientes()">💾 Salvar estoque</button>
-  <button class="btn btn-secondary" onclick="limparEstoqueIngredientes()">Limpar</button>
+  <button class="btn btn-success" onclick="salvarEstoqueIngredientes(this)">💾 Salvar estoque</button>
+  <button class="btn btn-secondary" onclick="limparEstoqueIngredientes(this)">Limpar</button>
 </div>
 </div>
 
@@ -1493,8 +1497,8 @@
     </select>
   </div>
   <div class="form-group" style="display:flex;align-items:flex-end;gap:8px;">
-    <button class="btn btn-secondary" onclick="novaReceita()" style="flex:1;">🆕 Nova receita</button>
-    <button class="btn btn-danger" onclick="excluirReceitaSelecionada()" style="flex:1;">🗑 Excluir receita</button>
+    <button class="btn btn-secondary" onclick="novaReceita(this)" style="flex:1;">🆕 Nova receita</button>
+    <button class="btn btn-danger" onclick="excluirReceitaSelecionada(this)" style="flex:1;">🗑 Excluir receita</button>
   </div>
 </div>
 
@@ -1512,9 +1516,9 @@
   <div class="info-box"><strong>Custo total do lote</strong><span id="fr-custo-total">R$ 0,00</span></div>
 </div>
 <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;">
-  <button class="btn btn-success" onclick="salvarFabricaRacao()">✅ Salvar ração fabricada</button>
-  <button class="btn btn-primary" onclick="salvarComoReceita()" style="background:#7c3aed;">💾 Salvar como receita</button>
-  <button class="btn btn-secondary" onclick="limparFabricaRacao()">Limpar campos</button>
+  <button class="btn btn-success" onclick="salvarFabricaRacao(this)">✅ Salvar ração fabricada</button>
+  <button class="btn btn-primary" onclick="salvarComoReceita(this)" style="background:#7c3aed;">💾 Salvar como receita</button>
+  <button class="btn btn-secondary" onclick="limparFabricaRacao(true, this)">Limpar campos</button>
 </div>
 </div>
 
@@ -4691,21 +4695,21 @@ async function fazerLogin() {
         const preco = e.preco || '';
         const precoPorKg = (kg > 0 && preco > 0) ? `R$ ${formatCurrencyBR(preco / kg)}/kg` : '—';
         return `
-          <div class="formula-item" style="border:1px solid var(--border,#e2e8f0);border-radius:10px;padding:12px;background:var(--surface,#f8fafc);">
-            <label style="font-weight:600;">${escapeHtml(i.nome)}</label>
+          <div class="formula-item formula-item-light" style="border:1px solid #e2e8f0;border-radius:10px;padding:12px;background:#f8fafc;color:#0f172a;">
+            <label style="font-weight:800;color:#0f172a;">${escapeHtml(i.nome)}</label>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;">
               <div>
-                <small style="color:#64748b;">Quantidade comprada (kg)</small>
+                <small style="color:#475569;font-weight:700;">Quantidade comprada (kg)</small>
                 <input id="est-kg-${i.id}" type="number" min="0" step="0.1" placeholder="Ex: 1000" value="${escapeAttr(String(kg))}"
-                  oninput="atualizarPrecoPorKg('${i.id}')" style="width:100%;box-sizing:border-box;margin-top:3px;" />
+                  oninput="atualizarPrecoPorKg('${i.id}')" style="width:100%;box-sizing:border-box;margin-top:3px;background:#fff;color:#0f172a;border:1px solid #94a3b8;" />
               </div>
               <div>
-                <small style="color:#64748b;">Valor pago (R$)</small>
+                <small style="color:#475569;font-weight:700;">Valor pago (R$)</small>
                 <input id="est-preco-${i.id}" type="number" min="0" step="0.01" placeholder="Ex: 1000" value="${escapeAttr(String(preco))}"
-                  oninput="atualizarPrecoPorKg('${i.id}')" style="width:100%;box-sizing:border-box;margin-top:3px;" />
+                  oninput="atualizarPrecoPorKg('${i.id}')" style="width:100%;box-sizing:border-box;margin-top:3px;background:#fff;color:#0f172a;border:1px solid #94a3b8;" />
               </div>
             </div>
-            <small id="est-precokg-${i.id}" style="color:#059669;font-weight:500;margin-top:4px;display:block;">Preço/kg: ${precoPorKg}</small>
+            <small id="est-precokg-${i.id}" style="color:#047857!important;font-weight:800;margin-top:4px;display:block;">Preço/kg: ${precoPorKg}</small>
           </div>`;
       }).join('');
     }
@@ -4718,29 +4722,64 @@ async function fazerLogin() {
       calcularFabricaRacao();
     }
 
-    async function salvarEstoqueIngredientes() {
-      if (!DB.estoqueIngredientes) DB.estoqueIngredientes = {};
-      INGREDIENTES_FABRICA_RACAO.forEach(i => {
-        const kg = parseFloat(document.getElementById('est-kg-' + i.id)?.value) || 0;
-        const preco = parseFloat(document.getElementById('est-preco-' + i.id)?.value) || 0;
-        if (kg > 0 || preco > 0) {
-          DB.estoqueIngredientes[i.id] = { kg, preco };
-        }
-      });
-      await salvarDB();
-      calcularFabricaRacao();
-      alert('Estoque de ingredientes salvo! O custo da ração será calculado automaticamente.');
+    function travarBotaoAcao(btn, textoProcessando) {
+      if (!btn) return null;
+      if (btn.dataset.processando === '1') return false;
+      btn.dataset.processando = '1';
+      btn.dataset.textoOriginal = btn.innerHTML;
+      btn.disabled = true;
+      btn.style.opacity = '0.75';
+      btn.style.cursor = 'not-allowed';
+      if (textoProcessando) btn.innerHTML = textoProcessando;
+      return true;
     }
 
-    function limparEstoqueIngredientes() {
-      INGREDIENTES_FABRICA_RACAO.forEach(i => {
-        const kg = document.getElementById('est-kg-' + i.id);
-        const preco = document.getElementById('est-preco-' + i.id);
-        const label = document.getElementById('est-precokg-' + i.id);
-        if (kg) kg.value = '';
-        if (preco) preco.value = '';
-        if (label) label.textContent = 'Preço/kg: —';
-      });
+    function liberarBotaoAcao(btn) {
+      if (!btn) return;
+      btn.dataset.processando = '0';
+      if (btn.dataset.textoOriginal) btn.innerHTML = btn.dataset.textoOriginal;
+      btn.disabled = false;
+      btn.style.opacity = '';
+      btn.style.cursor = '';
+    }
+
+    async function salvarEstoqueIngredientes(btn) {
+      const travou = travarBotaoAcao(btn, 'Salvando...');
+      if (travou === false) return;
+      try {
+        if (!DB.estoqueIngredientes) DB.estoqueIngredientes = {};
+        INGREDIENTES_FABRICA_RACAO.forEach(i => {
+          const kg = parseFloat(document.getElementById('est-kg-' + i.id)?.value) || 0;
+          const preco = parseFloat(document.getElementById('est-preco-' + i.id)?.value) || 0;
+          if (kg > 0 || preco > 0) {
+            DB.estoqueIngredientes[i.id] = { kg, preco };
+          }
+        });
+        await salvarDB();
+        calcularFabricaRacao();
+        alert('Estoque salvo com sucesso.');
+      } finally {
+        liberarBotaoAcao(btn);
+      }
+    }
+
+    function limparEstoqueIngredientes(btn) {
+      const travou = travarBotaoAcao(btn, 'Limpando...');
+      if (travou === false) return;
+      try {
+        INGREDIENTES_FABRICA_RACAO.forEach(i => {
+          const kg = document.getElementById('est-kg-' + i.id);
+          const preco = document.getElementById('est-preco-' + i.id);
+          const label = document.getElementById('est-precokg-' + i.id);
+          if (kg) kg.value = '';
+          if (preco) preco.value = '';
+          if (label) label.textContent = 'Preço/kg: —';
+        });
+        calcularFabricaRacao();
+        alert('Campos do estoque limpos com sucesso.');
+      } finally {
+        liberarBotaoAcao(btn);
+      }
     }
 
     function renderReceitasSelect() {
@@ -4769,13 +4808,23 @@ async function fazerLogin() {
       calcularFabricaRacao();
     }
 
-    function novaReceita() {
-      const sel = document.getElementById('fr-receita-select');
-      if (sel) sel.value = '';
-      limparFabricaRacao();
+    function novaReceita(btn) {
+      const travou = travarBotaoAcao(btn, 'Limpando...');
+      if (travou === false) return;
+      try {
+        const sel = document.getElementById('fr-receita-select');
+        if (sel) sel.value = '';
+        limparFabricaRacao(true);
+        alert('Nova receita pronta para preenchimento.');
+      } finally {
+        liberarBotaoAcao(btn);
+      }
     }
 
-    async function salvarComoReceita() {
+    async function salvarComoReceita(btn) {
+      const travou = travarBotaoAcao(btn, 'Salvando...');
+      if (travou === false) return;
+      try {
       const nome = (document.getElementById('fr-nome')?.value || '').trim();
       if (!nome) return alert('Informe o nome da receita antes de salvar.');
       const composicao = montarComposicaoFabricaRacao();
@@ -4793,9 +4842,15 @@ async function fazerLogin() {
       DB.receitasRacao = receitas;
       await salvarDB();
       renderReceitasSelect();
+      } finally {
+        liberarBotaoAcao(btn);
+      }
     }
 
-    async function excluirReceitaSelecionada() {
+    async function excluirReceitaSelecionada(btn) {
+      const travou = travarBotaoAcao(btn, 'Excluindo...');
+      if (travou === false) return;
+      try {
       const sel = document.getElementById('fr-receita-select');
       if (!sel || sel.value === '') return alert('Selecione uma receita para excluir.');
       const idx = parseInt(sel.value);
@@ -4806,7 +4861,11 @@ async function fazerLogin() {
       DB.receitasRacao = receitas;
       await salvarDB();
       renderReceitasSelect();
-      novaReceita();
+      limparFabricaRacao(true);
+      alert('Receita excluída com sucesso.');
+      } finally {
+        liberarBotaoAcao(btn);
+      }
     }
 
     function renderFabricaRacao() {
@@ -4856,7 +4915,10 @@ async function fazerLogin() {
       return INGREDIENTES_FABRICA_RACAO.map(i => ({ id: i.id, nome: i.nome, kg: parseFloat(document.getElementById('fr-' + i.id)?.value) || 0 })).filter(i => i.kg > 0);
     }
 
-    async function salvarFabricaRacao() {
+    async function salvarFabricaRacao(btn) {
+      const travou = travarBotaoAcao(btn, 'Salvando...');
+      if (travou === false) return;
+      try {
       const area = obterAreaAtual();
       const data = document.getElementById('fr-data')?.value || new Date().toISOString().slice(0,10);
       const nome = (document.getElementById('fr-nome')?.value || '').trim() || 'Ração fabricada';
@@ -4878,15 +4940,25 @@ async function fazerLogin() {
       renderFabricaRacao();
       try { renderDespesas(); } catch(e) {}
       try { renderDespesasCorte(); } catch(e) {}
-      alert('Ração fabricada salva e enviada para o estoque/despesas da área atual.');
+      alert('Ração fabricada salva com sucesso e enviada para o estoque/despesas da área atual.');
+      } finally {
+        liberarBotaoAcao(btn);
+      }
     }
 
-    function limparFabricaRacao(limparData = true) {
-      const nome = document.getElementById('fr-nome');
-      if (nome) nome.value = '';
-      if (limparData) { const data = document.getElementById('fr-data'); if (data) data.value = new Date().toISOString().slice(0,10); }
-      INGREDIENTES_FABRICA_RACAO.forEach(i => { const el = document.getElementById('fr-' + i.id); if (el) el.value = ''; });
-      calcularFabricaRacao();
+    function limparFabricaRacao(limparData = true, btn) {
+      const travou = travarBotaoAcao(btn, 'Limpando...');
+      if (travou === false) return;
+      try {
+        const nome = document.getElementById('fr-nome');
+        if (nome) nome.value = '';
+        if (limparData) { const data = document.getElementById('fr-data'); if (data) data.value = new Date().toISOString().slice(0,10); }
+        INGREDIENTES_FABRICA_RACAO.forEach(i => { const el = document.getElementById('fr-' + i.id); if (el) el.value = ''; });
+        calcularFabricaRacao();
+        if (btn) alert('Campos da fábrica de ração limpos com sucesso.');
+      } finally {
+        liberarBotaoAcao(btn);
+      }
     }
 
     function renderHistoricoFabricaRacao() {
@@ -4940,7 +5012,10 @@ async function fazerLogin() {
       }
     }
 
-    async function salvarEntregaRacao() {
+    async function salvarEntregaRacao(btn) {
+      const travou = travarBotaoAcao(btn, 'Salvando...');
+      if (travou === false) return;
+      try {
       const data = document.getElementById('d-data').value;
       const sacos = parseInt(document.getElementById('d-sacos').value);
       const tipo = parseInt(document.getElementById('d-tipo').value);
@@ -4967,9 +5042,16 @@ async function fazerLogin() {
       document.getElementById('d-total-calc').textContent = '—';
 
       renderDespesas();
+      alert('Entrega registrada com sucesso.');
+      } finally {
+        liberarBotaoAcao(btn);
+      }
     }
 
-    async function excluirEntregaRacao(indice) {
+    async function excluirEntregaRacao(indice, btn) {
+      const travou = travarBotaoAcao(btn, 'Excluindo...');
+      if (travou === false) return;
+      try {
       if (!Array.isArray(DB.entregas)) DB.entregas = [];
       const i = parseInt(indice, 10);
       if (isNaN(i) || i < 0 || i >= DB.entregas.length) {
@@ -4988,6 +5070,9 @@ async function fazerLogin() {
       await salvarDB();
       renderDespesas();
       alert('Entrega excluída com sucesso.');
+      } finally {
+        liberarBotaoAcao(btn);
+      }
     }
 
     function getConsumoDiario() {
@@ -5051,7 +5136,7 @@ async function fazerLogin() {
             <h4>${new Date(e.data + 'T12:00:00').toLocaleDateString('pt-BR')}</h4>
             <p>${e.sacos} saco(s) de ${e.tipoKg} kg</p>
             <p>Total: <strong>${e.totalKg} kg</strong></p>
-            <button class="btn btn-danger" onclick="excluirEntregaRacao(${e.indiceOriginal})">Excluir</button>
+            <button class="btn btn-danger" onclick="excluirEntregaRacao(${e.indiceOriginal}, this)">Excluir</button>
           </div>
         `).join('');
     }
@@ -5833,4 +5918,5 @@ async function fazerLogin() {
 </script>
 </body>
 </html>
+
 
