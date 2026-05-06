@@ -18,6 +18,7 @@
       document.addEventListener('click', (event) => {
         const btn = event.target.closest('button');
         if (!btn) return;
+        if (btn.dataset.localLock === 'calendario') return;
         const texto = (btn.innerText || '').toLowerCase();
         const palavras = ['salvar','registrar','excluir','adicionar','confirmar','marcar','alterar'];
         if (!palavras.some(p => texto.includes(p))) return;
@@ -2586,8 +2587,8 @@ async function fazerLogin() {
     }
 
     async function marcarAnimalComoSeca(id, btn) {
-      if (btn && btn.dataset.processing === '1') return;
-      if (btn) { btn.dataset.processing = '1'; btn.dataset.originalText = btn.dataset.originalText || btn.textContent; btn.disabled = true; btn.textContent = 'Salvando...'; }
+      if (btn && btn.dataset.calendarioProcessing === '1') return;
+      if (btn) { btn.dataset.calendarioProcessing = '1'; btn.dataset.originalText = btn.dataset.originalText || btn.textContent; btn.disabled = true; btn.textContent = 'Salvando...'; }
       try {
         const animal = DB.animais.find(a => a && a.id === id);
         if (!animal) return alert('Animal não encontrado. Atualize a página e tente novamente.');
@@ -2605,13 +2606,13 @@ async function fazerLogin() {
         renderTudo();
         alert('Confirmado: vaca marcada como seca. O aviso de secagem foi removido do calendário e o status apareceu em Meu Rebanho.');
       } finally {
-        if (btn) { btn.dataset.processing = '0'; btn.disabled = false; btn.textContent = btn.dataset.originalText || '🌾 Marcar como seca'; }
+        if (btn) { btn.dataset.calendarioProcessing = '0'; btn.disabled = false; btn.textContent = btn.dataset.originalText || '🌾 Marcar como seca'; }
       }
     }
 
     async function marcarAnimalComoLactacao(id, btn) {
-      if (btn && btn.dataset.processing === '1') return;
-      if (btn) { btn.dataset.processing = '1'; btn.disabled = true; btn.textContent = 'Salvando...'; }
+      if (btn && btn.dataset.calendarioProcessing === '1') return;
+      if (btn) { btn.dataset.calendarioProcessing = '1'; btn.disabled = true; btn.textContent = 'Salvando...'; }
       try {
         const animal = DB.animais.find(a => a && a.id === id);
         if (!animal) return alert('Animal não encontrado. Atualize a página e tente novamente.');
@@ -2625,13 +2626,13 @@ async function fazerLogin() {
         renderTudo();
         alert('Animal marcado como em lactação.');
       } finally {
-        if (btn) { btn.dataset.processing = '0'; btn.disabled = false; btn.textContent = '🥛 Marcar lactação'; }
+        if (btn) { btn.dataset.calendarioProcessing = '0'; btn.disabled = false; btn.textContent = '🥛 Marcar lactação'; }
       }
     }
 
     async function marcarAnimalComoParida(id, btn) {
-      if (btn && btn.dataset.processing === '1') return;
-      if (btn) { btn.dataset.processing = '1'; btn.dataset.originalText = btn.dataset.originalText || btn.textContent; btn.disabled = true; btn.textContent = 'Salvando...'; }
+      if (btn && btn.dataset.calendarioProcessing === '1') return;
+      if (btn) { btn.dataset.calendarioProcessing = '1'; btn.dataset.originalText = btn.dataset.originalText || btn.textContent; btn.disabled = true; btn.textContent = 'Salvando...'; }
       try {
         const vaca = DB.animais.find(a => a && a.id === id);
         if (!vaca) return alert('Animal não encontrado. Atualize a página e tente novamente.');
@@ -2704,7 +2705,7 @@ async function fazerLogin() {
         renderTudo();
         alert('Parto registrado. A vaca voltou para lactação, os avisos antigos saíram do calendário e a cria foi vinculada na genealogia.');
       } finally {
-        if (btn) { btn.dataset.processing = '0'; btn.disabled = false; btn.textContent = btn.dataset.originalText || '🐣 Marcar como parida'; }
+        if (btn) { btn.dataset.calendarioProcessing = '0'; btn.disabled = false; btn.textContent = btn.dataset.originalText || '🐣 Marcar como parida'; }
       }
     }
 
@@ -6226,7 +6227,7 @@ async function fazerLogin() {
                 titulo: `Secagem de ${a.nome}`,
                 sub: a.lactacao ? `Início recomendado do período seco para animal em lactação.` : `Data de referência calculada; confirme com o manejo/veterinário se o animal não estiver em lactação.`,
                 data: secagem,
-                acoes: `<button class="btn btn-success btn-sm" onclick="marcarAnimalComoSeca('${idAttr}', this)">🌾 Marcar como seca</button>`
+                acoes: `<button class="btn btn-success btn-sm" data-local-lock="calendario" onclick="marcarAnimalComoSeca('${idAttr}', this)">🌾 Marcar como seca</button>`
               });
             }
 
@@ -6236,7 +6237,7 @@ async function fazerLogin() {
               titulo: `Pré-parto de ${a.nome}`,
               sub: (a.secaConfirmada || a.secagemConcluida) ? `Animal já marcado como seco. Separar e observar intensivamente.` : `Separação e observação intensiva.`,
               data: preParto,
-              acoes: (a.secaConfirmada || a.secagemConcluida) ? '' : `<button class="btn btn-outline btn-sm" onclick="marcarAnimalComoSeca('${idAttr}', this)">🌾 Marcar seca agora</button>`
+              acoes: (a.secaConfirmada || a.secagemConcluida) ? '' : `<button class="btn btn-outline btn-sm" data-local-lock="calendario" onclick="marcarAnimalComoSeca('${idAttr}', this)">🌾 Marcar seca agora</button>`
             });
 
             eventos.push({
@@ -6245,7 +6246,7 @@ async function fazerLogin() {
               titulo: `Previsão de parto de ${a.nome}`,
               sub: `Data estimada com base na confirmação da prenhez. Ao marcar como parida, o sistema atualiza Meu Rebanho, encerra a secagem e cadastra a cria se informado.`,
               data: parto,
-              acoes: `<button class="btn btn-success btn-sm" onclick="marcarAnimalComoParida('${idAttr}', this)">🐣 Marcar como parida</button>`
+              acoes: `<button class="btn btn-success btn-sm" data-local-lock="calendario" onclick="marcarAnimalComoParida('${idAttr}', this)">🐣 Marcar como parida</button>`
             });
           }
         }
