@@ -19,7 +19,7 @@
         const btn = event.target.closest('button');
         if (!btn) return;
         const texto = (btn.innerText || '').toLowerCase();
-        const palavras = ['salvar','registrar','excluir','adicionar','confirmar'];
+        const palavras = ['salvar','registrar','excluir','adicionar','confirmar','marcar','alterar'];
         if (!palavras.some(p => texto.includes(p))) return;
         if (btn.dataset.processing === '1') {
           event.preventDefault();
@@ -1518,24 +1518,6 @@
 <div id="lista-produtos-lavagem" style="margin-top:12px;"></div>
 </div>
 
-<div class="card" data-area="leiteiro" style="background:#10100a;">
-<div class="section-title">🧾 Outros gastos mensais do rebanho</div>
-<p class="muted" style="margin-bottom:12px;font-size:12px;">Use para gastos fixos ou recorrentes que também precisam entrar no resumo mensal, como sal mineral, proteinado, ração de bezerras, medicamentos simples e outros itens do dia a dia.</p>
-<div class="form-row">
-  <div class="form-group">
-    <label>Nome do gasto</label>
-    <input id="outro-gasto-leite-nome" type="text" placeholder="Ex: Sal mineral, ração bezerras, proteinado" />
-  </div>
-  <div class="form-group">
-    <label>Valor mensal (R$)</label>
-    <input id="outro-gasto-leite-valor" type="number" min="0" step="0.01" placeholder="Ex: 250,00" />
-  </div>
-</div>
-<button class="btn btn-success" id="btn-salvar-outro-gasto-leite" onclick="salvarOutroGastoMensalLeite(this)">+ Salvar gasto mensal</button>
-<div id="outros-gastos-leite-status" style="font-size:12px;color:#6dd56d;margin-top:8px;min-height:18px;"></div>
-<div id="lista-outros-gastos-leite" style="margin-top:12px;"></div>
-</div>
-
 <div class="card" data-area="leiteiro">
 <div class="section-title">📦 Registrar Entrega de Ração</div>
 <div class="form-row">
@@ -1843,8 +1825,7 @@
       formulasRacao: [],
       precoLitroLeite: 0,
       leiteBezerros: { litrosDia: 0, quantidadeBezerros: 0 },
-      produtosLavagem: [],
-      outrosGastosMensaisLeite: []
+      produtosLavagem: []
     });
 
     let DB = DB_PADRAO();
@@ -2384,8 +2365,7 @@ async function fazerLogin() {
         formulasRacao: Array.isArray(obj?.formulasRacao) ? obj.formulasRacao : base.formulasRacao,
         precoLitroLeite: typeof obj?.precoLitroLeite === 'number' ? obj.precoLitroLeite : (parseFloat(obj?.precoLitroLeite) || 0),
         leiteBezerros: (obj?.leiteBezerros && typeof obj.leiteBezerros === 'object') ? { litrosDia: parseFloat(obj.leiteBezerros.litrosDia) || 0, quantidadeBezerros: parseFloat(obj.leiteBezerros.quantidadeBezerros) || 0 } : base.leiteBezerros,
-        produtosLavagem: Array.isArray(obj?.produtosLavagem) ? obj.produtosLavagem : base.produtosLavagem,
-        outrosGastosMensaisLeite: Array.isArray(obj?.outrosGastosMensaisLeite) ? obj.outrosGastosMensaisLeite : base.outrosGastosMensaisLeite
+        produtosLavagem: Array.isArray(obj?.produtosLavagem) ? obj.produtosLavagem : base.produtosLavagem
       };
     }
 
@@ -2436,8 +2416,7 @@ async function fazerLogin() {
         formulasRacao: principalTemCampo('formulasRacao') ? dbPrincipal.formulasRacao : dbSecundaria.formulasRacao,
         precoLitroLeite: principalTemCampo('precoLitroLeite') ? dbPrincipal.precoLitroLeite : dbSecundaria.precoLitroLeite,
         leiteBezerros: principalTemCampo('leiteBezerros') ? dbPrincipal.leiteBezerros : dbSecundaria.leiteBezerros,
-        produtosLavagem: principalTemCampo('produtosLavagem') ? dbPrincipal.produtosLavagem : dbSecundaria.produtosLavagem,
-        outrosGastosMensaisLeite: principalTemCampo('outrosGastosMensaisLeite') ? dbPrincipal.outrosGastosMensaisLeite : dbSecundaria.outrosGastosMensaisLeite
+        produtosLavagem: principalTemCampo('produtosLavagem') ? dbPrincipal.produtosLavagem : dbSecundaria.produtosLavagem
       });
     }
 
@@ -2487,6 +2466,12 @@ async function fazerLogin() {
         prenha: a?.prenha === true,
         dataPrenha: a?.dataPrenha || '',
         lactacao: a?.lactacao === true,
+        secaConfirmada: a?.secaConfirmada === true,
+        dataSecagemReal: a?.dataSecagemReal || '',
+        statusReprodutivo: a?.statusReprodutivo || '',
+        dataUltimoParto: a?.dataUltimoParto || '',
+        totalCrias: typeof a?.totalCrias === 'number' ? a.totalCrias : (parseInt(a?.totalCrias, 10) || 0),
+        historicoPartos: Array.isArray(a?.historicoPartos) ? a.historicoPartos : [],
         previsaoParto: a?.previsaoParto || '',
         previsaoSecagem: a?.previsaoSecagem || '',
         previsaoPreParto: a?.previsaoPreParto || '',
@@ -2564,6 +2549,149 @@ async function fazerLogin() {
           <span style="display:block;font-size:11px;color:var(--muted);margin-top:2px;">Secagem prevista: ${formatarDataBR(prev.secagem)}${prev.preParto ? ` · Pré-parto: ${formatarDataBR(prev.preParto)}` : ''}</span>
         </div>
       `;
+    }
+
+
+
+    function obterStatusReprodutivoAnimal(a) {
+      if (!a || (a.area || 'leiteiro') !== 'leiteiro') return [];
+      const tags = [];
+      if (a.secaConfirmada) {
+        const prevParto = a.previsaoParto || (a.dataPrenha ? calcularPrevisoesPrenhez(a.dataPrenha).parto : '');
+        tags.push({ classe: 'tag', estilo: 'background:#211606;color:#fde68a;', texto: `🌾 Vaca seca${prevParto ? ' até ' + formatarDataBR(prevParto) : ''}` });
+      }
+      if (a.lactacao && !a.secaConfirmada) tags.push({ classe: 'tag tag-lactacao', estilo: '', texto: '🥛 Em lactação' });
+      if (a.prenha) tags.push({ classe: 'tag tag-prenha', estilo: '', texto: '🤰 Prenha' });
+      if (a.dataUltimoParto) tags.push({ classe: 'tag', estilo: 'background:#102210;color:#86efac;', texto: `🐣 Último parto: ${formatarDataBR(a.dataUltimoParto)}` });
+      if ((parseInt(a.totalCrias, 10) || 0) > 0) tags.push({ classe: 'tag', estilo: 'background:#111111;color:#ffffff;', texto: `🐄 ${parseInt(a.totalCrias, 10)} cria(s)` });
+      return tags;
+    }
+
+    function renderTagsStatusReprodutivo(a) {
+      return obterStatusReprodutivoAnimal(a).map(t => `<span class="${t.classe}"${t.estilo ? ` style="${t.estilo}"` : ''}>${escapeHtml(t.texto)}</span>`).join('');
+    }
+
+    function animalPodeReceberAcoesReprodutivas(a) {
+      return a && (a.area || 'leiteiro') === 'leiteiro' && String(a.sexo || '').toLowerCase().includes('fêmea');
+    }
+
+    async function marcarAnimalComoSeca(id, btn) {
+      if (btn && btn.dataset.processing === '1') return;
+      if (btn) { btn.dataset.processing = '1'; btn.disabled = true; btn.textContent = 'Salvando...'; }
+      try {
+        const animal = DB.animais.find(a => a && a.id === id);
+        if (!animal) return alert('Animal não encontrado. Atualize a página e tente novamente.');
+        const hoje = new Date().toISOString().slice(0, 10);
+        const dataSecagem = prompt('Data em que a vaca ficou seca (AAAA-MM-DD):', hoje);
+        if (dataSecagem === null) return;
+        animal.secaConfirmada = true;
+        animal.dataSecagemReal = (dataSecagem || hoje).slice(0, 10);
+        animal.statusReprodutivo = 'seca';
+        animal.lactacao = false;
+        animal.atualizadoEm = new Date().toISOString();
+        const ok = await salvarDB();
+        if (!ok) return alert('Não foi possível salvar a situação na nuvem. Verifique conexão/Firebase e tente novamente.');
+        renderTudo();
+        alert('Vaca marcada como seca. O aviso de secagem saiu do calendário e o status apareceu em Meu Rebanho.');
+      } finally {
+        if (btn) { btn.dataset.processing = '0'; btn.disabled = false; btn.textContent = '🌾 Marcar seca'; }
+      }
+    }
+
+    async function marcarAnimalComoLactacao(id, btn) {
+      if (btn && btn.dataset.processing === '1') return;
+      if (btn) { btn.dataset.processing = '1'; btn.disabled = true; btn.textContent = 'Salvando...'; }
+      try {
+        const animal = DB.animais.find(a => a && a.id === id);
+        if (!animal) return alert('Animal não encontrado. Atualize a página e tente novamente.');
+        animal.lactacao = true;
+        animal.secaConfirmada = false;
+        animal.statusReprodutivo = 'lactacao';
+        animal.atualizadoEm = new Date().toISOString();
+        const ok = await salvarDB();
+        if (!ok) return alert('Não foi possível salvar a situação na nuvem. Verifique conexão/Firebase e tente novamente.');
+        renderTudo();
+        alert('Animal marcado como em lactação.');
+      } finally {
+        if (btn) { btn.dataset.processing = '0'; btn.disabled = false; btn.textContent = '🥛 Marcar lactação'; }
+      }
+    }
+
+    async function marcarAnimalComoParida(id, btn) {
+      if (btn && btn.dataset.processing === '1') return;
+      if (btn) { btn.dataset.processing = '1'; btn.disabled = true; btn.textContent = 'Salvando...'; }
+      try {
+        const vaca = DB.animais.find(a => a && a.id === id);
+        if (!vaca) return alert('Animal não encontrado. Atualize a página e tente novamente.');
+        const hoje = new Date().toISOString().slice(0, 10);
+        const dataParto = prompt('Data do parto (AAAA-MM-DD):', hoje);
+        if (dataParto === null) return;
+        const sexoCria = prompt('Sexo da cria (opcional: Fêmea ou Macho):', '') || '';
+        const nomeCria = prompt('Nome ou brinco da cria (opcional):', '') || '';
+        const racaCria = prompt('Raça da cria (opcional):', '') || '';
+        const nasceuViva = confirm('A cria nasceu viva?\n\nOK = sim\nCancelar = não ou não informar');
+        const obsCria = prompt('Observação do parto/cria (opcional):', '') || '';
+        const dataFinal = (dataParto || hoje).slice(0, 10);
+        const registroParto = {
+          id: 'parto_' + Date.now(),
+          data: dataFinal,
+          sexoCria: sexoCria.trim(),
+          nomeCria: nomeCria.trim(),
+          racaCria: racaCria.trim(),
+          nasceuViva,
+          obs: obsCria.trim(),
+          criadoEm: new Date().toISOString()
+        };
+        vaca.prenha = false;
+        vaca.dataPrenha = '';
+        vaca.previsaoParto = '';
+        vaca.previsaoSecagem = '';
+        vaca.previsaoPreParto = '';
+        vaca.secaConfirmada = false;
+        vaca.dataSecagemReal = '';
+        vaca.lactacao = true;
+        vaca.statusReprodutivo = 'lactacao';
+        vaca.dataUltimoParto = dataFinal;
+        vaca.totalCrias = (parseInt(vaca.totalCrias, 10) || 0) + 1;
+        vaca.historicoPartos = Array.isArray(vaca.historicoPartos) ? vaca.historicoPartos : [];
+        vaca.historicoPartos.unshift(registroParto);
+        vaca.atualizadoEm = new Date().toISOString();
+
+        const deveCadastrarCria = nasceuViva || nomeCria.trim() || sexoCria.trim() || racaCria.trim();
+        if (deveCadastrarCria) {
+          const sexoNormalizado = /^f/i.test(sexoCria.trim()) ? 'Fêmea' : (/^m/i.test(sexoCria.trim()) ? 'Macho' : sexoCria.trim());
+          const cria = normalizarAnimal({
+            id: 'animal_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10),
+            area: 'leiteiro',
+            nome: nomeCria.trim() || ('Cria de ' + (vaca.nome || 'vaca')),
+            brinco: '',
+            sexo: sexoNormalizado,
+            dataNascimento: dataFinal,
+            idadeMeses: 0,
+            categoria: sexoNormalizado === 'Fêmea' ? 'Bezerra' : (sexoNormalizado === 'Macho' ? 'Bezerro' : 'Bezerro(a)'),
+            obs: [racaCria.trim() ? 'Raça: ' + racaCria.trim() : '', obsCria.trim()].filter(Boolean).join(' | '),
+            genealogia: {
+              mae: vaca.nome || '',
+              pai: vaca.genealogia?.pai || '',
+              avoMaterna: vaca.genealogia?.mae || '',
+              avoMaterno: vaca.genealogia?.pai || '',
+              avoPaterna: '',
+              avoPaterno: ''
+            },
+            dataCadastro: new Date().toISOString(),
+            criadoEm: new Date().toISOString()
+          });
+          DB.animais.push(cria);
+          registroParto.idCria = cria.id;
+        }
+
+        const ok = await salvarDB();
+        if (!ok) return alert('Não foi possível salvar o parto na nuvem. Verifique conexão/Firebase e tente novamente.');
+        renderTudo();
+        alert('Parto registrado. A vaca voltou para lactação, os avisos antigos saíram do calendário e a cria foi vinculada na genealogia.');
+      } finally {
+        if (btn) { btn.dataset.processing = '0'; btn.disabled = false; btn.textContent = '🐣 Marcar parida'; }
+      }
     }
 
     function calcularIdadeEmMeses(dataNascimento) {
@@ -3038,7 +3166,6 @@ async function fazerLogin() {
       try { carregarPrecoLitroNaTela(); } catch(e) {}
       try { carregarLeiteBezerrosNaTela(); } catch(e) {}
       try { renderListaProdutosLavagem(); } catch(e) {}
-      try { renderListaOutrosGastosMensaisLeite(); } catch(e) {}
     }
 
     async function carregarColecaoAnimais(nomeColecao) {
@@ -4673,8 +4800,7 @@ async function fazerLogin() {
 
               <div class="tag-wrap">
                 <span class="tag ${tagClass(a.categoria)}">${categoriaSeguro}</span>
-                ${a.prenha ? `<span class="tag tag-prenha">🤰 Prenha</span>` : ''}
-                ${a.lactacao ? `<span class="tag tag-lactacao">🥛 Lactação</span>` : ''}
+                ${renderTagsStatusReprodutivo(a)}
                 ${area === 'corte' && a.faseCorte ? `<span class="tag" style="background:#111111;color:#ffffff;">${escapeHtml(a.faseCorte)}</span>` : ''}
                 ${area === 'corte' && a.sistemaAlimentar ? `<span class="tag" style="background:#111111;color:#ffffff;">${escapeHtml(a.sistemaAlimentar)}</span>` : ''}
               </div>
@@ -4697,6 +4823,8 @@ async function fazerLogin() {
 
               <div class="animal-actions">
                 <button class="btn btn-outline btn-sm" onclick="abrirEdicaoAnimal('${idAttr}')">Editar</button>
+                ${animalPodeReceberAcoesReprodutivas(a) ? `<button class="btn btn-outline btn-sm" onclick="marcarAnimalComoSeca('${idAttr}', this)">🌾 Marcar seca</button>` : ''}
+                ${animalPodeReceberAcoesReprodutivas(a) ? `<button class="btn btn-outline btn-sm" onclick="marcarAnimalComoLactacao('${idAttr}', this)">🥛 Marcar lactação</button>` : ''}
                 <button class="btn btn-outline btn-sm" onclick="editarAnotacaoRapida('${idAttr}', '${nomeJs}')">📝 Anotar</button>
                 <button class="btn btn-outline btn-sm" onclick="abrirExcluir('${idAttr}', '${nomeJs}')">Excluir</button>
               </div>
@@ -5906,7 +6034,6 @@ async function fazerLogin() {
         renderHistoricoProdutosLeite();
         try { carregarLeiteBezerrosNaTela(); } catch(e) {}
         try { renderListaProdutosLavagem(); } catch(e) {}
-        try { renderListaOutrosGastosMensaisLeite(); } catch(e) {}
         return;
       }
 
@@ -5928,7 +6055,6 @@ async function fazerLogin() {
       // Novos campos: leite bezerros, produtos de lavagem e preço do litro
       try { carregarLeiteBezerrosNaTela(); } catch(e) {}
       try { renderListaProdutosLavagem(); } catch(e) {}
-      try { renderListaOutrosGastosMensaisLeite(); } catch(e) {}
     }
 
     function setVetFilter(tipo) {
@@ -6067,6 +6193,7 @@ async function fazerLogin() {
     function renderCalendario() {
       const lista = document.getElementById('lista-calendario');
       const vacinas = document.getElementById('lista-vacinas');
+      if (!lista || !vacinas) return;
 
       let eventos = [];
 
@@ -6078,29 +6205,51 @@ async function fazerLogin() {
             const parto = prev.parto ? new Date(prev.parto + 'T12:00:00') : addDias(base, 280);
             const secagem = prev.secagem ? new Date(prev.secagem + 'T12:00:00') : addDias(parto, -60);
             const preParto = prev.preParto ? new Date(prev.preParto + 'T12:00:00') : addDias(parto, -20);
+            const idAttr = escapeAttr(a.id || '');
+
+            if (!a.secaConfirmada) {
+              eventos.push({
+                tipo: 'secagem',
+                animalId: a.id,
+                titulo: `Secagem de ${a.nome}`,
+                sub: a.lactacao ? `Início recomendado do período seco para animal em lactação.` : `Data de referência calculada; confirme com o manejo/veterinário se o animal não estiver em lactação.`,
+                data: secagem,
+                acoes: `<button class="btn btn-success btn-sm" onclick="marcarAnimalComoSeca('${idAttr}', this)">🌾 Marcar como seca</button>`
+              });
+            }
 
             eventos.push({
-              titulo: `Secagem de ${a.nome}`,
-              sub: a.lactacao ? `Início recomendado do período seco para animal em lactação.` : `Data de referência calculada; confirme com o manejo/veterinário se o animal não estiver em lactação.`,
-              data: secagem
-            });
-
-            eventos.push({
+              tipo: 'preparto',
+              animalId: a.id,
               titulo: `Pré-parto de ${a.nome}`,
-              sub: `Separação e observação intensiva.`,
-              data: preParto
+              sub: a.secaConfirmada ? `Animal já marcado como seco. Separar e observar intensivamente.` : `Separação e observação intensiva.`,
+              data: preParto,
+              acoes: a.secaConfirmada ? '' : `<button class="btn btn-outline btn-sm" onclick="marcarAnimalComoSeca('${idAttr}', this)">🌾 Marcar seca agora</button>`
             });
 
             eventos.push({
+              tipo: 'parto',
+              animalId: a.id,
               titulo: `Previsão de parto de ${a.nome}`,
-              sub: `Data estimada com base na confirmação da prenhez.`,
-              data: parto
+              sub: `Data estimada com base na confirmação da prenhez. Ao marcar como parida, o sistema atualiza Meu Rebanho, encerra a secagem e cadastra a cria se informado.`,
+              data: parto,
+              acoes: `<button class="btn btn-success btn-sm" onclick="marcarAnimalComoParida('${idAttr}', this)">🐣 Marcar como parida</button>`
             });
           }
         }
       });
 
-      (DB.protocolosVacas || []).forEach(p => { const prot = normalizarProtocoloVaca(p); if (prot.dataProtocolo) { const data = new Date(prot.dataProtocolo + 'T12:00:00'); if (!isNaN(data.getTime())) eventos.push({ titulo: 'Protocolo de ' + prot.animal, sub: 'Boi usado: ' + prot.boi, data }); } if (prot.dataToque) { const data = new Date(prot.dataToque + 'T12:00:00'); if (!isNaN(data.getTime())) eventos.push({ titulo: 'Toque / exame de ' + prot.animal, sub: 'Verificar confirmação de prenhez. Boi: ' + prot.boi, data }); } });
+      (DB.protocolosVacas || []).forEach(p => {
+        const prot = normalizarProtocoloVaca(p);
+        if (prot.dataProtocolo) {
+          const data = new Date(prot.dataProtocolo + 'T12:00:00');
+          if (!isNaN(data.getTime())) eventos.push({ titulo: 'Protocolo de ' + prot.animal, sub: 'Boi usado: ' + prot.boi, data, acoes: '' });
+        }
+        if (prot.dataToque) {
+          const data = new Date(prot.dataToque + 'T12:00:00');
+          if (!isNaN(data.getTime())) eventos.push({ titulo: 'Toque / exame de ' + prot.animal, sub: 'Verificar confirmação de prenhez. Boi: ' + prot.boi, data, acoes: '' });
+        }
+      });
 
       eventos = eventos.sort((a, b) => a.data - b.data);
 
@@ -6115,9 +6264,10 @@ async function fazerLogin() {
       } else {
         lista.innerHTML = eventos.map(ev => `
           <div class="event-item">
-            <h4>${ev.titulo}</h4>
-            <p>${ev.sub}</p>
+            <h4>${escapeHtml(ev.titulo)}</h4>
+            <p>${escapeHtml(ev.sub)}</p>
             <p><strong>Data:</strong> ${formatarData(ev.data)}</p>
+            ${ev.acoes ? `<div class="animal-actions" style="margin-top:10px;">${ev.acoes}</div>` : ''}
           </div>
         `).join('');
       }
@@ -6706,10 +6856,7 @@ async function fazerLogin() {
       const produtosLavagem = Array.isArray(DB.produtosLavagem) ? DB.produtosLavagem : [];
       const custoProdutosLavagemMes = produtosLavagem.reduce((s, p) => s + (parseFloat(p.valorMensal) || 0), 0);
 
-      const outrosGastosMensaisLeite = Array.isArray(DB.outrosGastosMensaisLeite) ? DB.outrosGastosMensaisLeite : [];
-      const custoOutrosGastosMes = outrosGastosMensaisLeite.reduce((s, p) => s + (parseFloat(p.valorMensal) || 0), 0);
-
-      const totalDespesasMes = custoRacaoMes + custoSiloMes + custoLeiteBezerrosMes + custoProdutosLavagemMes + custoOutrosGastosMes;
+      const totalDespesasMes = custoRacaoMes + custoSiloMes + custoLeiteBezerrosMes + custoProdutosLavagemMes;
       const lucroBruto = faturamentoMensalEstimado - totalDespesasMes;
       const lucroLiquido = faturamentoMensalReal - totalDespesasMes;
 
@@ -6718,8 +6865,7 @@ async function fazerLogin() {
         faturamentoMensalReal, litrosMes, custoRacaoDia, custoRacaoMes,
         consumoRacaoDia, custoProdutosDia, custoSiloMes, litrosBezDia,
         custoLeiteBezerrosDia, custoLeiteBezerrosMes, custoProdutosLavagemMes,
-        produtosLavagem, outrosGastosMensaisLeite, custoOutrosGastosMes,
-        totalDespesasMes, lucroBruto, lucroLiquido
+        produtosLavagem, totalDespesasMes, lucroBruto, lucroLiquido
       };
     }
 
@@ -6876,80 +7022,6 @@ async function fazerLogin() {
     }
 
     // =====================================================================
-    // OUTROS GASTOS MENSAIS DO REBANHO LEITEIRO
-    // =====================================================================
-
-    function getOutrosGastosMensaisLeite() {
-      if (!Array.isArray(DB.outrosGastosMensaisLeite)) DB.outrosGastosMensaisLeite = [];
-      return DB.outrosGastosMensaisLeite;
-    }
-
-    function renderListaOutrosGastosMensaisLeite() {
-      const el = document.getElementById('lista-outros-gastos-leite');
-      if (!el) return;
-      const lista = getOutrosGastosMensaisLeite();
-      if (!lista.length) {
-        el.innerHTML = '<div class="muted" style="font-size:12px;margin-top:6px;">Nenhum gasto mensal extra cadastrado ainda.</div>';
-        return;
-      }
-      el.innerHTML = lista.map((p, i) => `
-        <div class="delivery-item" style="margin-bottom:8px;padding:10px 12px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
-            <div>
-              <strong>${escapeHtml(p.nome || 'Gasto')}</strong>
-              <span style="font-size:12px;color:var(--muted);margin-left:8px;">R$ ${formatCurrencyBR(p.valorMensal || 0)}/mês</span>
-            </div>
-            <button class="btn btn-danger btn-sm" onclick="excluirOutroGastoMensalLeite(${i}, this)">Excluir</button>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    async function salvarOutroGastoMensalLeite(btn) {
-      const travou = travarBotaoAcao(btn, 'Salvando...');
-      if (travou === false) return;
-      try {
-        const nome = (document.getElementById('outro-gasto-leite-nome')?.value || '').trim();
-        const valorMensal = parseFloat(document.getElementById('outro-gasto-leite-valor')?.value) || 0;
-        if (!nome) { alert('Informe o nome do gasto.'); return; }
-        if (valorMensal <= 0) { alert('Informe o valor mensal do gasto.'); return; }
-        getOutrosGastosMensaisLeite().push({ id: 'gasto_leite_' + Date.now(), nome, valorMensal, criadoEm: new Date().toISOString() });
-        const ok = await salvarDB({ sincronizarAnimais: false });
-        if (!ok) { alert('Não foi possível salvar na nuvem. Verifique a conexão.'); return; }
-        const nomeEl = document.getElementById('outro-gasto-leite-nome');
-        const valorEl = document.getElementById('outro-gasto-leite-valor');
-        if (nomeEl) nomeEl.value = '';
-        if (valorEl) valorEl.value = '';
-        const status = document.getElementById('outros-gastos-leite-status');
-        if (status) {
-          status.textContent = '✓ Gasto mensal salvo e incluído no resumo financeiro!';
-          setTimeout(() => { if (status) status.textContent = ''; }, 4000);
-        }
-        renderListaOutrosGastosMensaisLeite();
-      } finally {
-        liberarBotaoAcao(btn);
-      }
-    }
-
-    async function excluirOutroGastoMensalLeite(indice, btn) {
-      const travou = travarBotaoAcao(btn, 'Excluindo...');
-      if (travou === false) return;
-      try {
-        const lista = getOutrosGastosMensaisLeite();
-        if (indice < 0 || indice >= lista.length) return;
-        const item = lista[indice];
-        if (!confirm('Deseja excluir o gasto "' + (item.nome || 'gasto') + '"?')) return;
-        lista.splice(indice, 1);
-        const ok = await salvarDB({ sincronizarAnimais: false });
-        if (!ok) { alert('Não foi possível salvar a exclusão na nuvem. Verifique a conexão.'); return; }
-        renderListaOutrosGastosMensaisLeite();
-        alert('Gasto excluído com sucesso.');
-      } finally {
-        liberarBotaoAcao(btn);
-      }
-    }
-
-    // =====================================================================
     // RELATÓRIO FINANCEIRO MENSAL
     // =====================================================================
 
@@ -6991,9 +7063,6 @@ async function fazerLogin() {
               <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Leite p/ bezerros (${r.litrosBezDia.toFixed(1).replace('.', ',')} L/dia)</span><strong>R$ ${formatCurrencyBR(r.custoLeiteBezerrosMes)}/mês</strong></div>
               ${r.produtosLavagem.map(p => '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">🧴 ' + escapeHtml(p.nome) + '</span><strong>R$ ' + formatCurrencyBR(p.valorMensal) + '/mês</strong></div>').join('')}
               ${r.produtosLavagem.length === 0 ? '<div style="color:var(--muted);font-size:11px;">Produtos de lavagem: nenhum cadastrado ainda</div>' : ''}
-              ${r.outrosGastosMensaisLeite.map(p => '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">🧾 ' + escapeHtml(p.nome) + '</span><strong>R$ ' + formatCurrencyBR(p.valorMensal) + '/mês</strong></div>').join('')}
-              ${r.outrosGastosMensaisLeite.length === 0 ? '<div style="color:var(--muted);font-size:11px;">Outros gastos mensais: nenhum cadastrado ainda</div>' : ''}
-              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Total outros gastos mensais</span><strong>R$ ${formatCurrencyBR(r.custoOutrosGastosMes)}/mês</strong></div>
               <div style="border-top:1px solid #3a1a1a;padding-top:8px;margin-top:4px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span><strong>TOTAL DESPESAS/MÊS</strong></span><strong style="color:#ef4444;">R$ ${formatCurrencyBR(r.totalDespesasMes)}</strong></div>
             </div>
           </div>
@@ -7088,4 +7157,7 @@ async function fazerLogin() {
 </script>
 </body>
 </html>
+
+
+
 
