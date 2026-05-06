@@ -19,9 +19,6 @@
         const btn = event.target.closest('button');
         if (!btn) return;
         if (btn.dataset.localLock === 'calendario') return;
-        // Botões com trava própria não podem ser desabilitados no capture,
-        // senão o onclick recebe o botão já disabled e a ação não executa.
-        if (btn.classList && btn.classList.contains('prevent-double-click')) return;
         const texto = (btn.innerText || '').toLowerCase();
         const palavras = ['salvar','registrar','excluir','adicionar','confirmar','marcar','alterar'];
         if (!palavras.some(p => texto.includes(p))) return;
@@ -4433,7 +4430,7 @@ async function fazerLogin() {
       const tarde = parseFloat(p.tarde) || 0;
       const noite = parseFloat(p.noite) || 0;
       const total = manha + tarde + noite;
-      return { manha, tarde, noite, total, racao: (parseFloat(p.racaoKgDia) || (total / 3)) };
+      return { manha, tarde, noite, total, racao: total / 3 };
     }
 
     function calcularIndicadoresPeso(animal) {
@@ -5090,101 +5087,65 @@ async function fazerLogin() {
     }
 
     async function salvarPesagemLeite(btn) {
-      if (salvandoPesagemLeite || (btn && btn.dataset.processandoPesagem === '1')) return;
+      if (salvandoPesagemLeite || (btn && btn.disabled)) return;
       salvandoPesagemLeite = true;
-      if (btn) {
-        btn.dataset.processandoPesagem = '1';
-        btn.dataset.originalText = btn.dataset.originalText || btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = 'Salvando...';
+      if (btn) { btn.disabled = true; btn.dataset.originalText = btn.innerHTML; btn.innerHTML = 'Salvando...'; }
+      const data = document.getElementById('pesagem-leite-data')?.value || new Date().toISOString().slice(0, 10);
+      const emLactacao = obterAnimaisLeiteEmLactacao();
+      const itens = emLactacao.map(a => {
+        const buscar = periodo => parseFloat(document.querySelector(`.pesagem-input[data-animal-id="${CSS.escape(a.id)}"][data-periodo="${periodo}"]`)?.value) || 0;
+        const manha = buscar('manha');
+        const tarde = buscar('tarde');
+        const noite = buscar('noite');
+        const total = manha + tarde + noite;
+        return { animalId: a.id, nome: a.nome || '', brinco: a.brinco || '', manha, tarde, noite, total };
+      }).filter(i => i.total > 0);
+
+      if (!itens.length) {
+        salvandoPesagemLeite = false;
+        if (btn) { btn.disabled = false; btn.innerHTML = btn.dataset.originalText || 'Salvar pesagem'; }
+        return alert('Informe pelo menos uma quantidade de leite antes de salvar.');
       }
 
-      const liberarBotaoPesagem = () => {
-        salvandoPesagemLeite = false;
-        if (btn) {
-          btn.dataset.processandoPesagem = '0';
-          btn.disabled = false;
-          btn.innerHTML = btn.dataset.originalText || 'Salvar pesagem';
-        }
+      if (!DB.producao || typeof DB.producao !== 'object') DB.producao = {};
+      itens.forEach(i => {
+        DB.producao[i.animalId] = { manha: i.manha, tarde: i.tarde, noite: i.noite, total: i.total, data };
+      });
+
+      const historico = getHistoricoPesagensLeite();
+      const registro = {
+        id: pesagemLeiteEmEdicao || ('pesagem_' + Date.now()),
+        data,
+        criadoEm: pesagemLeiteEmEdicao ? (historico.find(p => p.id === pesagemLeiteEmEdicao)?.criadoEm || new Date().toISOString()) : new Date().toISOString(),
+        atualizadoEm: new Date().toISOString(),
+        itens,
+        total: itens.reduce((s, i) => s + i.total, 0)
       };
+      const idsAfetadosEdicao = new Set(itens.map(i => i.animalId).filter(Boolean));
+      if (pesagemLeiteEmEdicao) {
+        const pesagemAntiga = historico.find(p => p.id === pesagemLeiteEmEdicao);
+        (pesagemAntiga?.itens || []).forEach(i => { if (i?.animalId) idsAfetadosEdicao.add(i.animalId); });
+        DB.historicoPesagensLeite = historico.filter(p => p.id !== pesagemLeiteEmEdicao);
+      }
+      getHistoricoPesagensLeite().unshift(registro);
+      recalcularProducaoLeiteAPartirDoHistorico(idsAfetadosEdicao);
 
-      try {
-        const data = document.getElementById('pesagem-leite-data')?.value || new Date().toISOString().slice(0, 10);
-        const emLactacao = obterAnimaisLeiteEmLactacao();
-        const itens = emLactacao.map(a => {
-          const buscar = periodo => parseFloat(document.querySelector(`.pesagem-input[data-animal-id="${CSS.escape(a.id)}"][data-periodo="${periodo}"]`)?.value) || 0;
-          const manha = buscar('manha');
-          const tarde = buscar('tarde');
-          const noite = buscar('noite');
-          const total = manha + tarde + noite;
-          return { animalId: a.id, nome: a.nome || '', brinco: a.brinco || '', manha, tarde, noite, total, racaoKgDia: total / 3 };
-        }).filter(i => i.total > 0);
-
-        if (!itens.length) {
-          alert('Informe pelo menos uma quantidade de leite antes de salvar.');
-          return;
-        }
-
-        if (!DB.producao || typeof DB.producao !== 'object') DB.producao = {};
-        itens.forEach(i => {
-          DB.producao[i.animalId] = {
-            manha: i.manha,
-            tarde: i.tarde,
-            noite: i.noite,
-            total: i.total,
-            racaoKgDia: i.racaoKgDia,
-            data
-          };
-        });
-
-        const historico = getHistoricoPesagensLeite();
-        const registro = {
-          id: pesagemLeiteEmEdicao || ('pesagem_' + Date.now()),
-          data,
-          criadoEm: pesagemLeiteEmEdicao ? (historico.find(p => p.id === pesagemLeiteEmEdicao)?.criadoEm || new Date().toISOString()) : new Date().toISOString(),
-          atualizadoEm: new Date().toISOString(),
-          itens,
-          total: itens.reduce((s, i) => s + i.total, 0),
-          racaoKgDia: itens.reduce((s, i) => s + (i.racaoKgDia || 0), 0)
-        };
-
-        const idsAfetadosEdicao = new Set(itens.map(i => i.animalId).filter(Boolean));
-        if (pesagemLeiteEmEdicao) {
-          const pesagemAntiga = historico.find(p => p.id === pesagemLeiteEmEdicao);
-          (pesagemAntiga?.itens || []).forEach(i => { if (i?.animalId) idsAfetadosEdicao.add(i.animalId); });
-          DB.historicoPesagensLeite = historico.filter(p => p.id !== pesagemLeiteEmEdicao);
-        }
-        getHistoricoPesagensLeite().unshift(registro);
-        recalcularProducaoLeiteAPartirDoHistorico(idsAfetadosEdicao);
-
-        const eraEdicaoPesagem = !!pesagemLeiteEmEdicao;
-        const salvarComLimite = Promise.race([
-          salvarDB({ sincronizarAnimais: false }),
-          new Promise(resolve => setTimeout(() => resolve(false), 18000))
-        ]);
-        const ok = await salvarComLimite;
-        if (!ok) {
-          alert('A pesagem foi calculada na tela, mas a nuvem ainda não confirmou. Verifique a internet e salve novamente para garantir que apareça em outro aparelho.');
-          renderProducao();
-          renderRebanho();
-          renderDespesas();
-          if (document.getElementById('modal-relatorio-financeiro')?.classList.contains('open')) renderRelatorioFinanceiro();
-          return;
-        }
-
-        salvarLocal();
-        fecharFormularioPesagemLeite();
-        renderProducao();
-        renderRebanho();
-        renderDespesas();
-        if (document.getElementById('modal-relatorio-financeiro')?.classList.contains('open')) renderRelatorioFinanceiro();
-        alert(eraEdicaoPesagem ? 'Pesagem do leite atualizada com sucesso. Ração, estoque e resumo financeiro foram recalculados.' : 'Pesagem do leite salva com sucesso. Ração, estoque e resumo financeiro foram recalculados.');
-        pesagemLeiteEmEdicao = null;
-      } catch (erro) {
-        console.error('Erro ao salvar pesagem do leite:', erro);
-        alert('Falha ao salvar a pesagem. Atualize a página e tente novamente.');
-      } finally {
-        liberarBotaoPesagem();
+      const eraEdicaoPesagem = !!pesagemLeiteEmEdicao;
+      const ok = await salvarDB({ sincronizarAnimais: false });
+      if (!ok) {
+        alert('Não consegui confirmar a pesagem na nuvem. Verifique a internet e tente novamente.');
+        return;
+      }
+      fecharFormularioPesagemLeite();
+      renderProducao();
+      renderRebanho();
+      renderDespesas();
+      alert(eraEdicaoPesagem ? 'Pesagem do leite atualizada com sucesso.' : 'Pesagem do leite salva com sucesso.');
+      pesagemLeiteEmEdicao = null;
+      salvandoPesagemLeite = false;
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = btn.dataset.originalText || 'Salvar pesagem';
       }
     }
 
