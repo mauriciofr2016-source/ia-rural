@@ -1519,6 +1519,45 @@
 <div id="lista-produtos-lavagem" style="margin-top:12px;"></div>
 </div>
 
+<div class="card" data-area="leiteiro" style="background:#15100a;">
+<div class="section-title">🧾 Outros Gastos</div>
+<p class="muted" style="margin-bottom:12px;font-size:12px;">Use para sal, MUB, ração de bezerras, proteinado, mineral ou qualquer outro gasto mensal. Os itens salvos entram automaticamente no Resumo Faturamento-Gastos Mensal.</p>
+<div class="form-row">
+  <div class="form-group">
+    <label>Outro gasto 1</label>
+    <input id="outro-gasto-nome-1" type="text" placeholder="Ex: Sal" />
+  </div>
+  <div class="form-group">
+    <label>Valor (R$)</label>
+    <input id="outro-gasto-valor-1" type="number" min="0" step="0.01" placeholder="Ex: 80,00" />
+  </div>
+</div>
+<div class="form-row">
+  <div class="form-group">
+    <label>Outro gasto 2</label>
+    <input id="outro-gasto-nome-2" type="text" placeholder="Ex: MUB" />
+  </div>
+  <div class="form-group">
+    <label>Valor (R$)</label>
+    <input id="outro-gasto-valor-2" type="number" min="0" step="0.01" placeholder="Ex: 120,00" />
+  </div>
+</div>
+<div class="form-row">
+  <div class="form-group">
+    <label>Outro gasto 3</label>
+    <input id="outro-gasto-nome-3" type="text" placeholder="Ex: Ração bezerras" />
+  </div>
+  <div class="form-group">
+    <label>Valor (R$)</label>
+    <input id="outro-gasto-valor-3" type="number" min="0" step="0.01" placeholder="Ex: 300,00" />
+  </div>
+</div>
+<button class="btn btn-success" id="btn-salvar-outros-gastos" onclick="salvarOutrosGastosLeite(this)">Salvar outros gastos</button>
+<div id="outros-gastos-status" style="font-size:12px;color:#6dd56d;margin-top:8px;min-height:18px;"></div>
+<div id="lista-outros-gastos" style="margin-top:12px;"></div>
+</div>
+
+
 <div class="card" data-area="leiteiro">
 <div class="section-title">📦 Registrar Entrega de Ração</div>
 <div class="form-row">
@@ -3180,7 +3219,8 @@ async function fazerLogin() {
       try { renderListaProdutosCorte(); } catch(e) {}
       try { carregarPrecoLitroNaTela(); } catch(e) {}
       try { carregarLeiteBezerrosNaTela(); } catch(e) {}
-      try { renderListaProdutosLavagem(); } catch(e) {}
+      try { renderListaProdutosLavagem();
+        try { renderListaOutrosGastosLeite(); } catch(e) {} } catch(e) {}
     }
 
     async function carregarColecaoAnimais(nomeColecao) {
@@ -6869,7 +6909,10 @@ async function fazerLogin() {
       const produtosLavagem = Array.isArray(DB.produtosLavagem) ? DB.produtosLavagem : [];
       const custoProdutosLavagemMes = produtosLavagem.reduce((s, p) => s + (parseFloat(p.valorMensal) || 0), 0);
 
-      const totalDespesasMes = custoRacaoMes + custoSiloMes + custoLeiteBezerrosMes + custoProdutosLavagemMes;
+      const outrosGastosLeite = Array.isArray(DB.outrosGastosLeite) ? DB.outrosGastosLeite : [];
+      const custoOutrosGastosMes = outrosGastosLeite.reduce((s, p) => s + (parseFloat(p.valorMensal) || 0), 0);
+
+      const totalDespesasMes = custoRacaoMes + custoSiloMes + custoLeiteBezerrosMes + custoProdutosLavagemMes + custoOutrosGastosMes;
       const lucroBruto = faturamentoMensalEstimado - totalDespesasMes;
       const lucroLiquido = faturamentoMensalReal - totalDespesasMes;
 
@@ -6878,7 +6921,8 @@ async function fazerLogin() {
         faturamentoMensalReal, litrosMes, custoRacaoDia, custoRacaoMes,
         consumoRacaoDia, custoProdutosDia, custoSiloMes, litrosBezDia,
         custoLeiteBezerrosDia, custoLeiteBezerrosMes, custoProdutosLavagemMes,
-        produtosLavagem, totalDespesasMes, lucroBruto, lucroLiquido
+        produtosLavagem, outrosGastosLeite, custoOutrosGastosMes,
+        totalDespesasMes, lucroBruto, lucroLiquido
       };
     }
 
@@ -7034,6 +7078,97 @@ async function fazerLogin() {
       }
     }
 
+
+
+    // =====================================================================
+    // OUTROS GASTOS DO LEITE
+    // =====================================================================
+
+    function getOutrosGastosLeite() {
+      if (!Array.isArray(DB.outrosGastosLeite)) DB.outrosGastosLeite = [];
+      return DB.outrosGastosLeite;
+    }
+
+    function renderListaOutrosGastosLeite() {
+      const el = document.getElementById('lista-outros-gastos');
+      if (!el) return;
+      const lista = getOutrosGastosLeite();
+      if (!lista.length) {
+        el.innerHTML = '<div class="muted" style="font-size:12px;margin-top:6px;">Nenhum outro gasto cadastrado ainda.</div>';
+        return;
+      }
+      el.innerHTML = lista.map((p, i) => `
+        <div class="delivery-item" style="margin-bottom:8px;padding:10px 12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+            <div>
+              <strong>${escapeHtml(p.nome || 'Outro gasto')}</strong>
+              <span style="font-size:12px;color:var(--muted);margin-left:8px;">R$ ${formatCurrencyBR(p.valorMensal || 0)}/mês</span>
+            </div>
+            <button class="btn btn-danger btn-sm" onclick="excluirOutroGastoLeite(${i}, this)">Excluir</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function salvarOutrosGastosLeite(btn) {
+      const travou = travarBotaoAcao(btn, 'Salvando...');
+      if (travou === false) return;
+      try {
+        const novos = [];
+        for (let i = 1; i <= 3; i++) {
+          const nomeEl = document.getElementById('outro-gasto-nome-' + i);
+          const valorEl = document.getElementById('outro-gasto-valor-' + i);
+          const nome = (nomeEl?.value || '').trim();
+          const valorMensal = parseFloat(valorEl?.value) || 0;
+          if (nome || valorMensal > 0) {
+            if (!nome) { alert('Informe o nome do gasto na linha ' + i + '.'); return; }
+            if (valorMensal <= 0) { alert('Informe um valor válido para ' + nome + '.'); return; }
+            novos.push({ id: 'og_' + Date.now() + '_' + i, nome, valorMensal, criadoEm: new Date().toISOString() });
+          }
+        }
+        if (!novos.length) { alert('Preencha pelo menos um gasto com nome e valor.'); return; }
+        const lista = getOutrosGastosLeite();
+        novos.forEach(item => lista.push(item));
+        const ok = await salvarDB({ sincronizarAnimais: false });
+        if (!ok) { alert('Não foi possível salvar na nuvem. Verifique a conexão.'); return; }
+        for (let i = 1; i <= 3; i++) {
+          const nomeEl = document.getElementById('outro-gasto-nome-' + i);
+          const valorEl = document.getElementById('outro-gasto-valor-' + i);
+          if (nomeEl) nomeEl.value = '';
+          if (valorEl) valorEl.value = '';
+        }
+        const status = document.getElementById('outros-gastos-status');
+        if (status) {
+          status.textContent = '✓ Outros gastos salvos com sucesso e enviados ao resumo mensal!';
+          setTimeout(() => { if (status) status.textContent = ''; }, 5000);
+        }
+        renderListaOutrosGastosLeite();
+        try { renderRelatorioFinanceiro(); } catch(e) {}
+        alert('Outros gastos salvos com sucesso.');
+      } finally {
+        liberarBotaoAcao(btn);
+      }
+    }
+
+    async function excluirOutroGastoLeite(indice, btn) {
+      const travou = travarBotaoAcao(btn, 'Excluindo...');
+      if (travou === false) return;
+      try {
+        const lista = getOutrosGastosLeite();
+        if (indice < 0 || indice >= lista.length) return;
+        const item = lista[indice];
+        if (!confirm('Deseja excluir o gasto "' + (item.nome || 'outro gasto') + '"?')) return;
+        lista.splice(indice, 1);
+        await salvarDB({ sincronizarAnimais: false });
+        renderListaOutrosGastosLeite();
+        try { renderRelatorioFinanceiro(); } catch(e) {}
+        alert('Gasto excluído com sucesso.');
+      } finally {
+        liberarBotaoAcao(btn);
+      }
+    }
+
+
     // =====================================================================
     // RELATÓRIO FINANCEIRO MENSAL
     // =====================================================================
@@ -7076,6 +7211,8 @@ async function fazerLogin() {
               <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Leite p/ bezerros (${r.litrosBezDia.toFixed(1).replace('.', ',')} L/dia)</span><strong>R$ ${formatCurrencyBR(r.custoLeiteBezerrosMes)}/mês</strong></div>
               ${r.produtosLavagem.map(p => '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">🧴 ' + escapeHtml(p.nome) + '</span><strong>R$ ' + formatCurrencyBR(p.valorMensal) + '/mês</strong></div>').join('')}
               ${r.produtosLavagem.length === 0 ? '<div style="color:var(--muted);font-size:11px;">Produtos de lavagem: nenhum cadastrado ainda</div>' : ''}
+              ${r.outrosGastosLeite.map(p => '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">🧾 ' + escapeHtml(p.nome) + '</span><strong>R$ ' + formatCurrencyBR(p.valorMensal) + '/mês</strong></div>').join('')}
+              ${r.outrosGastosLeite.length === 0 ? '<div style="color:var(--muted);font-size:11px;">Outros gastos: nenhum cadastrado ainda</div>' : ''}
               <div style="border-top:1px solid #3a1a1a;padding-top:8px;margin-top:4px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span><strong>TOTAL DESPESAS/MÊS</strong></span><strong style="color:#ef4444;">R$ ${formatCurrencyBR(r.totalDespesasMes)}</strong></div>
             </div>
           </div>
@@ -7168,101 +7305,6 @@ async function fazerLogin() {
     deferredInstallPrompt = null;
   });
 </script>
-
-<script>
-async function salvarOutrosGastos() {
-
-  const btn = document.getElementById('btnSalvarOutrosGastos');
-
-  if (!btn) return;
-
-  if (btn.dataset.processing === '1') return;
-
-  btn.dataset.processing = '1';
-  btn.disabled = true;
-
-  const textoOriginal = btn.innerHTML;
-  btn.innerHTML = 'Salvando...';
-
-  try {
-
-    const gastos = [];
-
-    for (let i = 1; i <= 3; i++) {
-
-      const nome = document.getElementById(`outroGastoNome${i}`)?.value.trim();
-      const valor = parseFloat(document.getElementById(`outroGastoValor${i}`)?.value || 0);
-
-      if (nome && valor > 0) {
-
-        gastos.push({
-          nome,
-          valor,
-          data: new Date().toISOString()
-        });
-
-      }
-    }
-
-    if (gastos.length === 0) {
-      alert('Preencha ao menos um gasto.');
-      return;
-    }
-
-    const uid = firebase.auth().currentUser.uid;
-
-    await firebase.firestore()
-      .collection('users')
-      .doc(uid)
-      .collection('outros_gastos')
-      .add({
-        gastos,
-        criadoEm: firebase.firestore.FieldValue.serverTimestamp()
-      });
-
-    let total = 0;
-
-    gastos.forEach(g => total += Number(g.valor || 0));
-
-    window.totalOutrosGastosMensal =
-      (window.totalOutrosGastosMensal || 0) + total;
-
-    if (typeof atualizarResumoFinanceiro === 'function') {
-      atualizarResumoFinanceiro();
-    }
-
-    alert('Outros gastos salvos com sucesso!');
-
-    for (let i = 1; i <= 3; i++) {
-      document.getElementById(`outroGastoNome${i}`).value = '';
-      document.getElementById(`outroGastoValor${i}`).value = '';
-    }
-
-  } catch (e) {
-
-    console.error(e);
-    alert('Erro ao salvar outros gastos.');
-
-  } finally {
-
-    btn.dataset.processing = '0';
-    btn.disabled = false;
-    btn.innerHTML = textoOriginal;
-
-  }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-
-  const btn = document.getElementById('btnSalvarOutrosGastos');
-
-  if (btn) {
-    btn.addEventListener('click', salvarOutrosGastos);
-  }
-
-});
-</script>
-
 </body>
 </html>
 
