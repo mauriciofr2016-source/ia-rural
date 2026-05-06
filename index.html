@@ -1518,6 +1518,24 @@
 <div id="lista-produtos-lavagem" style="margin-top:12px;"></div>
 </div>
 
+<div class="card" data-area="leiteiro" style="background:#10100a;">
+<div class="section-title">🧾 Outros gastos mensais do rebanho</div>
+<p class="muted" style="margin-bottom:12px;font-size:12px;">Use para gastos fixos ou recorrentes que também precisam entrar no resumo mensal, como sal mineral, proteinado, ração de bezerras, medicamentos simples e outros itens do dia a dia.</p>
+<div class="form-row">
+  <div class="form-group">
+    <label>Nome do gasto</label>
+    <input id="outro-gasto-leite-nome" type="text" placeholder="Ex: Sal mineral, ração bezerras, proteinado" />
+  </div>
+  <div class="form-group">
+    <label>Valor mensal (R$)</label>
+    <input id="outro-gasto-leite-valor" type="number" min="0" step="0.01" placeholder="Ex: 250,00" />
+  </div>
+</div>
+<button class="btn btn-success" id="btn-salvar-outro-gasto-leite" onclick="salvarOutroGastoMensalLeite(this)">+ Salvar gasto mensal</button>
+<div id="outros-gastos-leite-status" style="font-size:12px;color:#6dd56d;margin-top:8px;min-height:18px;"></div>
+<div id="lista-outros-gastos-leite" style="margin-top:12px;"></div>
+</div>
+
 <div class="card" data-area="leiteiro">
 <div class="section-title">📦 Registrar Entrega de Ração</div>
 <div class="form-row">
@@ -1825,7 +1843,8 @@
       formulasRacao: [],
       precoLitroLeite: 0,
       leiteBezerros: { litrosDia: 0, quantidadeBezerros: 0 },
-      produtosLavagem: []
+      produtosLavagem: [],
+      outrosGastosMensaisLeite: []
     });
 
     let DB = DB_PADRAO();
@@ -2365,7 +2384,8 @@ async function fazerLogin() {
         formulasRacao: Array.isArray(obj?.formulasRacao) ? obj.formulasRacao : base.formulasRacao,
         precoLitroLeite: typeof obj?.precoLitroLeite === 'number' ? obj.precoLitroLeite : (parseFloat(obj?.precoLitroLeite) || 0),
         leiteBezerros: (obj?.leiteBezerros && typeof obj.leiteBezerros === 'object') ? { litrosDia: parseFloat(obj.leiteBezerros.litrosDia) || 0, quantidadeBezerros: parseFloat(obj.leiteBezerros.quantidadeBezerros) || 0 } : base.leiteBezerros,
-        produtosLavagem: Array.isArray(obj?.produtosLavagem) ? obj.produtosLavagem : base.produtosLavagem
+        produtosLavagem: Array.isArray(obj?.produtosLavagem) ? obj.produtosLavagem : base.produtosLavagem,
+        outrosGastosMensaisLeite: Array.isArray(obj?.outrosGastosMensaisLeite) ? obj.outrosGastosMensaisLeite : base.outrosGastosMensaisLeite
       };
     }
 
@@ -2416,7 +2436,8 @@ async function fazerLogin() {
         formulasRacao: principalTemCampo('formulasRacao') ? dbPrincipal.formulasRacao : dbSecundaria.formulasRacao,
         precoLitroLeite: principalTemCampo('precoLitroLeite') ? dbPrincipal.precoLitroLeite : dbSecundaria.precoLitroLeite,
         leiteBezerros: principalTemCampo('leiteBezerros') ? dbPrincipal.leiteBezerros : dbSecundaria.leiteBezerros,
-        produtosLavagem: principalTemCampo('produtosLavagem') ? dbPrincipal.produtosLavagem : dbSecundaria.produtosLavagem
+        produtosLavagem: principalTemCampo('produtosLavagem') ? dbPrincipal.produtosLavagem : dbSecundaria.produtosLavagem,
+        outrosGastosMensaisLeite: principalTemCampo('outrosGastosMensaisLeite') ? dbPrincipal.outrosGastosMensaisLeite : dbSecundaria.outrosGastosMensaisLeite
       });
     }
 
@@ -3017,6 +3038,7 @@ async function fazerLogin() {
       try { carregarPrecoLitroNaTela(); } catch(e) {}
       try { carregarLeiteBezerrosNaTela(); } catch(e) {}
       try { renderListaProdutosLavagem(); } catch(e) {}
+      try { renderListaOutrosGastosMensaisLeite(); } catch(e) {}
     }
 
     async function carregarColecaoAnimais(nomeColecao) {
@@ -5884,6 +5906,7 @@ async function fazerLogin() {
         renderHistoricoProdutosLeite();
         try { carregarLeiteBezerrosNaTela(); } catch(e) {}
         try { renderListaProdutosLavagem(); } catch(e) {}
+        try { renderListaOutrosGastosMensaisLeite(); } catch(e) {}
         return;
       }
 
@@ -5905,6 +5928,7 @@ async function fazerLogin() {
       // Novos campos: leite bezerros, produtos de lavagem e preço do litro
       try { carregarLeiteBezerrosNaTela(); } catch(e) {}
       try { renderListaProdutosLavagem(); } catch(e) {}
+      try { renderListaOutrosGastosMensaisLeite(); } catch(e) {}
     }
 
     function setVetFilter(tipo) {
@@ -6682,7 +6706,10 @@ async function fazerLogin() {
       const produtosLavagem = Array.isArray(DB.produtosLavagem) ? DB.produtosLavagem : [];
       const custoProdutosLavagemMes = produtosLavagem.reduce((s, p) => s + (parseFloat(p.valorMensal) || 0), 0);
 
-      const totalDespesasMes = custoRacaoMes + custoSiloMes + custoLeiteBezerrosMes + custoProdutosLavagemMes;
+      const outrosGastosMensaisLeite = Array.isArray(DB.outrosGastosMensaisLeite) ? DB.outrosGastosMensaisLeite : [];
+      const custoOutrosGastosMes = outrosGastosMensaisLeite.reduce((s, p) => s + (parseFloat(p.valorMensal) || 0), 0);
+
+      const totalDespesasMes = custoRacaoMes + custoSiloMes + custoLeiteBezerrosMes + custoProdutosLavagemMes + custoOutrosGastosMes;
       const lucroBruto = faturamentoMensalEstimado - totalDespesasMes;
       const lucroLiquido = faturamentoMensalReal - totalDespesasMes;
 
@@ -6691,7 +6718,8 @@ async function fazerLogin() {
         faturamentoMensalReal, litrosMes, custoRacaoDia, custoRacaoMes,
         consumoRacaoDia, custoProdutosDia, custoSiloMes, litrosBezDia,
         custoLeiteBezerrosDia, custoLeiteBezerrosMes, custoProdutosLavagemMes,
-        produtosLavagem, totalDespesasMes, lucroBruto, lucroLiquido
+        produtosLavagem, outrosGastosMensaisLeite, custoOutrosGastosMes,
+        totalDespesasMes, lucroBruto, lucroLiquido
       };
     }
 
@@ -6848,6 +6876,80 @@ async function fazerLogin() {
     }
 
     // =====================================================================
+    // OUTROS GASTOS MENSAIS DO REBANHO LEITEIRO
+    // =====================================================================
+
+    function getOutrosGastosMensaisLeite() {
+      if (!Array.isArray(DB.outrosGastosMensaisLeite)) DB.outrosGastosMensaisLeite = [];
+      return DB.outrosGastosMensaisLeite;
+    }
+
+    function renderListaOutrosGastosMensaisLeite() {
+      const el = document.getElementById('lista-outros-gastos-leite');
+      if (!el) return;
+      const lista = getOutrosGastosMensaisLeite();
+      if (!lista.length) {
+        el.innerHTML = '<div class="muted" style="font-size:12px;margin-top:6px;">Nenhum gasto mensal extra cadastrado ainda.</div>';
+        return;
+      }
+      el.innerHTML = lista.map((p, i) => `
+        <div class="delivery-item" style="margin-bottom:8px;padding:10px 12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+            <div>
+              <strong>${escapeHtml(p.nome || 'Gasto')}</strong>
+              <span style="font-size:12px;color:var(--muted);margin-left:8px;">R$ ${formatCurrencyBR(p.valorMensal || 0)}/mês</span>
+            </div>
+            <button class="btn btn-danger btn-sm" onclick="excluirOutroGastoMensalLeite(${i}, this)">Excluir</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function salvarOutroGastoMensalLeite(btn) {
+      const travou = travarBotaoAcao(btn, 'Salvando...');
+      if (travou === false) return;
+      try {
+        const nome = (document.getElementById('outro-gasto-leite-nome')?.value || '').trim();
+        const valorMensal = parseFloat(document.getElementById('outro-gasto-leite-valor')?.value) || 0;
+        if (!nome) { alert('Informe o nome do gasto.'); return; }
+        if (valorMensal <= 0) { alert('Informe o valor mensal do gasto.'); return; }
+        getOutrosGastosMensaisLeite().push({ id: 'gasto_leite_' + Date.now(), nome, valorMensal, criadoEm: new Date().toISOString() });
+        const ok = await salvarDB({ sincronizarAnimais: false });
+        if (!ok) { alert('Não foi possível salvar na nuvem. Verifique a conexão.'); return; }
+        const nomeEl = document.getElementById('outro-gasto-leite-nome');
+        const valorEl = document.getElementById('outro-gasto-leite-valor');
+        if (nomeEl) nomeEl.value = '';
+        if (valorEl) valorEl.value = '';
+        const status = document.getElementById('outros-gastos-leite-status');
+        if (status) {
+          status.textContent = '✓ Gasto mensal salvo e incluído no resumo financeiro!';
+          setTimeout(() => { if (status) status.textContent = ''; }, 4000);
+        }
+        renderListaOutrosGastosMensaisLeite();
+      } finally {
+        liberarBotaoAcao(btn);
+      }
+    }
+
+    async function excluirOutroGastoMensalLeite(indice, btn) {
+      const travou = travarBotaoAcao(btn, 'Excluindo...');
+      if (travou === false) return;
+      try {
+        const lista = getOutrosGastosMensaisLeite();
+        if (indice < 0 || indice >= lista.length) return;
+        const item = lista[indice];
+        if (!confirm('Deseja excluir o gasto "' + (item.nome || 'gasto') + '"?')) return;
+        lista.splice(indice, 1);
+        const ok = await salvarDB({ sincronizarAnimais: false });
+        if (!ok) { alert('Não foi possível salvar a exclusão na nuvem. Verifique a conexão.'); return; }
+        renderListaOutrosGastosMensaisLeite();
+        alert('Gasto excluído com sucesso.');
+      } finally {
+        liberarBotaoAcao(btn);
+      }
+    }
+
+    // =====================================================================
     // RELATÓRIO FINANCEIRO MENSAL
     // =====================================================================
 
@@ -6889,6 +6991,9 @@ async function fazerLogin() {
               <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Leite p/ bezerros (${r.litrosBezDia.toFixed(1).replace('.', ',')} L/dia)</span><strong>R$ ${formatCurrencyBR(r.custoLeiteBezerrosMes)}/mês</strong></div>
               ${r.produtosLavagem.map(p => '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">🧴 ' + escapeHtml(p.nome) + '</span><strong>R$ ' + formatCurrencyBR(p.valorMensal) + '/mês</strong></div>').join('')}
               ${r.produtosLavagem.length === 0 ? '<div style="color:var(--muted);font-size:11px;">Produtos de lavagem: nenhum cadastrado ainda</div>' : ''}
+              ${r.outrosGastosMensaisLeite.map(p => '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">🧾 ' + escapeHtml(p.nome) + '</span><strong>R$ ' + formatCurrencyBR(p.valorMensal) + '/mês</strong></div>').join('')}
+              ${r.outrosGastosMensaisLeite.length === 0 ? '<div style="color:var(--muted);font-size:11px;">Outros gastos mensais: nenhum cadastrado ainda</div>' : ''}
+              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Total outros gastos mensais</span><strong>R$ ${formatCurrencyBR(r.custoOutrosGastosMes)}/mês</strong></div>
               <div style="border-top:1px solid #3a1a1a;padding-top:8px;margin-top:4px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span><strong>TOTAL DESPESAS/MÊS</strong></span><strong style="color:#ef4444;">R$ ${formatCurrencyBR(r.totalDespesasMes)}</strong></div>
             </div>
           </div>
@@ -6983,6 +7088,4 @@ async function fazerLogin() {
 </script>
 </body>
 </html>
-
-
 
