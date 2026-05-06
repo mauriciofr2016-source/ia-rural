@@ -7168,6 +7168,101 @@ async function fazerLogin() {
     deferredInstallPrompt = null;
   });
 </script>
+
+<script>
+async function salvarOutrosGastos() {
+
+  const btn = document.getElementById('btnSalvarOutrosGastos');
+
+  if (!btn) return;
+
+  if (btn.dataset.processing === '1') return;
+
+  btn.dataset.processing = '1';
+  btn.disabled = true;
+
+  const textoOriginal = btn.innerHTML;
+  btn.innerHTML = 'Salvando...';
+
+  try {
+
+    const gastos = [];
+
+    for (let i = 1; i <= 3; i++) {
+
+      const nome = document.getElementById(`outroGastoNome${i}`)?.value.trim();
+      const valor = parseFloat(document.getElementById(`outroGastoValor${i}`)?.value || 0);
+
+      if (nome && valor > 0) {
+
+        gastos.push({
+          nome,
+          valor,
+          data: new Date().toISOString()
+        });
+
+      }
+    }
+
+    if (gastos.length === 0) {
+      alert('Preencha ao menos um gasto.');
+      return;
+    }
+
+    const uid = firebase.auth().currentUser.uid;
+
+    await firebase.firestore()
+      .collection('users')
+      .doc(uid)
+      .collection('outros_gastos')
+      .add({
+        gastos,
+        criadoEm: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+    let total = 0;
+
+    gastos.forEach(g => total += Number(g.valor || 0));
+
+    window.totalOutrosGastosMensal =
+      (window.totalOutrosGastosMensal || 0) + total;
+
+    if (typeof atualizarResumoFinanceiro === 'function') {
+      atualizarResumoFinanceiro();
+    }
+
+    alert('Outros gastos salvos com sucesso!');
+
+    for (let i = 1; i <= 3; i++) {
+      document.getElementById(`outroGastoNome${i}`).value = '';
+      document.getElementById(`outroGastoValor${i}`).value = '';
+    }
+
+  } catch (e) {
+
+    console.error(e);
+    alert('Erro ao salvar outros gastos.');
+
+  } finally {
+
+    btn.dataset.processing = '0';
+    btn.disabled = false;
+    btn.innerHTML = textoOriginal;
+
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+
+  const btn = document.getElementById('btnSalvarOutrosGastos');
+
+  if (btn) {
+    btn.addEventListener('click', salvarOutrosGastos);
+  }
+
+});
+</script>
+
 </body>
 </html>
 
