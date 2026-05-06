@@ -2467,8 +2467,10 @@ async function fazerLogin() {
         dataPrenha: a?.dataPrenha || '',
         lactacao: a?.lactacao === true,
         secaConfirmada: a?.secaConfirmada === true,
+        secagemConcluida: a?.secagemConcluida === true,
         dataSecagemReal: a?.dataSecagemReal || '',
         statusReprodutivo: a?.statusReprodutivo || '',
+        partoRegistrado: a?.partoRegistrado === true,
         dataUltimoParto: a?.dataUltimoParto || '',
         totalCrias: typeof a?.totalCrias === 'number' ? a.totalCrias : (parseInt(a?.totalCrias, 10) || 0),
         historicoPartos: Array.isArray(a?.historicoPartos) ? a.historicoPartos : [],
@@ -2538,11 +2540,19 @@ async function fazerLogin() {
     }
 
     function blocoPrevisoesPrenhezRebanho(a) {
-      if (!a || (a.area || 'leiteiro') !== 'leiteiro' || !a.prenha) return '';
+      if (!a || (a.area || 'leiteiro') !== 'leiteiro' || !a.prenha || a.partoRegistrado) return '';
       const prev = (a.previsaoParto && a.previsaoSecagem)
         ? { parto: a.previsaoParto, secagem: a.previsaoSecagem, preParto: a.previsaoPreParto || '' }
         : calcularPrevisoesPrenhez(a.dataPrenha || '');
       if (!prev.parto) return '';
+      if (a.secaConfirmada || a.secagemConcluida) {
+        return `
+          <div class="note-badge" style="margin-top:8px;">
+            🌾 Gestação: <strong>vaca seca até o parto previsto em ${formatarDataBR(prev.parto)}</strong>
+            ${a.dataSecagemReal ? `<span style="display:block;font-size:11px;color:var(--muted);margin-top:2px;">Seca desde ${formatarDataBR(a.dataSecagemReal)}</span>` : ''}
+          </div>
+        `;
+      }
       return `
         <div class="note-badge" style="margin-top:8px;">
           🤰 Gestação: <strong>parto previsto em ${formatarDataBR(prev.parto)}</strong>
@@ -2556,11 +2566,11 @@ async function fazerLogin() {
     function obterStatusReprodutivoAnimal(a) {
       if (!a || (a.area || 'leiteiro') !== 'leiteiro') return [];
       const tags = [];
-      if (a.secaConfirmada) {
+      if (a.secaConfirmada || a.secagemConcluida) {
         const prevParto = a.previsaoParto || (a.dataPrenha ? calcularPrevisoesPrenhez(a.dataPrenha).parto : '');
         tags.push({ classe: 'tag', estilo: 'background:#211606;color:#fde68a;', texto: `🌾 Vaca seca${prevParto ? ' até ' + formatarDataBR(prevParto) : ''}` });
       }
-      if (a.lactacao && !a.secaConfirmada) tags.push({ classe: 'tag tag-lactacao', estilo: '', texto: '🥛 Em lactação' });
+      if (a.lactacao && !a.secaConfirmada && !a.secagemConcluida) tags.push({ classe: 'tag tag-lactacao', estilo: '', texto: '🥛 Em lactação' });
       if (a.prenha) tags.push({ classe: 'tag tag-prenha', estilo: '', texto: '🤰 Prenha' });
       if (a.dataUltimoParto) tags.push({ classe: 'tag', estilo: 'background:#102210;color:#86efac;', texto: `🐣 Último parto: ${formatarDataBR(a.dataUltimoParto)}` });
       if ((parseInt(a.totalCrias, 10) || 0) > 0) tags.push({ classe: 'tag', estilo: 'background:#111111;color:#ffffff;', texto: `🐄 ${parseInt(a.totalCrias, 10)} cria(s)` });
@@ -2577,7 +2587,7 @@ async function fazerLogin() {
 
     async function marcarAnimalComoSeca(id, btn) {
       if (btn && btn.dataset.processing === '1') return;
-      if (btn) { btn.dataset.processing = '1'; btn.disabled = true; btn.textContent = 'Salvando...'; }
+      if (btn) { btn.dataset.processing = '1'; btn.dataset.originalText = btn.dataset.originalText || btn.textContent; btn.disabled = true; btn.textContent = 'Salvando...'; }
       try {
         const animal = DB.animais.find(a => a && a.id === id);
         if (!animal) return alert('Animal não encontrado. Atualize a página e tente novamente.');
@@ -2585,6 +2595,7 @@ async function fazerLogin() {
         const dataSecagem = prompt('Data em que a vaca ficou seca (AAAA-MM-DD):', hoje);
         if (dataSecagem === null) return;
         animal.secaConfirmada = true;
+        animal.secagemConcluida = true;
         animal.dataSecagemReal = (dataSecagem || hoje).slice(0, 10);
         animal.statusReprodutivo = 'seca';
         animal.lactacao = false;
@@ -2592,9 +2603,9 @@ async function fazerLogin() {
         const ok = await salvarDB();
         if (!ok) return alert('Não foi possível salvar a situação na nuvem. Verifique conexão/Firebase e tente novamente.');
         renderTudo();
-        alert('Vaca marcada como seca. O aviso de secagem saiu do calendário e o status apareceu em Meu Rebanho.');
+        alert('Confirmado: vaca marcada como seca. O aviso de secagem foi removido do calendário e o status apareceu em Meu Rebanho.');
       } finally {
-        if (btn) { btn.dataset.processing = '0'; btn.disabled = false; btn.textContent = '🌾 Marcar seca'; }
+        if (btn) { btn.dataset.processing = '0'; btn.disabled = false; btn.textContent = btn.dataset.originalText || '🌾 Marcar como seca'; }
       }
     }
 
@@ -2606,6 +2617,7 @@ async function fazerLogin() {
         if (!animal) return alert('Animal não encontrado. Atualize a página e tente novamente.');
         animal.lactacao = true;
         animal.secaConfirmada = false;
+        animal.secagemConcluida = false;
         animal.statusReprodutivo = 'lactacao';
         animal.atualizadoEm = new Date().toISOString();
         const ok = await salvarDB();
@@ -2619,7 +2631,7 @@ async function fazerLogin() {
 
     async function marcarAnimalComoParida(id, btn) {
       if (btn && btn.dataset.processing === '1') return;
-      if (btn) { btn.dataset.processing = '1'; btn.disabled = true; btn.textContent = 'Salvando...'; }
+      if (btn) { btn.dataset.processing = '1'; btn.dataset.originalText = btn.dataset.originalText || btn.textContent; btn.disabled = true; btn.textContent = 'Salvando...'; }
       try {
         const vaca = DB.animais.find(a => a && a.id === id);
         if (!vaca) return alert('Animal não encontrado. Atualize a página e tente novamente.');
@@ -2648,6 +2660,8 @@ async function fazerLogin() {
         vaca.previsaoSecagem = '';
         vaca.previsaoPreParto = '';
         vaca.secaConfirmada = false;
+        vaca.secagemConcluida = false;
+        vaca.partoRegistrado = true;
         vaca.dataSecagemReal = '';
         vaca.lactacao = true;
         vaca.statusReprodutivo = 'lactacao';
@@ -2690,7 +2704,7 @@ async function fazerLogin() {
         renderTudo();
         alert('Parto registrado. A vaca voltou para lactação, os avisos antigos saíram do calendário e a cria foi vinculada na genealogia.');
       } finally {
-        if (btn) { btn.dataset.processing = '0'; btn.disabled = false; btn.textContent = '🐣 Marcar parida'; }
+        if (btn) { btn.dataset.processing = '0'; btn.disabled = false; btn.textContent = btn.dataset.originalText || '🐣 Marcar como parida'; }
       }
     }
 
@@ -4823,8 +4837,6 @@ async function fazerLogin() {
 
               <div class="animal-actions">
                 <button class="btn btn-outline btn-sm" onclick="abrirEdicaoAnimal('${idAttr}')">Editar</button>
-                ${animalPodeReceberAcoesReprodutivas(a) ? `<button class="btn btn-outline btn-sm" onclick="marcarAnimalComoSeca('${idAttr}', this)">🌾 Marcar seca</button>` : ''}
-                ${animalPodeReceberAcoesReprodutivas(a) ? `<button class="btn btn-outline btn-sm" onclick="marcarAnimalComoLactacao('${idAttr}', this)">🥛 Marcar lactação</button>` : ''}
                 <button class="btn btn-outline btn-sm" onclick="editarAnotacaoRapida('${idAttr}', '${nomeJs}')">📝 Anotar</button>
                 <button class="btn btn-outline btn-sm" onclick="abrirExcluir('${idAttr}', '${nomeJs}')">Excluir</button>
               </div>
@@ -6198,7 +6210,7 @@ async function fazerLogin() {
       let eventos = [];
 
       DB.animais.filter(a => (a.area || 'leiteiro') === 'leiteiro').forEach(a => {
-        if (a.prenha && a.dataPrenha) {
+        if (a.prenha && a.dataPrenha && !a.partoRegistrado) {
           const base = new Date(a.dataPrenha + 'T12:00:00');
           if (!isNaN(base.getTime())) {
             const prev = (a.previsaoParto && a.previsaoSecagem) ? { parto: a.previsaoParto, secagem: a.previsaoSecagem, preParto: a.previsaoPreParto || '' } : calcularPrevisoesPrenhez(a.dataPrenha);
@@ -6207,7 +6219,7 @@ async function fazerLogin() {
             const preParto = prev.preParto ? new Date(prev.preParto + 'T12:00:00') : addDias(parto, -20);
             const idAttr = escapeAttr(a.id || '');
 
-            if (!a.secaConfirmada) {
+            if (!a.secaConfirmada && !a.secagemConcluida) {
               eventos.push({
                 tipo: 'secagem',
                 animalId: a.id,
@@ -6222,9 +6234,9 @@ async function fazerLogin() {
               tipo: 'preparto',
               animalId: a.id,
               titulo: `Pré-parto de ${a.nome}`,
-              sub: a.secaConfirmada ? `Animal já marcado como seco. Separar e observar intensivamente.` : `Separação e observação intensiva.`,
+              sub: (a.secaConfirmada || a.secagemConcluida) ? `Animal já marcado como seco. Separar e observar intensivamente.` : `Separação e observação intensiva.`,
               data: preParto,
-              acoes: a.secaConfirmada ? '' : `<button class="btn btn-outline btn-sm" onclick="marcarAnimalComoSeca('${idAttr}', this)">🌾 Marcar seca agora</button>`
+              acoes: (a.secaConfirmada || a.secagemConcluida) ? '' : `<button class="btn btn-outline btn-sm" onclick="marcarAnimalComoSeca('${idAttr}', this)">🌾 Marcar seca agora</button>`
             });
 
             eventos.push({
