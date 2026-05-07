@@ -6859,6 +6859,7 @@ async function fazerLogin() {
       const agora = new Date();
       const mesAtual = agora.getMonth();
       const anoAtual = agora.getFullYear();
+      const diasDoMesAtual = new Date(anoAtual, mesAtual + 1, 0).getDate();
 
       const pesagensMes = historicoPesagens.filter(p => {
         if (!p.data) return false;
@@ -6883,8 +6884,11 @@ async function fazerLogin() {
       const litrosVendaveisMesReal = Math.max(litrosMes - litrosBezerrosMesReal, 0);
 
       const faturamentoDiario = litrosVendaveisDia * precoLitro;
-      const faturamentoMensalEstimado = faturamentoDiario * 30;
-      const faturamentoMensalReal = litrosVendaveisMesReal * precoLitro;
+      const faturamentoMensalEstimado = faturamentoDiario * diasDoMesAtual;
+      const litrosProjetadosMes = totalDiario * diasDoMesAtual;
+      const litrosBezerrosProjetadoMes = litrosBezDia * diasDoMesAtual;
+      const litrosVendaveisProjetadoMes = Math.max(litrosProjetadosMes - litrosBezerrosProjetadoMes, 0);
+      const faturamentoMensalReal = litrosVendaveisProjetadoMes * precoLitro;
 
       const consumoRacaoDia = (function() {
         let total = 0;
@@ -6900,7 +6904,7 @@ async function fazerLogin() {
 
       const valorKgRacao = obterValorKgRacaoAtual();
       const custoRacaoDia = consumoRacaoDia * valorKgRacao;
-      const custoRacaoMes = custoRacaoDia * 30;
+      const custoRacaoMes = custoRacaoDia * diasDoMesAtual;
 
       const entregasProdutos = Array.isArray(DB.entregasProdutosLeite) ? DB.entregasProdutosLeite : [];
       const custoProdutosDia = entregasProdutos.reduce((s, e) => {
@@ -6909,8 +6913,8 @@ async function fazerLogin() {
       const custoSiloMes = custoProdutosDia * 30;
 
       const custoLeiteBezerrosDia = litrosBezDia * precoLitro;
-      const custoLeiteBezerrosMes = custoLeiteBezerrosDia * 30;
-      const descontoLeiteBezerrosRealMes = litrosBezerrosMesReal * precoLitro;
+      const custoLeiteBezerrosMes = custoLeiteBezerrosDia * diasDoMesAtual;
+      const descontoLeiteBezerrosRealMes = litrosBezerrosProjetadoMes * precoLitro;
 
       const produtosLavagem = Array.isArray(DB.produtosLavagem) ? DB.produtosLavagem : [];
       const custoProdutosLavagemMes = produtosLavagem.reduce((s, p) => s + (parseFloat(p.valorMensal) || 0), 0);
@@ -6924,8 +6928,10 @@ async function fazerLogin() {
 
       return {
         precoLitro, totalDiario, faturamentoDiario, faturamentoMensalEstimado,
-        faturamentoMensalReal, litrosMes, diasComPesagemMes, litrosVendaveisDia,
-        litrosVendaveisMesReal, litrosBezerrosMesReal, custoRacaoDia, custoRacaoMes,
+        faturamentoMensalReal, litrosMes, diasComPesagemMes, diasDoMesAtual,
+        litrosProjetadosMes, litrosVendaveisDia, litrosVendaveisMesReal,
+        litrosProjetadosMes, litrosVendaveisProjetadoMes, litrosBezerrosMesReal,
+        litrosBezerrosProjetadoMes, custoRacaoDia, custoRacaoMes,
         consumoRacaoDia, custoProdutosDia, custoSiloMes, litrosBezDia,
         custoLeiteBezerrosDia, custoLeiteBezerrosMes, descontoLeiteBezerrosRealMes,
         custoProdutosLavagemMes, produtosLavagem, outrosGastosLeite, custoOutrosGastosMes,
@@ -7207,11 +7213,11 @@ async function fazerLogin() {
               <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Leite para bezerros descontado</span><strong>-${r.litrosBezDia.toFixed(1).replace('.', ',')} L/dia · R$ ${formatCurrencyBR(r.custoLeiteBezerrosDia)}/dia</strong></div>
               <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Leite vendável diário</span><strong>${r.litrosVendaveisDia.toFixed(1).replace('.', ',')} L</strong></div>
               <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Faturamento diário líquido</span><strong>R$ ${formatCurrencyBR(r.faturamentoDiario)}</strong></div>
-              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Faturamento mensal estimado já descontado (×30)</span><strong>R$ ${formatCurrencyBR(r.faturamentoMensalEstimado)}</strong></div>
-              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Litros registrados este mês</span><strong>${r.litrosMes.toFixed(1).replace('.', ',')} L</strong></div>
-              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Leite para bezerros descontado no mês real</span><strong>-${r.litrosBezerrosMesReal.toFixed(1).replace('.', ',')} L · R$ ${formatCurrencyBR(r.descontoLeiteBezerrosRealMes)}</strong></div>
-              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Litros vendáveis reais do mês</span><strong>${r.litrosVendaveisMesReal.toFixed(1).replace('.', ',')} L</strong></div>
-              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Faturamento total real do mês já descontado</span><strong style="color:#6dd56d;">R$ ${formatCurrencyBR(r.faturamentoMensalReal)}</strong></div>
+              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Faturamento mensal projetado já descontado</span><strong>R$ ${formatCurrencyBR(r.faturamentoMensalEstimado)}</strong></div>
+              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Litros registrados até agora</span><strong>${r.litrosMes.toFixed(1).replace('.', ',')} L</strong></div>
+              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Leite para bezerros projetado no mês</span><strong>-${r.litrosBezerrosProjetadoMes.toFixed(1).replace('.', ',')} L · R$ ${formatCurrencyBR(r.descontoLeiteBezerrosRealMes)}</strong></div>
+              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Litros vendáveis projetados no mês</span><strong>${r.litrosVendaveisProjetadoMes.toFixed(1).replace('.', ',')} L</strong></div>
+              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Faturamento projetado do mês já descontado</span><strong style="color:#6dd56d;">R$ ${formatCurrencyBR(r.faturamentoMensalReal)}</strong></div>
             </div>
           </div>
           <div style="background:#150a0a;border:1px solid #3a1a1a;border-radius:12px;padding:14px;">
@@ -7230,8 +7236,8 @@ async function fazerLogin() {
           <div style="background:#0f0f0f;border:1px solid var(--border);border-radius:12px;padding:14px;">
             <div style="font-size:13px;font-weight:800;color:#ffffff;margin-bottom:10px;">🎯 RESULTADO</div>
             <div style="display:grid;gap:8px;font-size:14px;">
-              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Lucro bruto (estimado 30 dias)</span><strong style="color:${r.lucroBruto >= 0 ? '#6dd56d' : '#ef4444'};">R$ ${formatCurrencyBR(r.lucroBruto)}</strong></div>
-              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Lucro líquido (litros reais do mês)</span><strong style="color:${r.lucroLiquido >= 0 ? '#6dd56d' : '#ef4444'};">R$ ${formatCurrencyBR(r.lucroLiquido)}</strong></div>
+              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Lucro bruto projetado do mês</span><strong style="color:${r.lucroBruto >= 0 ? '#6dd56d' : '#ef4444'};">R$ ${formatCurrencyBR(r.lucroBruto)}</strong></div>
+              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Lucro líquido projetado do mês</span><strong style="color:${r.lucroLiquido >= 0 ? '#6dd56d' : '#ef4444'};">R$ ${formatCurrencyBR(r.lucroLiquido)}</strong></div>
             </div>
           </div>
         </div>
@@ -7262,7 +7268,7 @@ async function fazerLogin() {
 <div class="modal-bg" id="modal-relatorio-financeiro">
   <div class="modal-box" style="max-width:520px;max-height:90vh;overflow-y:auto;">
     <h3>💹 Relatório Financeiro Mensal</h3>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">Calculado automaticamente com base nos dados do mês atual. Atualiza em tempo real.</p>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">Projeção automática do fechamento do mês com base na produção diária atual. Atualiza em tempo real.</p>
     <div id="relatorio-financeiro-conteudo">
       <div class="loading-state"><strong>Calculando...</strong></div>
     </div>
