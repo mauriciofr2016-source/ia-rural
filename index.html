@@ -5683,6 +5683,71 @@ async function fazerLogin() {
       return DB.entregasProdutosLeite;
     }
 
+    function calcularResumoProdutosLeiteEstoque() {
+      const entregas = getEntregasProdutosLeite();
+      const hoje = new Date();
+      hoje.setHours(12, 0, 0, 0);
+      const msDia = 24 * 60 * 60 * 1000;
+
+      const itens = entregas.map(e => {
+        const quantidadeKg = parseFloat(e.quantidadeKg) || 0;
+        const valorTotal = parseFloat(e.valorTotal) || 0;
+        const valorKg = parseFloat(e.valorKg) || (quantidadeKg > 0 && valorTotal > 0 ? valorTotal / quantidadeKg : 0);
+        const consumoDia = parseFloat(e.consumoTotalDia) || 0;
+        let diasDecorridos = 0;
+        if (e.data) {
+          const dataEntrega = new Date(e.data + 'T12:00:00');
+          if (!isNaN(dataEntrega.getTime())) {
+            diasDecorridos = Math.max(0, Math.floor((hoje - dataEntrega) / msDia));
+          }
+        }
+        const consumidoKg = consumoDia > 0 ? Math.min(quantidadeKg, diasDecorridos * consumoDia) : 0;
+        const estoqueKg = Math.max(0, quantidadeKg - consumidoKg);
+        const ativo = estoqueKg > 0.0001 && consumoDia > 0;
+        const diasRestantes = ativo ? Math.floor(estoqueKg / consumoDia) : null;
+        const dataFim = diasRestantes !== null ? addDias(new Date(hoje), diasRestantes) : null;
+        return {
+          ...e,
+          quantidadeKg,
+          valorTotal,
+          valorKg,
+          consumoDia,
+          consumidoKg,
+          estoqueKg,
+          ativo,
+          diasRestantes,
+          dataFim,
+          custoDia: ativo ? consumoDia * valorKg : 0,
+          custoMes: ativo ? consumoDia * valorKg * 30 : 0
+        };
+      });
+
+      const ativos = itens.filter(i => i.ativo);
+      const totalKg = itens.reduce((s, i) => s + i.quantidadeKg, 0);
+      const valorTotal = itens.reduce((s, i) => s + i.valorTotal, 0);
+      const estoqueKg = itens.reduce((s, i) => s + i.estoqueKg, 0);
+      const consumoDia = ativos.reduce((s, i) => s + i.consumoDia, 0);
+      const custoDia = ativos.reduce((s, i) => s + i.custoDia, 0);
+      const diasRestantes = consumoDia > 0 ? Math.floor(estoqueKg / consumoDia) : null;
+      const dataFim = diasRestantes !== null ? addDias(new Date(hoje), diasRestantes) : null;
+      const valorKgMedio = totalKg > 0 ? valorTotal / totalKg : 0;
+
+      return {
+        itens,
+        ativos,
+        totalKg,
+        valorTotal,
+        estoqueKg,
+        consumoDia,
+        consumoMes: consumoDia * 30,
+        custoDia,
+        custoMes: custoDia * 30,
+        diasRestantes,
+        dataFim,
+        valorKgMedio
+      };
+    }
+
     function normalizarNomeProdutoLeite(nome) {
       return String(nome || 'Produto').trim() || 'Produto';
     }
@@ -5872,6 +5937,10 @@ async function fazerLogin() {
         const consumoMes = consumoDia * 30;
         const custoDia = consumoDia * valorKg;
         const custoMes = custoDia * 30;
+        const resumoItem = calcularResumoProdutosLeiteEstoque().itens.find(x => x.id === e.id) || {};
+        const estoqueItemKg = parseFloat(resumoItem.estoqueKg) || 0;
+        const diasRestItem = resumoItem.diasRestantes;
+        const dataFimItem = resumoItem.dataFim;
         const individuais = e.consumoPorAnimal && Object.keys(e.consumoPorAnimal).length
           ? Object.entries(e.consumoPorAnimal).map(([animalId, qtd]) => {
               const a = DB.animais.find(x => x.id === animalId);
@@ -5884,7 +5953,9 @@ async function fazerLogin() {
             <p>Total entregue: <strong>${(parseFloat(e.quantidadeKg)||0).toFixed(1).replace('.', ',')} kg</strong> · Valor: <strong>R$ ${formatCurrencyBR(e.valorTotal || 0)}</strong></p>
             <p>Valor por kg: <strong>R$ ${formatCurrencyBR(valorKg)}</strong></p>
             <p>Consumo diário total: <strong>${consumoDia.toFixed(1).replace('.', ',')} kg</strong> · <strong>R$ ${formatCurrencyBR(custoDia)}</strong></p>
-            <p>Consumo mensal total: <strong>${consumoMes.toFixed(1).replace('.', ',')} kg</strong> · <strong>R$ ${formatCurrencyBR(custoMes)}</strong></p>
+            <p>Consumo mensal projetado: <strong>${consumoMes.toFixed(1).replace('.', ',')} kg</strong> · <strong>R$ ${formatCurrencyBR(custoMes)}</strong></p>
+            <p>Estoque restante estimado: <strong>${estoqueItemKg.toFixed(1).replace('.', ',')} kg</strong></p>
+            <p>Previsão de duração: <strong>${diasRestItem === null || diasRestItem === undefined ? '—' : diasRestItem + ' dia(s)'}</strong>${dataFimItem ? ` · até <strong>${formatarData(dataFimItem)}</strong>` : ''}</p>
             <button class="btn btn-outline btn-sm" id="btn-prod-leite-${id}" onclick="alternarDetalheProdutoLeite('${id}')">Mostrar mais</button>
             <div id="det-prod-leite-${id}" class="hidden" style="margin-top:10px;">
               ${individuais}
@@ -6038,20 +6109,10 @@ async function fazerLogin() {
 
       const painel = document.getElementById('painel-estoque');
       const historico = document.getElementById('historico-racao');
-      const produtosLeite = getEntregasProdutosLeite();
-      const resumoProdutosLeite = produtosLeite.reduce((acc, e) => {
-        const kg = parseFloat(e.quantidadeKg) || 0;
-        const valor = parseFloat(e.valorTotal) || 0;
-        const consDia = parseFloat(e.consumoTotalDia) || 0;
-        acc.totalKg += kg;
-        acc.valorTotal += valor;
-        acc.consumoDia += consDia;
-        acc.custoDia += consDia * (parseFloat(e.valorKg) || 0);
-        return acc;
-      }, { totalKg: 0, valorTotal: 0, consumoDia: 0, custoDia: 0 });
-      resumoProdutosLeite.consumoMes = resumoProdutosLeite.consumoDia * 30;
-      resumoProdutosLeite.custoMes = resumoProdutosLeite.custoDia * 30;
-      resumoProdutosLeite.valorKgMedio = resumoProdutosLeite.totalKg > 0 ? resumoProdutosLeite.valorTotal / resumoProdutosLeite.totalKg : 0;
+      const resumoProdutosLeite = calcularResumoProdutosLeiteEstoque();
+      const avisoFimProdutos = resumoProdutosLeite.diasRestantes !== null && resumoProdutosLeite.dataFim
+        ? `Previsão de duração: <strong>${resumoProdutosLeite.diasRestantes} dia(s)</strong> · até <strong>${formatarData(resumoProdutosLeite.dataFim)}</strong>`
+        : 'Informe o consumo diário para calcular a previsão de duração.';
 
       const perc = estoque > 0 ? Math.min(100, Math.max(0, (estoque / Math.max(estoque, 1000)) * 100)) : 0;
 
@@ -6070,10 +6131,12 @@ async function fazerLogin() {
         </div>
         <div class="delivery-item">
           <h4>Resumo de Silo / Produtos</h4>
-          <p>Total entregue: <strong>${resumoProdutosLeite.totalKg.toFixed(1).replace('.', ',')} kg</strong></p>
+          <p>Total entregue/comprado: <strong>${resumoProdutosLeite.totalKg.toFixed(1).replace('.', ',')} kg</strong></p>
+          <p>Estoque restante estimado: <strong>${resumoProdutosLeite.estoqueKg.toFixed(1).replace('.', ',')} kg</strong></p>
           <p>Valor por kg médio: <strong>${resumoProdutosLeite.valorKgMedio > 0 ? 'R$ ' + formatCurrencyBR(resumoProdutosLeite.valorKgMedio) + '/kg' : '—'}</strong></p>
-          <p>Consumo diário total: <strong>${resumoProdutosLeite.consumoDia.toFixed(1).replace('.', ',')} kg</strong> · <strong>R$ ${formatCurrencyBR(resumoProdutosLeite.custoDia)}</strong></p>
-          <p>Consumo mensal total: <strong>${resumoProdutosLeite.consumoMes.toFixed(1).replace('.', ',')} kg</strong> · <strong>R$ ${formatCurrencyBR(resumoProdutosLeite.custoMes)}</strong></p>
+          <p>Consumo diário ativo: <strong>${resumoProdutosLeite.consumoDia.toFixed(1).replace('.', ',')} kg</strong> · <strong>R$ ${formatCurrencyBR(resumoProdutosLeite.custoDia)}</strong></p>
+          <p>Consumo mensal projetado: <strong>${resumoProdutosLeite.consumoMes.toFixed(1).replace('.', ',')} kg</strong> · <strong>R$ ${formatCurrencyBR(resumoProdutosLeite.custoMes)}</strong></p>
+          <p>${avisoFimProdutos}</p>
         </div>
       `;
 
@@ -6906,11 +6969,9 @@ async function fazerLogin() {
       const custoRacaoDia = consumoRacaoDia * valorKgRacao;
       const custoRacaoMes = custoRacaoDia * diasDoMesAtual;
 
-      const entregasProdutos = Array.isArray(DB.entregasProdutosLeite) ? DB.entregasProdutosLeite : [];
-      const custoProdutosDia = entregasProdutos.reduce((s, e) => {
-        return s + (parseFloat(e.consumoTotalDia) || 0) * (parseFloat(e.valorKg) || 0);
-      }, 0);
-      const custoSiloMes = custoProdutosDia * 30;
+      const resumoProdutosLeite = calcularResumoProdutosLeiteEstoque();
+      const custoProdutosDia = resumoProdutosLeite.custoDia;
+      const custoSiloMes = resumoProdutosLeite.custoMes;
 
       const custoLeiteBezerrosDia = litrosBezDia * precoLitro;
       const custoLeiteBezerrosMes = custoLeiteBezerrosDia * diasDoMesAtual;
@@ -6923,8 +6984,9 @@ async function fazerLogin() {
       const custoOutrosGastosMes = outrosGastosLeite.reduce((s, p) => s + (parseFloat(p.valorMensal) || 0), 0);
 
       const totalDespesasMes = custoRacaoMes + custoSiloMes + custoProdutosLavagemMes + custoOutrosGastosMes;
-      const lucroBruto = faturamentoMensalEstimado - totalDespesasMes;
-      const lucroLiquido = faturamentoMensalReal - totalDespesasMes;
+      const lucroBruto = faturamentoMensalEstimado;
+      const lucroLiquido = faturamentoMensalEstimado - totalDespesasMes;
+      const resultadoParcialMes = faturamentoMensalReal - totalDespesasMes;
 
       return {
         precoLitro, totalDiario, faturamentoDiario, faturamentoMensalEstimado,
@@ -6935,7 +6997,7 @@ async function fazerLogin() {
         consumoRacaoDia, custoProdutosDia, custoSiloMes, litrosBezDia,
         custoLeiteBezerrosDia, custoLeiteBezerrosMes, descontoLeiteBezerrosRealMes,
         custoProdutosLavagemMes, produtosLavagem, outrosGastosLeite, custoOutrosGastosMes,
-        totalDespesasMes, lucroBruto, lucroLiquido
+        totalDespesasMes, lucroBruto, lucroLiquido, resultadoParcialMes, resumoProdutosLeite
       };
     }
 
@@ -7236,8 +7298,9 @@ async function fazerLogin() {
           <div style="background:#0f0f0f;border:1px solid var(--border);border-radius:12px;padding:14px;">
             <div style="font-size:13px;font-weight:800;color:#ffffff;margin-bottom:10px;">🎯 RESULTADO</div>
             <div style="display:grid;gap:8px;font-size:14px;">
-              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Lucro bruto projetado do mês</span><strong style="color:${r.lucroBruto >= 0 ? '#6dd56d' : '#ef4444'};">R$ ${formatCurrencyBR(r.lucroBruto)}</strong></div>
+              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Faturamento bruto projetado do mês</span><strong style="color:#6dd56d;">R$ ${formatCurrencyBR(r.lucroBruto)}</strong></div>
               <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Lucro líquido projetado do mês</span><strong style="color:${r.lucroLiquido >= 0 ? '#6dd56d' : '#ef4444'};">R$ ${formatCurrencyBR(r.lucroLiquido)}</strong></div>
+              <div style="font-size:11px;color:var(--muted);line-height:1.5;">Compra de silo/produto entra como estoque. O relatório desconta apenas o consumo mensal projetado, não o valor total da compra de uma vez.</div>
             </div>
           </div>
         </div>
