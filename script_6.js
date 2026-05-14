@@ -1,0 +1,7221 @@
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDs6njrUFchymlhcFHwdGSv6nPrKXoiLEc",
+      authDomain: "ia-rural.firebaseapp.com",
+      projectId: "ia-rural",
+      storageBucket: "ia-rural.firebasestorage.app",
+      messagingSenderId: "889787646020",
+      appId: "1:889787646020:web:d4e1ef26bcf9ca3b1dbc11"
+    };
+
+    if (typeof firebase === 'undefined') {
+      console.error('Firebase SDK não carregado. Verifique a conexão com a internet.');
+    }
+
+    if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+
+    const db = (typeof firebase !== 'undefined') ? firebase.firestore() : null;
+    const auth = (typeof firebase !== 'undefined') ? firebase.auth() : null;
+
+    if (auth) {
+      auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch((e) => {
+        console.log("Erro ao definir persistência:", e);
+      });
+    }
+
+    const DB_PADRAO = () => ({
+      animais: [],
+      arquivados: [],
+      producao: {},
+      historicoPesagensLeite: [],
+      entregas: [],
+      estoqueRacao: 0,
+      entregasProdutosLeite: [],
+      ultimoBackup: null,
+      areaSelecionada: '',
+      entregasCorte: [],
+      protocolosVacas: [],
+      formulasRacao: [],
+      precoLitroLeite: 0,
+      leiteBezerros: { litrosDia: 0, quantidadeBezerros: 0 },
+      produtosLavagem: [],
+      lotesCorte: [],
+      pesagensCorte: [],
+      sanitarioCorteHistorico: [],
+      movimentacoesCorte: [],
+      financeiroCorte: [],
+      tratosCorte: []
+    });
+
+    let DB = DB_PADRAO();
+    let usuarioFirebase = null;
+    let usuarioLogado = null;
+    let animalParaExcluir = null;
+
+    let vetFilter = 'todos';
+    let whatsappNumeroSuporte = '';
+    let whatsappMensagemSuporte = 'Olá! Preciso de ajuda com o IA Rural.';
+    let areaLoginSelecionada = '';
+    let usuarioAreaPermitida = '';
+    let salvandoProtocoloVaca = false;
+
+    let animalEmEdicao = null;
+    const AREAS_DISPONIVEIS = ['leiteiro', 'corte'];
+    const AREAS_CONTA = ['leiteira', 'confinamento'];
+
+    const VET_DB = [
+      {
+        grupo: 'bezerros',
+        nome: 'Diarreia neonatal',
+        causas: 'Falha de colostragem, infecção por vírus, bactérias, protozoários e manejo inadequado.',
+        sintomas: 'Fezes líquidas, fraqueza, desidratação, olhos fundos, apatia.',
+        medidas: 'Isolar, ofertar água e eletrólitos, manter aquecido e observar desidratação.',
+        medicacao: 'Eletrólitos orais, suporte e tratamento prescrito pelo veterinário conforme a causa.',
+        urgencia: 'Urgente se houver prostração forte ou desidratação intensa.'
+      },
+      {
+        grupo: 'bezerros',
+        nome: 'Pneumonia',
+        causas: 'Mudança brusca de temperatura, ventilação ruim, lotação e infecções respiratórias.',
+        sintomas: 'Tosse, secreção nasal, febre, respiração acelerada, orelhas caídas.',
+        medidas: 'Separar o animal, manter em local seco e ventilado, monitorar febre.',
+        medicacao: 'Antibióticos e anti-inflamatórios somente com orientação veterinária.',
+        urgencia: 'Alta urgência se houver esforço respiratório.'
+      },
+      {
+        grupo: 'bezerros',
+        nome: 'Tristeza parasitária',
+        causas: 'Carrapatos transmitindo babesiose e anaplasmose.',
+        sintomas: 'Febre, mucosas pálidas, urina escura, apatia, perda de apetite.',
+        medidas: 'Acionar veterinário rápido e revisar controle de carrapatos.',
+        medicacao: 'Terapia específica conforme o agente, prescrita por veterinário.',
+        urgencia: 'Muito urgente.'
+      },
+      {
+        grupo: 'bezerros',
+        nome: 'Umbigo inflamado',
+        causas: 'Falha na cura do umbigo e contaminação após o nascimento.',
+        sintomas: 'Umbigo quente, inchado, dolorido, secreção e febre.',
+        medidas: 'Higienizar, avaliar dor e chamar veterinário cedo.',
+        medicacao: 'Antissépticos e antibióticos conforme avaliação profissional.',
+        urgencia: 'Urgente para evitar infecção generalizada.'
+      },
+      {
+        grupo: 'bezerros',
+        nome: 'Verminose',
+        causas: 'Alta carga parasitária no ambiente e pasto contaminado.',
+        sintomas: 'Pelo ruim, barriga inchada, diarreia, emagrecimento, anemia.',
+        medidas: 'Separar os mais fracos, revisar pastagem e cronograma sanitário.',
+        medicacao: 'Vermífugo conforme protocolo e orientação técnica.',
+        urgencia: 'Moderada, mas pode ficar grave.'
+      },
+      {
+        grupo: 'vacas',
+        nome: 'Mastite',
+        causas: 'Infecção da glândula mamária, falha de higiene ou manejo de ordenha.',
+        sintomas: 'Leite alterado, grumos, quarto quente, inchado e dolorido.',
+        medidas: 'Separar leite do quarto afetado, reforçar higiene e observar febre.',
+        medicacao: 'Tratamento intramamário e/ou sistêmico prescrito pelo veterinário.',
+        urgencia: 'Alta se houver febre ou queda forte na produção.'
+      },
+      {
+        grupo: 'vacas',
+        nome: 'Febre do leite',
+        causas: 'Queda do cálcio no pós-parto.',
+        sintomas: 'Fraqueza, tremores, dificuldade para levantar, pescoço dobrado.',
+        medidas: 'Manter a vaca confortável e chamar veterinário imediatamente.',
+        medicacao: 'Cálcio via tratamento profissional.',
+        urgencia: 'Emergência.'
+      },
+      {
+        grupo: 'vacas',
+        nome: 'Retenção de placenta',
+        causas: 'Problemas de parto, deficiência mineral, infecções e distúrbios metabólicos.',
+        sintomas: 'Placenta não eliminada após o parto, secreção, queda de apetite.',
+        medidas: 'Observar odor, temperatura e condição geral.',
+        medicacao: 'Conduta veterinária conforme exame; não puxar a placenta.',
+        urgencia: 'Urgente.'
+      },
+      {
+        grupo: 'vacas',
+        nome: 'Metrite',
+        causas: 'Infecção uterina no pós-parto.',
+        sintomas: 'Secreção com mau cheiro, febre, apatia, queda no consumo.',
+        medidas: 'Separar, monitorar temperatura e chamar veterinário.',
+        medicacao: 'Antibióticos e anti-inflamatórios conforme avaliação.',
+        urgencia: 'Alta.'
+      },
+      {
+        grupo: 'vacas',
+        nome: 'Cetose',
+        causas: 'Déficit energético no pós-parto.',
+        sintomas: 'Queda na produção, perda de apetite, emagrecimento, hálito alterado.',
+        medidas: 'Revisar dieta e chamar assistência técnica.',
+        medicacao: 'Suporte energético e tratamento indicado por veterinário.',
+        urgencia: 'Moderada a alta.'
+      },
+      {
+        grupo: 'vacas',
+        nome: 'Acidose ruminal',
+        causas: 'Excesso de concentrado e adaptação ruim da dieta.',
+        sintomas: 'Diarreia, queda do apetite, timpanismo, dor abdominal, apatia.',
+        medidas: 'Suspender excesso de concentrado e acionar veterinário.',
+        medicacao: 'Correção de dieta e suporte clínico profissional.',
+        urgencia: 'Alta.'
+      },
+      {
+        grupo: 'vacas',
+        nome: 'Problemas de casco',
+        causas: 'Ambiente úmido, piso ruim, falta de casqueamento e infecções.',
+        sintomas: 'Manqueira, dor, ferida, dificuldade de locomoção.',
+        medidas: 'Separar, deixar em local seco e avaliar o casco.',
+        medicacao: 'Tratamento local e sistêmico conforme causa.',
+        urgencia: 'Moderada a alta.'
+      }
+    ];
+
+    function normalizarUsuario(usuario) {
+      return (usuario || '').trim().toLowerCase().replace(/\s+/g, '');
+    }
+
+    function usuarioParaEmail(usuario) {
+      return `${normalizarUsuario(usuario)}@ia-rural.app`;
+    }
+
+    async function obterStatusDaConta(uid) {
+  try {
+    const docRef = await db.collection('users').doc(uid).get();
+    if (!docRef.exists) return 'ativo';
+
+    const dados = docRef.data() || {};
+    return dados.accountStatus || 'ativo';
+  } catch (erro) {
+    console.error('Erro ao verificar status da conta:', erro);
+    return 'ativo';
+  }
+}
+    
+    async function buscarRegistroAdminPorUsuario(usuario) {
+  try {
+    const snapshot = await db.collection('admin_usuarios')
+      .where('usuario', '==', normalizarUsuario(usuario))
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) return null;
+    return snapshot.docs[0].data();
+  } catch (erro) {
+    console.error('Erro ao consultar admin_usuarios:', erro);
+    return null;
+  }
+}
+   
+    async function usuarioEstaBloqueadoPorUid(uid) {
+  try {
+    const adminDoc = await db.collection('admin_usuarios').where('firebaseUid', '==', uid).limit(1).get();
+    if (adminDoc.empty) return false;
+    const dados = adminDoc.docs[0].data();
+    return dados.status === 'bloqueado';
+  } catch (erro) {
+    console.error('Erro ao consultar bloqueio:', erro);
+    return false;
+  }
+}
+
+async function fazerLogin() {
+  const usuario = normalizarUsuario(document.getElementById('login-usuario').value);
+  const senha = document.getElementById('login-senha').value;
+  const erroBox = document.getElementById('login-erro');
+
+  erroBox.style.display = 'none';
+
+  if (!usuario || !senha) {
+    erroBox.textContent = 'Informe usuário e senha.';
+    erroBox.style.display = 'block';
+    return;
+  }
+
+  try {
+    const cred = await auth.signInWithEmailAndPassword(usuarioParaEmail(usuario), senha);
+    const statusConta = await obterStatusDaConta(cred.user.uid);
+
+    if (statusConta === 'bloqueado') {
+      await auth.signOut();
+      erroBox.textContent = 'Seu acesso está bloqueado. Procure o administrador.';
+      erroBox.style.display = 'block';
+      return;
+    }
+
+    usuarioFirebase = cred.user;
+    usuarioLogado = usuario;
+    usuarioAreaPermitida = await buscarAreaPermitidaUsuario(cred.user.uid, usuario);
+    DB = DB_PADRAO();
+    aplicarAreaPermitidaOuRedirecionar(areaLoginSelecionada || usuarioAreaPermitida || 'leiteira');
+    abrirAppLogado(usuario);
+    mostrarCarregandoDadosIniciais();
+    await carregarFirestore();
+  } catch (erro) {
+    console.error(erro);
+    let msg = 'Não foi possível entrar. Verifique usuário e senha.';
+    const code = erro?.code || '';
+
+    if (code.includes('wrong-password')) msg = 'Senha incorreta.';
+    else if (code.includes('user-not-found')) msg = 'Usuário não encontrado.';
+    else if (code.includes('invalid-login-credentials')) msg = 'Usuário ou senha inválidos.';
+    else if (code.includes('network-request-failed')) msg = 'Falha de conexão com a internet.';
+    else if (code.includes('too-many-requests')) msg = 'Muitas tentativas. Aguarde um pouco.';
+    else if (code.includes('operation-not-allowed')) msg = 'Login por senha não habilitado no Firebase.';
+    else if (code.includes('invalid-api-key')) msg = 'Configuração do Firebase inválida.';
+    else if (erro?.message) msg = erro.message;
+
+    erroBox.textContent = msg;
+    erroBox.style.display = 'block';
+  }
+}
+
+    async function carregarConfigWhatsApp() {
+      try {
+        const doc = await db.collection('config_publica').doc('whatsapp').get();
+        const dados = doc.exists ? (doc.data() || {}) : {};
+        whatsappNumeroSuporte = String(dados.numero || '').replace(/\D/g, '');
+        whatsappMensagemSuporte = (dados.mensagemPadrao || 'Olá! Preciso de ajuda com o IA Rural.').trim();
+      } catch (e) {
+        whatsappNumeroSuporte = '';
+        whatsappMensagemSuporte = 'Olá! Preciso de ajuda com o IA Rural.';
+      }
+
+      atualizarBotaoWhatsApp();
+    }
+
+    function atualizarBotaoWhatsApp() {
+      const btn = document.getElementById('btn-whatsapp');
+      if (!btn) return;
+      btn.style.display = whatsappNumeroSuporte ? 'inline-flex' : 'none';
+      const landing = document.getElementById('landing-whatsapp');
+      if (landing) landing.style.display = whatsappNumeroSuporte ? 'inline-flex' : 'none';
+    }
+
+    function abrirWhatsAppSuporte() {
+      if (!whatsappNumeroSuporte) {
+        alert('O número de suporte ainda não foi configurado.');
+        return;
+      }
+
+      const texto = encodeURIComponent(whatsappMensagemSuporte || 'Olá! Preciso de ajuda com o IA Rural.');
+      const url = `https://wa.me/${whatsappNumeroSuporte}?text=${texto}`;
+      window.open(url, '_blank');
+    }
+
+    function formatarDataHora(iso) {
+      if (!iso) return '—';
+      const data = new Date(iso);
+      if (isNaN(data.getTime())) return '—';
+      return data.toLocaleString('pt-BR');
+    }
+
+    function normalizarAreaContaValor(valor){const area=String(valor||'').toLowerCase().trim();if(area==='confinamento'||area==='corte')return 'confinamento';return 'leiteira';}
+    function normalizarAreaAcesso(valor){
+      const area=String(valor||'').toLowerCase().trim();
+      if(['ambas','todos','todas','completo','duas','leiteira_confinamento','leiteira+confinamento'].includes(area)) return 'ambas';
+      if(area==='confinamento'||area==='corte')return 'confinamento';
+      if(area==='leiteira'||area==='leiteiro')return 'leiteira';
+      return '';
+    }
+    function areaContaParaInterna(area){return normalizarAreaContaValor(area)==='confinamento'?'corte':'leiteiro';}
+    function areaInternaParaConta(area){return area==='corte'?'confinamento':'leiteira';}
+    function nomeArea(area){return normalizarAreaContaValor(area)==='confinamento'||area==='corte'?'Confinamento':'Área Leiteira';}
+    function usuarioPodeAcessarArea(areaConta){
+      const area=normalizarAreaContaValor(areaConta);
+      const permitida=normalizarAreaAcesso(usuarioAreaPermitida);
+      return !permitida || permitida==='ambas' || permitida===area;
+    }
+    function areaPermitidaComoInterna(){
+      const permitida=normalizarAreaAcesso(usuarioAreaPermitida);
+      if(permitida==='confinamento') return 'corte';
+      if(permitida==='leiteira') return 'leiteiro';
+      return '';
+    }
+    function aplicarAreaPermitidaOuRedirecionar(areaDesejadaConta){
+      const desejada=normalizarAreaContaValor(areaDesejadaConta || areaLoginSelecionada || 'leiteira');
+      const permitida=normalizarAreaAcesso(usuarioAreaPermitida);
+      if(permitida && permitida!=='ambas' && desejada!==permitida){
+        areaLoginSelecionada=permitida;
+        if(DB) DB.areaSelecionada=areaContaParaInterna(permitida);
+        try{ mostrarMensagem(`Este usuário tem acesso somente à área ${nomeArea(permitida)}.`, 'aviso'); }catch(e){ console.warn(`Acesso redirecionado para ${permitida}`); }
+        return permitida;
+      }
+      areaLoginSelecionada=desejada;
+      if(DB) DB.areaSelecionada=areaContaParaInterna(desejada);
+      return desejada;
+    }
+    async function buscarAreaPermitidaUsuario(uid, usuario){
+      const usuarioNorm=normalizarUsuario(usuario||usuarioLogado||'');
+      let areaEncontrada='';
+      let planoEncontrado='';
+      try{
+        if(uid){
+          const userDoc=await db.collection('users').doc(uid).get();
+          if(userDoc.exists){
+            const dados=userDoc.data()||{};
+            areaEncontrada=normalizarAreaAcesso(dados.areaSistema||dados.area||dados.areaPermitida||dados.tipoArea||'')||areaEncontrada;
+            planoEncontrado=String(dados.plano||dados.tipoPlano||'').toLowerCase();
+          }
+        }
+      }catch(e){console.warn('Não foi possível ler área em users:',e);}
+      try{
+        let docAdmin=null;
+        if(uid){
+          const porUid=await db.collection('admin_usuarios').where('firebaseUid','==',uid).limit(1).get();
+          if(!porUid.empty) docAdmin=porUid.docs[0].data()||{};
+        }
+      }catch(e){}
+      try{
+        let docAdmin=null;
+        if(uid){
+          const porUid=await db.collection('admin_usuarios').where('firebaseUid','==',uid).limit(1).get();
+          if(!porUid.empty) docAdmin=porUid.docs[0].data()||{};
+        }
+        if(!docAdmin && usuarioNorm){
+          const porUsuario=await db.collection('admin_usuarios').where('usuario','==',usuarioNorm).limit(1).get();
+          if(!porUsuario.empty) docAdmin=porUsuario.docs[0].data()||{};
+        }
+        if(docAdmin){
+          areaEncontrada=normalizarAreaAcesso(docAdmin.areaSistema||docAdmin.area||docAdmin.areaPermitida||docAdmin.tipoArea||'')||areaEncontrada;
+          planoEncontrado=String(docAdmin.plano||docAdmin.tipoPlano||planoEncontrado||'').toLowerCase();
+        }
+      }catch(e){console.warn('Não foi possível ler área em admin_usuarios:',e);}
+      if(!areaEncontrada && (planoEncontrado.includes('completo') || planoEncontrado.includes('duas') || planoEncontrado.includes('ambas'))) return 'ambas';
+      return areaEncontrada || normalizarAreaAcesso(areaLoginSelecionada) || 'leiteira';
+    }
+    function abrirLoginArea(area){areaLoginSelecionada=normalizarAreaContaValor(area);if(!AREAS_CONTA.includes(areaLoginSelecionada))return;const chip=document.getElementById('login-area-chip');if(chip)chip.textContent=areaLoginSelecionada==='confinamento'?'Confinamento':'Área Leiteira';document.getElementById('landing-screen').style.display='none';document.getElementById('tela-login').style.display='flex';document.getElementById('app-wrapper').style.display='none';document.getElementById('login-erro').style.display='none';document.getElementById('login-usuario').focus();}
+    function voltarLanding(){areaLoginSelecionada='';document.getElementById('login-usuario').value='';document.getElementById('login-senha').value='';document.getElementById('login-erro').style.display='none';document.getElementById('tela-login').style.display='none';document.getElementById('app-wrapper').style.display='none';document.getElementById('landing-screen').style.display='flex';carregarConfigWhatsApp();}
+
+    async function fazerLogout() {
+      if (!confirm('Deseja sair do sistema?')) return;
+      const btnSair = document.querySelector('button[onclick="fazerLogout()"]');
+      if (btnSair) { btnSair.disabled = true; btnSair.textContent = 'Saindo...'; }
+      try {
+        if (typeof salvarDB === 'function') {
+          try { await salvarDB({ sincronizarAnimais: false }); } catch(e) { console.warn('Aviso ao salvar antes do logout:', e); }
+        }
+        if (typeof auth !== 'undefined' && auth && auth.currentUser) {
+          await auth.signOut();
+        }
+        usuarioFirebase = null;
+        usuarioLogado = null;
+        usuarioAreaPermitida = '';
+        areaLoginSelecionada = '';
+        try { if (typeof DB_PADRAO === 'function') DB = DB_PADRAO(); } catch(e) {}
+        document.getElementById('app-wrapper').style.display = 'none';
+        document.getElementById('tela-login').style.display = 'none';
+        document.getElementById('landing-screen').style.display = 'flex';
+        const loginUsuario = document.getElementById('login-usuario');
+        const loginSenha = document.getElementById('login-senha');
+        if (loginUsuario) loginUsuario.value = '';
+        if (loginSenha) loginSenha.value = '';
+        try { carregarConfigWhatsApp(); } catch(e) {}
+      } catch (e) {
+        console.error('Erro ao sair:', e);
+        alert('Erro ao sair: ' + (e.message || e));
+      } finally {
+        if (btnSair) { btnSair.disabled = false; btnSair.textContent = 'Sair'; }
+      }
+    }
+    async function obterDadosAdminPorUid(uid, usuarioBusca = ''){
+      try{
+        if (uid) {
+          const docDireto = await db.collection('admin_usuarios').doc(uid).get();
+          if (docDireto.exists) return {...(docDireto.data()||{}), _docId: docDireto.id};
+
+          const snapUid = await db.collection('admin_usuarios').where('firebaseUid','==',uid).limit(1).get();
+          if(!snapUid.empty) return {...(snapUid.docs[0].data()||{}), _docId:snapUid.docs[0].id};
+        }
+
+        const usuarioNormalizado = normalizarUsuario(usuarioBusca || '');
+        if (usuarioNormalizado) {
+          const snapUsuario = await db.collection('admin_usuarios').where('usuario','==',usuarioNormalizado).limit(1).get();
+          if(!snapUsuario.empty) return {...(snapUsuario.docs[0].data()||{}), _docId:snapUsuario.docs[0].id};
+        }
+
+        return null;
+      }catch(e){
+        console.error('Erro ao consultar dados do usuário:',e);
+        return null;
+      }
+    }
+
+    async function obterDadosContaCompleta(uid, usuarioBusca = ''){
+      const admin = await obterDadosAdminPorUid(uid, usuarioBusca);
+      let userDoc = null;
+      try{
+        if (uid) {
+          const snap = await db.collection('users').doc(uid).get();
+          if (snap.exists) userDoc = snap.data() || {};
+        }
+      }catch(e){ console.error('Erro ao consultar users:', e); }
+      return { ...(userDoc || {}), ...(admin || {}), _adminDocId: admin?._docId || '' };
+    }
+
+    function normalizarAreaConta(dados){return normalizarAreaContaValor(dados?.area || dados?.areaSistema || dados?.tipoArea || 'leiteira');}
+    function formatarDataBloqueio(iso){if(!iso)return '';const d=new Date(iso);if(isNaN(d.getTime()))return '';return d.toLocaleDateString('pt-BR');}
+    async function validarTesteGratisNoLogin(dadosAdmin, uid){
+      const dias=Number(dadosAdmin?.testeGratisDias||0);
+      const fimIso=dadosAdmin?.testeGratisFim||'';
+      if(!dias||!fimIso)return {bloqueado:false,mensagem:''};
+      const fim=new Date(fimIso);
+      if(isNaN(fim.getTime()))return {bloqueado:false,mensagem:''};
+      if(new Date()<=fim)return {bloqueado:false,mensagem:''};
+      const mensagem='Seu período de teste expirou. Entre em contato para ativar seu acesso.';
+      try{
+        const adminId=dadosAdmin?._docId||dadosAdmin?.id;
+        if(adminId){await db.collection('admin_usuarios').doc(adminId).update({status:'bloqueado',bloqueioMotivo:mensagem});}
+        if(uid){await db.collection('users').doc(uid).set({accountStatus:'bloqueado',bloqueioMotivo:mensagem,trial:{enabled:true,days:dias,startedAt:dadosAdmin?.testeGratisInicio||'',endsAt:fimIso,expired:true}}, {merge:true});}
+      }catch(e){console.error('Erro ao bloquear teste grátis vencido:',e);}
+      return {bloqueado:true,mensagem};
+    }
+    function normalizarProtocoloVaca(p={}){return {id:p.id||String(Date.now()),animal:p.animal||p.nomeAnimal||'',dataProtocolo:p.dataProtocolo||'',boi:p.boi||'',dataToque:p.dataToque||'',status:p.status||'protocolada',dataCriacao:p.dataCriacao||new Date().toISOString(),historico:Array.isArray(p.historico)?p.historico:[]};}
+
+    function abrirAppLogado(usuario) {
+      usuarioLogado = usuario;
+      document.getElementById('nav-usuario').textContent = usuario + (obterAreaAtual() ? ' · ' + nomeArea(obterAreaAtual()) : '');
+      document.getElementById('landing-screen').style.display = 'none';
+      document.getElementById('tela-login').style.display = 'none';
+      document.getElementById('app-wrapper').style.display = 'block';
+      aplicarAreaNaInterface();
+      showPage('inicio');
+      carregarConfigWhatsApp();
+    }
+
+    function toggleForm(id) {
+      const form = document.getElementById(id);
+      if (!form) {
+        console.error('Formulário não encontrado:', id);
+        return;
+      }
+      form.classList.toggle('hidden');
+      if (!form.classList.contains('hidden')) {
+        atualizarVisibilidadeCamposCadastro();
+        atualizarCategoria();
+        const primeiroCampo = form.querySelector('input, select, textarea');
+        if (primeiroCampo) primeiroCampo.focus();
+      }
+    }
+
+    function atualizarCategoria() {
+      const area = obterAreaAtual() || 'leiteiro';
+      const sexo = document.getElementById('a-sexo')?.value || '';
+      const dataNascimento = document.getElementById('a-data-nascimento')?.value || '';
+      const castrado = document.getElementById('a-castrado')?.value === 'sim';
+      const box = document.getElementById('a-categoria-box');
+      const idadeInput = document.getElementById('a-idade');
+
+      let idade = NaN;
+      if (dataNascimento) idade = calcularIdadeEmMeses(dataNascimento);
+      if (idadeInput) idadeInput.value = Number.isFinite(idade) ? idade : '';
+
+      if (!sexo || !dataNascimento || !Number.isFinite(idade)) {
+        if (box) box.textContent = 'Informe sexo e data de nascimento. A categoria será calculada automaticamente.';
+        return;
+      }
+
+      const categoria = getCategoriaPorArea(area, sexo, idade, castrado);
+      if (box) box.textContent = `${categoria} · ${idade} meses pela data de nascimento`;
+    }
+
+    function showPage(id) {
+      const area = obterAreaAtual();
+      const paginasBloqueadasNoCorte = ['producao', 'despesas', 'calendario', 'protocolar-vaca', 'vacas-protocoladas', 'genealogia'];
+
+      if (area === 'corte' && paginasBloqueadasNoCorte.includes(id)) {
+        id = 'inicio';
+      }
+
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+
+      const page = document.getElementById('page-' + id);
+      if (page) page.classList.add('active');
+
+      const tab = document.querySelector(`.nav-tab[data-page="${id}"]`);
+      if (tab && !tab.classList.contains('hidden')) tab.classList.add('active');
+
+      if (id === 'inicio') atualizarHomeArea();
+      if (id === 'rebanho') renderRebanho();
+      if (id === 'producao') { renderProducao(); try { carregarPrecoLitroNaTela(); } catch(e) {} }
+      if (id === 'despesas') renderDespesas();
+      if (id === 'protocolar-vaca') renderProtocolarVaca();
+      if (id === 'vacas-protocoladas') renderVacasProtocoladas();
+      if (id === 'sanitario-corte') renderSanitarioCorte();
+      if (id === 'nutricao-corte') renderNutricaoCorte();
+      if (id === 'manejo-corte') renderManejoCorte();
+      if (id === 'despesas-corte') renderDespesasCorte();
+      if (id === 'trato-corte') renderTratoCorte();
+      if (id === 'fabrica-racao') renderFabricaRacao();
+      if (id === 'vendidos-corte') renderVendidosCorte();
+      if (id === 'veterinario') renderVet();
+      if (id === 'genealogia') renderGenealogia();
+      if (id === 'calendario') renderCalendario();
+      if (id === 'arquivados') renderArquivados();
+      if (id === 'lotes-corte') renderLotesCorte();
+      if (id === 'pesagens-corte') renderPesagensCorte();
+      if (id === 'vacinas-medicamentos-corte') renderVacinasMedicamentosCorte();
+      if (id === 'financeiro-corte') renderFinanceiroCorte();
+      if (id === 'mortes-vendas-corte') renderMovimentacoesCorte();
+    }
+
+    function getUidAtualSeguro() {
+      return usuarioFirebase?.uid || auth.currentUser?.uid || '';
+    }
+
+    function getAreaContaLocalSegura() {
+      const areaAtual = AREAS_DISPONIVEIS.includes(DB?.areaSelecionada) ? DB.areaSelecionada : '';
+      const areaConta = areaAtual ? areaInternaParaConta(areaAtual) : (areaLoginSelecionada || 'leiteira');
+      return AREAS_CONTA.includes(areaConta) ? areaConta : 'leiteira';
+    }
+
+    function getLocalKey() {
+      const uid = getUidAtualSeguro();
+      const areaConta = getAreaContaLocalSegura();
+      if (uid) return `ia_rural_db_uid_${uid}_${areaConta}`;
+      return `ia_rural_db_tmp_${normalizarUsuario(usuarioLogado || 'anonimo')}_${areaConta}`;
+    }
+
+    function getLocalKeysPossiveis(usuario = usuarioLogado || '') {
+      const uid = getUidAtualSeguro();
+      const areaConta = getAreaContaLocalSegura();
+
+      // Correção principal: quando existe Firebase UID, o app só pode ler backups desse UID.
+      // Antes ele varria todas as chaves ia_rural_db_* do navegador; por isso o rebanho do usuário X
+      // podia ser reaproveitado pelo usuário Y no mesmo computador.
+      if (uid) {
+        return Array.from(new Set([
+          `ia_rural_db_uid_${uid}_${areaConta}`,
+          `ia_rural_db_uid_${uid}`,
+          `ia_rural_db_${uid}`,
+          `ia_rural_db_backup_uid_${uid}`
+        ]));
+      }
+
+      const bruto = String(usuario || '').trim();
+      const normalizado = normalizarUsuario(bruto || 'anonimo');
+      return Array.from(new Set([
+        `ia_rural_db_tmp_${normalizado}_${areaConta}`,
+        `ia_rural_db_${normalizado}`,
+        `ia_rural_db_${bruto}`
+      ].filter(Boolean)));
+    }
+
+    function removerFotosGrandesDoBackupLocal(dbOrigem) {
+      const copia = normalizarDB(dbOrigem || {});
+      const limparLista = (lista) => (Array.isArray(lista) ? lista : []).map(item => ({
+        ...item,
+        // O cache local não guarda base64 pesado. As fotos continuam salvas na nuvem.
+        // Isso evita travar a abertura do site quando há muitas fotos tiradas por celular.
+        foto: '',
+        fotoThumb: item && item.fotoThumb ? item.fotoThumb : ''
+      }));
+      copia.animais = limparLista(copia.animais);
+      copia.arquivados = limparLista(copia.arquivados);
+      return copia;
+    }
+
+    function prepararDBParaBackupLocal() {
+      const uid = getUidAtualSeguro();
+      const areaConta = getAreaContaLocalSegura();
+      return {
+        ...removerFotosGrandesDoBackupLocal(DB),
+        _ownerUid: uid || '',
+        _ownerUsuario: normalizarUsuario(usuarioLogado || ''),
+        _ownerArea: areaConta,
+        _backupVersion: 3
+      };
+    }
+
+    function salvarLocal() {
+      try {
+        const payload = JSON.stringify(prepararDBParaBackupLocal());
+        getLocalKeysPossiveis(usuarioLogado || '').forEach(chave => {
+          try { localStorage.setItem(chave, payload); } catch (_) {}
+        });
+      } catch (e) {
+        console.log('Erro localStorage:', e);
+      }
+    }
+
+    function carregarLocalPorUsuario(usuario) {
+      const keys = getLocalKeysPossiveis(usuario || usuarioLogado || '');
+      const uidAtual = getUidAtualSeguro();
+      const areaContaAtual = getAreaContaLocalSegura();
+      let melhor = null;
+      let melhorQtd = -1;
+
+      const tentarLerChave = (chave) => {
+        try {
+          const raw = localStorage.getItem(chave);
+          if (!raw) return;
+          const bruto = JSON.parse(raw);
+
+          // Não aceita backup marcado como pertencente a outro UID/área.
+          if (uidAtual && bruto?._ownerUid && bruto._ownerUid !== uidAtual) return;
+          if (uidAtual && bruto?._ownerArea && bruto._ownerArea !== areaContaAtual) return;
+
+          const parsed = normalizarDB(bruto);
+          const qtd = (parsed.animais?.length || 0) + (parsed.protocolosVacas?.length || 0) + (parsed.entregas?.length || 0) + (parsed.entregasCorte?.length || 0) + (parsed.arquivados?.length || 0);
+          if (qtd > melhorQtd) {
+            melhor = parsed;
+            melhorQtd = qtd;
+          }
+        } catch (e) {
+          console.warn('Falha ao ler backup local:', chave, e);
+        }
+      };
+
+      // Correção de isolamento: nunca mais varrer todas as chaves ia_rural_db_* do navegador.
+      keys.forEach(tentarLerChave);
+
+      return melhor || DB_PADRAO();
+    }
+
+    function normalizarDB(obj) {
+      const base = DB_PADRAO();
+      const area = AREAS_DISPONIVEIS.includes(obj?.areaSelecionada) ? obj.areaSelecionada : base.areaSelecionada;
+
+      return {
+        animais: Array.isArray(obj?.animais) ? obj.animais.map(normalizarAnimal) : base.animais,
+        arquivados: Array.isArray(obj?.arquivados) ? obj.arquivados.map(normalizarAnimal) : base.arquivados,
+        producao: obj?.producao && typeof obj.producao === 'object' ? obj.producao : base.producao,
+        historicoPesagensLeite: Array.isArray(obj?.historicoPesagensLeite) ? obj.historicoPesagensLeite : base.historicoPesagensLeite,
+        entregas: Array.isArray(obj?.entregas) ? obj.entregas : base.entregas,
+        estoqueRacao: typeof obj?.estoqueRacao === 'number' ? obj.estoqueRacao : base.estoqueRacao,
+        entregasProdutosLeite: Array.isArray(obj?.entregasProdutosLeite) ? obj.entregasProdutosLeite : base.entregasProdutosLeite,
+        ultimoBackup: obj?.ultimoBackup || base.ultimoBackup,
+        areaSelecionada: area,
+        entregasCorte: Array.isArray(obj?.entregasCorte) ? obj.entregasCorte : base.entregasCorte,
+        protocolosVacas: Array.isArray(obj?.protocolosVacas) ? obj.protocolosVacas.map(normalizarProtocoloVaca) : base.protocolosVacas,
+        formulasRacao: Array.isArray(obj?.formulasRacao) ? obj.formulasRacao : base.formulasRacao,
+        precoLitroLeite: typeof obj?.precoLitroLeite === 'number' ? obj.precoLitroLeite : (parseFloat(obj?.precoLitroLeite) || 0),
+        leiteBezerros: (obj?.leiteBezerros && typeof obj.leiteBezerros === 'object') ? { litrosDia: parseFloat(obj.leiteBezerros.litrosDia) || 0, quantidadeBezerros: parseFloat(obj.leiteBezerros.quantidadeBezerros) || 0 } : base.leiteBezerros,
+        produtosLavagem: Array.isArray(obj?.produtosLavagem) ? obj.produtosLavagem : base.produtosLavagem,
+        lotesCorte: Array.isArray(obj?.lotesCorte) ? obj.lotesCorte : base.lotesCorte,
+        pesagensCorte: Array.isArray(obj?.pesagensCorte) ? obj.pesagensCorte : base.pesagensCorte,
+        sanitarioCorteHistorico: Array.isArray(obj?.sanitarioCorteHistorico) ? obj.sanitarioCorteHistorico : base.sanitarioCorteHistorico,
+        movimentacoesCorte: Array.isArray(obj?.movimentacoesCorte) ? obj.movimentacoesCorte : base.movimentacoesCorte,
+        financeiroCorte: Array.isArray(obj?.financeiroCorte) ? obj.financeiroCorte : base.financeiroCorte,
+        tratosCorte: Array.isArray(obj?.tratosCorte) ? obj.tratosCorte : base.tratosCorte
+      };
+    }
+
+
+
+    function mesclarListasPorIdSeguro(principal = [], secundaria = [], idsArquivados = new Set()) {
+      const mapa = new Map();
+
+      [...(Array.isArray(secundaria) ? secundaria : []), ...(Array.isArray(principal) ? principal : [])].forEach((item) => {
+        if (!item) return;
+        const id = item.id || item._id || item.nome || `${Date.now()}_${Math.random()}`;
+        if (idsArquivados.has(id)) return;
+        mapa.set(id, { ...item, id });
+      });
+
+      return Array.from(mapa.values()).map(normalizarAnimal);
+    }
+
+    function mesclarDBSeguro(principal, secundaria) {
+      const origemPrincipal = principal && typeof principal === 'object' ? principal : {};
+      const origemSecundaria = secundaria && typeof secundaria === 'object' ? secundaria : {};
+      const dbPrincipal = normalizarDB(origemPrincipal);
+      const dbSecundaria = normalizarDB(origemSecundaria);
+      const principalTemCampo = campo => Object.prototype.hasOwnProperty.call(origemPrincipal, campo);
+
+      const arquivadosPorId = new Map();
+      [...dbSecundaria.arquivados, ...dbPrincipal.arquivados].forEach((item) => {
+        if (!item) return;
+        const id = item.id || item._id || item.nome || `${Date.now()}_${Math.random()}`;
+        arquivadosPorId.set(id, { ...item, id });
+      });
+
+      const idsArquivados = new Set(Array.from(arquivadosPorId.keys()));
+
+      return normalizarDB({
+        ...dbSecundaria,
+        ...dbPrincipal,
+        animais: mesclarListasPorIdSeguro(dbPrincipal.animais, dbSecundaria.animais, idsArquivados),
+        arquivados: Array.from(arquivadosPorId.values()).map(normalizarAnimal),
+        producao: principalTemCampo('producao') ? (dbPrincipal.producao || {}) : { ...(dbSecundaria.producao || {}), ...(dbPrincipal.producao || {}) },
+        // Campos de histórico/listas precisam respeitar array vazio vindo da nuvem.
+        // Sem isso, uma pesagem excluída voltava do cache local ao sair e entrar novamente.
+        historicoPesagensLeite: principalTemCampo('historicoPesagensLeite') ? dbPrincipal.historicoPesagensLeite : dbSecundaria.historicoPesagensLeite,
+        entregas: principalTemCampo('entregas') ? dbPrincipal.entregas : dbSecundaria.entregas,
+        entregasProdutosLeite: principalTemCampo('entregasProdutosLeite') ? dbPrincipal.entregasProdutosLeite : dbSecundaria.entregasProdutosLeite,
+        entregasCorte: principalTemCampo('entregasCorte') ? dbPrincipal.entregasCorte : dbSecundaria.entregasCorte,
+        protocolosVacas: principalTemCampo('protocolosVacas') ? dbPrincipal.protocolosVacas : dbSecundaria.protocolosVacas,
+        formulasRacao: principalTemCampo('formulasRacao') ? dbPrincipal.formulasRacao : dbSecundaria.formulasRacao,
+        precoLitroLeite: principalTemCampo('precoLitroLeite') ? dbPrincipal.precoLitroLeite : dbSecundaria.precoLitroLeite,
+        leiteBezerros: principalTemCampo('leiteBezerros') ? dbPrincipal.leiteBezerros : dbSecundaria.leiteBezerros,
+        produtosLavagem: principalTemCampo('produtosLavagem') ? dbPrincipal.produtosLavagem : dbSecundaria.produtosLavagem,
+        lotesCorte: principalTemCampo('lotesCorte') ? dbPrincipal.lotesCorte : dbSecundaria.lotesCorte,
+        pesagensCorte: principalTemCampo('pesagensCorte') ? dbPrincipal.pesagensCorte : dbSecundaria.pesagensCorte,
+        sanitarioCorteHistorico: principalTemCampo('sanitarioCorteHistorico') ? dbPrincipal.sanitarioCorteHistorico : dbSecundaria.sanitarioCorteHistorico,
+        movimentacoesCorte: principalTemCampo('movimentacoesCorte') ? dbPrincipal.movimentacoesCorte : dbSecundaria.movimentacoesCorte,
+        financeiroCorte: principalTemCampo('financeiroCorte') ? dbPrincipal.financeiroCorte : dbSecundaria.financeiroCorte,
+        tratosCorte: principalTemCampo('tratosCorte') ? dbPrincipal.tratosCorte : dbSecundaria.tratosCorte
+      });
+    }
+
+    function obterAreaAtual() {
+      const internaPermitida = areaPermitidaComoInterna();
+      if (internaPermitida) return internaPermitida;
+      if (AREAS_DISPONIVEIS.includes(DB?.areaSelecionada)) return DB.areaSelecionada;
+      if (AREAS_CONTA.includes(areaLoginSelecionada)) return areaContaParaInterna(areaLoginSelecionada);
+      return 'leiteiro';
+    }
+
+    function normalizarAnimal(a = {}) {
+      return {
+        ...a,
+        area: AREAS_DISPONIVEIS.includes(a?.area) ? a.area : 'leiteiro',
+        foto: typeof a?.foto === 'string' ? a.foto : '',
+        dataNascimento: a?.dataNascimento || '',
+        castrado: a?.castrado === true,
+        faseCorte: a?.faseCorte || '',
+        sistemaAlimentar: a?.sistemaAlimentar || '',
+        pesoEstimado: typeof a?.pesoEstimado === 'number' ? a.pesoEstimado : (parseFloat(a?.pesoEstimado) || 0),
+        vacinaData: a?.vacinaData || '',
+        vermifugoData: a?.vermifugoData || '',
+        carrapatoData: a?.carrapatoData || '',
+        anotacaoRapida: a?.anotacaoRapida || '',
+        consumoEstimado: typeof a?.consumoEstimado === 'number' ? a.consumoEstimado : (parseFloat(a?.consumoEstimado) || 0),
+        consumoMilho: typeof a?.consumoMilho === 'number' ? a.consumoMilho : (parseFloat(a?.consumoMilho) || 0),
+        consumoSilagem: typeof a?.consumoSilagem === 'number' ? a.consumoSilagem : (parseFloat(a?.consumoSilagem) || 0),
+        consumoRacao: typeof a?.consumoRacao === 'number' ? a.consumoRacao : (parseFloat(a?.consumoRacao) || 0),
+        obsSanitaria: a?.obsSanitaria || '',
+        obsNutricao: a?.obsNutricao || '',
+        loteCorte: a?.loteCorte || '',
+        objetivoCorte: a?.objetivoCorte || '',
+        obsManejo: a?.obsManejo || '',
+        alimentoPrincipal: a?.alimentoPrincipal || '',
+        detalheAlimento: a?.detalheAlimento || '',
+        custoKgManual: typeof a?.custoKgManual === 'number' ? a.custoKgManual : (parseFloat(a?.custoKgManual) || 0),
+        dataEntradaConfinamento: a?.dataEntradaConfinamento || a?.dataCadastro || '',
+        precoVenda: typeof a?.precoVenda === 'number' ? a.precoVenda : (parseFloat(a?.precoVenda) || 0),
+        dataVenda: a?.dataVenda || '',
+        obsVenda: a?.obsVenda || '',
+        resumoVenda: a?.resumoVenda || null,
+        genealogia: typeof a?.genealogia === 'object' && a?.genealogia ? {
+          mae: a.genealogia.mae || '',
+          pai: a.genealogia.pai || '',
+          avoMaterna: a.genealogia.avoMaterna || '',
+          avoMaterno: a.genealogia.avoMaterno || '',
+          avoPaterna: a.genealogia.avoPaterna || '',
+          avoPaterno: a.genealogia.avoPaterno || ''
+        } : { mae: '', pai: '', avoMaterna: '', avoMaterno: '', avoPaterna: '', avoPaterno: '' },
+        prenha: a?.prenha === true,
+        dataPrenha: a?.dataPrenha || '',
+        lactacao: a?.lactacao === true,
+        secaConfirmada: a?.secaConfirmada === true,
+        secagemConcluida: a?.secagemConcluida === true,
+        dataSecagemReal: a?.dataSecagemReal || '',
+        statusReprodutivo: a?.statusReprodutivo || '',
+        partoRegistrado: a?.partoRegistrado === true,
+        dataUltimoParto: a?.dataUltimoParto || '',
+        totalCrias: typeof a?.totalCrias === 'number' ? a.totalCrias : (parseInt(a?.totalCrias, 10) || 0),
+        historicoPartos: Array.isArray(a?.historicoPartos) ? a.historicoPartos : [],
+        previsaoParto: a?.previsaoParto || '',
+        previsaoSecagem: a?.previsaoSecagem || '',
+        previsaoPreParto: a?.previsaoPreParto || '',
+        pesoInicial: typeof a?.pesoInicial === 'number' ? a.pesoInicial : (parseFloat(a?.pesoInicial) || 0),
+        dataPesoInicial: a?.dataPesoInicial || ''
+      };
+    }
+
+    function getAnimaisDaArea(area = obterAreaAtual()) {
+      const alvo = AREAS_DISPONIVEIS.includes(area) ? area : 'leiteiro';
+      return DB.animais.filter(a => (a.area || 'leiteiro') === alvo);
+    }
+
+    function getArquivadosDaArea(area = obterAreaAtual()) {
+      const alvo = AREAS_DISPONIVEIS.includes(area) ? area : 'leiteiro';
+      return DB.arquivados.filter(a => (a.area || 'leiteiro') === alvo);
+    }
+
+    function atualizarVisibilidadeCamposCadastro() {
+      const area = obterAreaAtual();
+      const isCorte = area === 'corte';
+      document.getElementById('bloco-corte-form')?.classList.toggle('active', isCorte);
+      document.getElementById('bloco-leiteiro-form')?.classList.toggle('active', !isCorte);
+      document.getElementById('campo-castrado')?.classList.toggle('active', isCorte);
+      if (isCorte && typeof popularSelectLotes === 'function') {
+        popularSelectLotes('a-lote-corte');
+      }
+    }
+
+    function calcularPrevisoesPrenhez(dataPrenha) {
+      if (!dataPrenha) return { parto: '', secagem: '', preParto: '' };
+      const base = new Date(String(dataPrenha).slice(0, 10) + 'T12:00:00');
+      if (isNaN(base.getTime())) return { parto: '', secagem: '', preParto: '' };
+      const parto = new Date(base); parto.setDate(parto.getDate() + 280);
+      const secagem = new Date(parto); secagem.setDate(secagem.getDate() - 60);
+      const preParto = new Date(parto); preParto.setDate(preParto.getDate() - 20);
+      return {
+        parto: parto.toISOString().slice(0, 10),
+        secagem: secagem.toISOString().slice(0, 10),
+        preParto: preParto.toISOString().slice(0, 10)
+      };
+    }
+
+    function togglePrenha() {
+      const prenha = document.getElementById('a-prenha')?.value === 'sim';
+      const campo = document.getElementById('campo-data-prenha');
+      const data = document.getElementById('a-data-prenha');
+      campo?.classList.toggle('hidden', !prenha);
+      if (!prenha && data) data.value = '';
+      atualizarAvisoPrenhezCadastro();
+    }
+
+    function atualizarAvisoPrenhezCadastro() {
+      const aviso = document.getElementById('aviso-prenhez-cadastro');
+      if (!aviso) return;
+      const prenha = document.getElementById('a-prenha')?.value === 'sim';
+      const dataPrenha = document.getElementById('a-data-prenha')?.value || '';
+      if (!prenha) { aviso.textContent = ''; return; }
+      if (!dataPrenha) {
+        aviso.textContent = 'Informe a data da confirmação para o sistema calcular secagem, pré-parto e previsão de parto.';
+        return;
+      }
+      const prev = calcularPrevisoesPrenhez(dataPrenha);
+      aviso.innerHTML = prev.parto
+        ? `Automático: secagem em ${formatarDataBR(prev.secagem)}, pré-parto em ${formatarDataBR(prev.preParto)} e previsão de parto em ${formatarDataBR(prev.parto)}.`
+        : 'Data inválida. Confira a data informada.';
+    }
+
+    function blocoPrevisoesPrenhezRebanho(a) {
+      if (!a || (a.area || 'leiteiro') !== 'leiteiro' || !a.prenha || a.partoRegistrado) return '';
+      const prev = (a.previsaoParto && a.previsaoSecagem)
+        ? { parto: a.previsaoParto, secagem: a.previsaoSecagem, preParto: a.previsaoPreParto || '' }
+        : calcularPrevisoesPrenhez(a.dataPrenha || '');
+      if (!prev.parto) return '';
+      if (a.secaConfirmada || a.secagemConcluida) {
+        return `
+          <div class="note-badge" style="margin-top:8px;">
+            🌾 Gestação: <strong>vaca seca até o parto previsto em ${formatarDataBR(prev.parto)}</strong>
+            ${a.dataSecagemReal ? `<span style="display:block;font-size:11px;color:var(--muted);margin-top:2px;">Seca desde ${formatarDataBR(a.dataSecagemReal)}</span>` : ''}
+          </div>
+        `;
+      }
+      return `
+        <div class="note-badge" style="margin-top:8px;">
+          🤰 Gestação: <strong>parto previsto em ${formatarDataBR(prev.parto)}</strong>
+          <span style="display:block;font-size:11px;color:var(--muted);margin-top:2px;">Secagem prevista: ${formatarDataBR(prev.secagem)}${prev.preParto ? ` · Pré-parto: ${formatarDataBR(prev.preParto)}` : ''}</span>
+        </div>
+      `;
+    }
+
+
+
+    function obterStatusReprodutivoAnimal(a) {
+      if (!a || (a.area || 'leiteiro') !== 'leiteiro') return [];
+      const tags = [];
+      if (a.secaConfirmada || a.secagemConcluida) {
+        const prevParto = a.previsaoParto || (a.dataPrenha ? calcularPrevisoesPrenhez(a.dataPrenha).parto : '');
+        tags.push({ classe: 'tag', estilo: 'background:#211606;color:#fde68a;', texto: `🌾 Vaca seca${prevParto ? ' até ' + formatarDataBR(prevParto) : ''}` });
+      }
+      if (a.lactacao && !a.secaConfirmada && !a.secagemConcluida) tags.push({ classe: 'tag tag-lactacao', estilo: '', texto: '🥛 Em lactação' });
+      if (a.prenha) tags.push({ classe: 'tag tag-prenha', estilo: '', texto: '🤰 Prenha' });
+      if (a.dataUltimoParto) tags.push({ classe: 'tag', estilo: 'background:#102210;color:#86efac;', texto: `🐣 Último parto: ${formatarDataBR(a.dataUltimoParto)}` });
+      if ((parseInt(a.totalCrias, 10) || 0) > 0) tags.push({ classe: 'tag', estilo: 'background:#111111;color:#ffffff;', texto: `🐄 ${parseInt(a.totalCrias, 10)} cria(s)` });
+      return tags;
+    }
+
+    function renderTagsStatusReprodutivo(a) {
+      return obterStatusReprodutivoAnimal(a).map(t => `<span class="${t.classe}"${t.estilo ? ` style="${t.estilo}"` : ''}>${escapeHtml(t.texto)}</span>`).join('');
+    }
+
+    function animalPodeReceberAcoesReprodutivas(a) {
+      return a && (a.area || 'leiteiro') === 'leiteiro' && String(a.sexo || '').toLowerCase().includes('fêmea');
+    }
+
+    async function marcarAnimalComoSeca(id, btn) {
+      if (btn && btn.dataset.calendarioProcessing === '1') return;
+      if (btn) { btn.dataset.calendarioProcessing = '1'; btn.dataset.originalText = btn.dataset.originalText || btn.textContent; btn.disabled = true; btn.textContent = 'Salvando...'; }
+      try {
+        const animal = DB.animais.find(a => a && a.id === id);
+        if (!animal) return alert('Animal não encontrado. Atualize a página e tente novamente.');
+        const hoje = new Date().toISOString().slice(0, 10);
+        const dataSecagem = prompt('Data em que a vaca ficou seca (AAAA-MM-DD):', hoje);
+        if (dataSecagem === null) return;
+        animal.secaConfirmada = true;
+        animal.secagemConcluida = true;
+        animal.dataSecagemReal = (dataSecagem || hoje).slice(0, 10);
+        animal.statusReprodutivo = 'seca';
+        animal.lactacao = false;
+        animal.atualizadoEm = new Date().toISOString();
+        const ok = await salvarDB();
+        if (!ok) return alert('Não foi possível salvar a situação na nuvem. Verifique conexão/Firebase e tente novamente.');
+        renderTudo();
+        alert('Confirmado: vaca marcada como seca. O aviso de secagem foi removido do calendário e o status apareceu em Meu Rebanho.');
+      } finally {
+        if (btn) { btn.dataset.calendarioProcessing = '0'; btn.disabled = false; btn.textContent = btn.dataset.originalText || '🌾 Marcar como seca'; }
+      }
+    }
+
+    async function marcarAnimalComoLactacao(id, btn) {
+      if (btn && btn.dataset.calendarioProcessing === '1') return;
+      if (btn) { btn.dataset.calendarioProcessing = '1'; btn.disabled = true; btn.textContent = 'Salvando...'; }
+      try {
+        const animal = DB.animais.find(a => a && a.id === id);
+        if (!animal) return alert('Animal não encontrado. Atualize a página e tente novamente.');
+        animal.lactacao = true;
+        animal.secaConfirmada = false;
+        animal.secagemConcluida = false;
+        animal.statusReprodutivo = 'lactacao';
+        animal.atualizadoEm = new Date().toISOString();
+        const ok = await salvarDB();
+        if (!ok) return alert('Não foi possível salvar a situação na nuvem. Verifique conexão/Firebase e tente novamente.');
+        renderTudo();
+        alert('Animal marcado como em lactação.');
+      } finally {
+        if (btn) { btn.dataset.calendarioProcessing = '0'; btn.disabled = false; btn.textContent = '🥛 Marcar lactação'; }
+      }
+    }
+
+    async function marcarAnimalComoParida(id, btn) {
+      if (btn && btn.dataset.calendarioProcessing === '1') return;
+      if (btn) { btn.dataset.calendarioProcessing = '1'; btn.dataset.originalText = btn.dataset.originalText || btn.textContent; btn.disabled = true; btn.textContent = 'Salvando...'; }
+      try {
+        const vaca = DB.animais.find(a => a && a.id === id);
+        if (!vaca) return alert('Animal não encontrado. Atualize a página e tente novamente.');
+        const hoje = new Date().toISOString().slice(0, 10);
+        const dataParto = prompt('Data do parto (AAAA-MM-DD):', hoje);
+        if (dataParto === null) return;
+        const sexoCria = prompt('Sexo da cria (opcional: Fêmea ou Macho):', '') || '';
+        const nomeCria = prompt('Nome ou brinco da cria (opcional):', '') || '';
+        const racaCria = prompt('Raça da cria (opcional):', '') || '';
+        const nasceuViva = confirm('A cria nasceu viva?\n\nOK = sim\nCancelar = não ou não informar');
+        const obsCria = prompt('Observação do parto/cria (opcional):', '') || '';
+        const dataFinal = (dataParto || hoje).slice(0, 10);
+        const registroParto = {
+          id: 'parto_' + Date.now(),
+          data: dataFinal,
+          sexoCria: sexoCria.trim(),
+          nomeCria: nomeCria.trim(),
+          racaCria: racaCria.trim(),
+          nasceuViva,
+          obs: obsCria.trim(),
+          criadoEm: new Date().toISOString()
+        };
+        vaca.prenha = false;
+        vaca.dataPrenha = '';
+        vaca.previsaoParto = '';
+        vaca.previsaoSecagem = '';
+        vaca.previsaoPreParto = '';
+        vaca.secaConfirmada = false;
+        vaca.secagemConcluida = false;
+        vaca.partoRegistrado = true;
+        vaca.dataSecagemReal = '';
+        vaca.lactacao = true;
+        vaca.statusReprodutivo = 'lactacao';
+        vaca.dataUltimoParto = dataFinal;
+        vaca.totalCrias = (parseInt(vaca.totalCrias, 10) || 0) + 1;
+        vaca.historicoPartos = Array.isArray(vaca.historicoPartos) ? vaca.historicoPartos : [];
+        vaca.historicoPartos.unshift(registroParto);
+        vaca.atualizadoEm = new Date().toISOString();
+
+        const deveCadastrarCria = nasceuViva || nomeCria.trim() || sexoCria.trim() || racaCria.trim();
+        if (deveCadastrarCria) {
+          const sexoNormalizado = /^f/i.test(sexoCria.trim()) ? 'Fêmea' : (/^m/i.test(sexoCria.trim()) ? 'Macho' : sexoCria.trim());
+          const cria = normalizarAnimal({
+            id: 'animal_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10),
+            area: 'leiteiro',
+            nome: nomeCria.trim() || ('Cria de ' + (vaca.nome || 'vaca')),
+            brinco: '',
+            sexo: sexoNormalizado,
+            dataNascimento: dataFinal,
+            idadeMeses: 0,
+            categoria: sexoNormalizado === 'Fêmea' ? 'Bezerra' : (sexoNormalizado === 'Macho' ? 'Bezerro' : 'Bezerro(a)'),
+            obs: [racaCria.trim() ? 'Raça: ' + racaCria.trim() : '', obsCria.trim()].filter(Boolean).join(' | '),
+            genealogia: {
+              mae: vaca.nome || '',
+              pai: vaca.genealogia?.pai || '',
+              avoMaterna: vaca.genealogia?.mae || '',
+              avoMaterno: vaca.genealogia?.pai || '',
+              avoPaterna: '',
+              avoPaterno: ''
+            },
+            dataCadastro: new Date().toISOString(),
+            criadoEm: new Date().toISOString()
+          });
+          DB.animais.push(cria);
+          registroParto.idCria = cria.id;
+        }
+
+        const ok = await salvarDB();
+        if (!ok) return alert('Não foi possível salvar o parto na nuvem. Verifique conexão/Firebase e tente novamente.');
+        renderTudo();
+        alert('Parto registrado. A vaca voltou para lactação, os avisos antigos saíram do calendário e a cria foi vinculada na genealogia.');
+      } finally {
+        if (btn) { btn.dataset.calendarioProcessing = '0'; btn.disabled = false; btn.textContent = btn.dataset.originalText || '🐣 Marcar como parida'; }
+      }
+    }
+
+    function calcularIdadeEmMeses(dataNascimento) {
+      if (!dataNascimento) return 0;
+      const nasc = new Date(dataNascimento + 'T12:00:00');
+      if (isNaN(nasc.getTime())) return 0;
+      const hoje = new Date();
+      let meses = (hoje.getFullYear() - nasc.getFullYear()) * 12;
+      meses += hoje.getMonth() - nasc.getMonth();
+      if (hoje.getDate() < nasc.getDate()) meses -= 1;
+      return Math.max(0, meses);
+    }
+
+    function getCategoriaPorArea(area, sexo, idadeMeses, castrado = false) {
+      if (!sexo || idadeMeses === null || idadeMeses === undefined || Number.isNaN(idadeMeses) || idadeMeses < 0) {
+        return 'Não definido';
+      }
+
+      if (area === 'corte') {
+        if (sexo === 'Fêmea') {
+          if (idadeMeses <= 8) return 'Bezerra';
+          if (idadeMeses <= 24) return 'Novilha';
+          return 'Vaca';
+        }
+
+        if (idadeMeses <= 8) return 'Bezerro';
+        if (idadeMeses <= 24) return 'Garrote';
+        return castrado ? 'Boi' : 'Touro';
+      }
+
+      // Área leiteira
+      if (sexo === 'Fêmea') {
+        if (idadeMeses < 12) return 'Bezerra';
+        if (idadeMeses < 24) return 'Novilha';
+        return 'Vaca';
+      }
+      // Macho leiteiro
+      if (idadeMeses < 12) return 'Bezerro';
+      if (idadeMeses < 24) return 'Garrote';
+      return castrado ? 'Boi' : 'Touro';
+    }
+
+    function gerarRecomendacoesCorte(animal) {
+      const recomendacoes = {
+        veterinario: 'Mantenha observação clínica frequente e, em caso de apatia, tosse, diarreia, manqueira ou queda de desempenho, busque avaliação veterinária.',
+        sanitario: 'Mantenha calendário sanitário em dia, observando vacinação, vermifugação, controle de carrapatos e limpeza do ambiente.',
+        nutricional: 'Ajuste o manejo conforme a fase do animal e o sistema alimentar, evitando mudanças bruscas de dieta.'
+      };
+
+      if (animal.faseCorte === 'Cria') {
+        recomendacoes.nutricional = 'Na cria, priorize bom manejo inicial, água limpa, pasto de qualidade e suplementação conforme necessidade.';
+      } else if (animal.faseCorte === 'Recria') {
+        recomendacoes.nutricional = 'Na recria, foque em crescimento consistente, pastagem adequada e suplementação estratégica.';
+      } else if (animal.faseCorte === 'Engorda') {
+        recomendacoes.nutricional = 'Na engorda, acompanhe ganho de peso, adaptação alimentar e fornecimento regular de energia e proteína.';
+      }
+
+      if (animal.sistemaAlimentar === 'Confinamento') {
+        recomendacoes.sanitario = 'No confinamento, reforce limpeza de cochos, água, lotação adequada e observação diária para evitar surtos e problemas metabólicos.';
+      } else if (animal.sistemaAlimentar === 'Semi-confinamento') {
+        recomendacoes.sanitario = 'No semi-confinamento, monitore cocho, água, barro, lotação e transição entre dieta e pasto.';
+      }
+
+      return recomendacoes;
+    }
+
+    function previewFotoAnimal(event) {
+      const file = event?.target?.files?.[0];
+      const box = document.getElementById('preview-foto-box');
+      const img = document.getElementById('preview-foto-img');
+
+      if (!file) {
+        box?.classList.add('hidden');
+        if (img) img.src = '';
+        return;
+      }
+
+      // Preview leve: usa URL temporária em vez de converter a foto inteira para base64 na tela.
+      if (img) {
+        try {
+          if (img.dataset.previewUrl) URL.revokeObjectURL(img.dataset.previewUrl);
+          const url = URL.createObjectURL(file);
+          img.dataset.previewUrl = url;
+          img.src = url;
+        } catch (_) {
+          const reader = new FileReader();
+          reader.onload = () => { if (typeof reader.result === 'string') img.src = reader.result; };
+          reader.readAsDataURL(file);
+        }
+      }
+      box?.classList.remove('hidden');
+    }
+
+    function compactarFotoAnimal(file, maxLado = 420, qualidade = 0.45) {
+      return new Promise((resolve) => {
+        if (!file || !file.type || !file.type.startsWith('image/')) {
+          resolve('');
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onerror = () => resolve('');
+        reader.onload = () => {
+          const img = new Image();
+          img.onerror = () => resolve(typeof reader.result === 'string' ? reader.result : '');
+          img.onload = () => {
+            try {
+              let largura = img.naturalWidth || img.width || 0;
+              let altura = img.naturalHeight || img.height || 0;
+              if (!largura || !altura) {
+                resolve(typeof reader.result === 'string' ? reader.result : '');
+                return;
+              }
+
+              const escala = Math.min(1, maxLado / Math.max(largura, altura));
+              largura = Math.max(1, Math.round(largura * escala));
+              altura = Math.max(1, Math.round(altura * escala));
+
+              const canvas = document.createElement('canvas');
+              canvas.width = largura;
+              canvas.height = altura;
+              const ctx = canvas.getContext('2d', { alpha: false });
+              ctx.drawImage(img, 0, 0, largura, altura);
+
+              const compactada = canvas.toDataURL('image/jpeg', qualidade);
+              const original = typeof reader.result === 'string' ? reader.result : '';
+              resolve(compactada && (!original || compactada.length < original.length) ? compactada : original);
+            } catch (erroCanvas) {
+              console.warn('Não foi possível compactar a foto do animal:', erroCanvas);
+              resolve(typeof reader.result === 'string' ? reader.result : '');
+            }
+          };
+          img.src = typeof reader.result === 'string' ? reader.result : '';
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function compactarDataUrlAnimal(dataUrl, maxLado = 420, qualidade = 0.45) {
+      return new Promise((resolve) => {
+        if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) {
+          resolve(dataUrl || '');
+          return;
+        }
+        const img = new Image();
+        img.onerror = () => resolve(dataUrl);
+        img.onload = () => {
+          try {
+            let largura = img.naturalWidth || img.width || 0;
+            let altura = img.naturalHeight || img.height || 0;
+            if (!largura || !altura) return resolve(dataUrl);
+            const escala = Math.min(1, maxLado / Math.max(largura, altura));
+            largura = Math.max(1, Math.round(largura * escala));
+            altura = Math.max(1, Math.round(altura * escala));
+            const canvas = document.createElement('canvas');
+            canvas.width = largura;
+            canvas.height = altura;
+            const ctx = canvas.getContext('2d', { alpha: false });
+            ctx.drawImage(img, 0, 0, largura, altura);
+            const compactada = canvas.toDataURL('image/jpeg', qualidade);
+            resolve(compactada && compactada.length < dataUrl.length ? compactada : dataUrl);
+          } catch (_) {
+            resolve(dataUrl);
+          }
+        };
+        img.src = dataUrl;
+      });
+    }
+
+    async function reduzirFotosGrandesDoRebanho() {
+      const listas = [DB.animais, DB.arquivados];
+      let alterou = false;
+      for (const lista of listas) {
+        for (const animal of (Array.isArray(lista) ? lista : [])) {
+          if (!animal || !animal.foto || typeof animal.foto !== 'string') continue;
+          // Base64 grande é a principal causa de lentidão. Compacta fotos antigas uma vez.
+          if (animal.foto.length > 180000) {
+            const reduzida = await compactarDataUrlAnimal(animal.foto, 420, 0.45);
+            if (reduzida && reduzida.length < animal.foto.length) {
+              animal.foto = reduzida;
+              alterou = true;
+            }
+          }
+        }
+      }
+      return alterou;
+    }
+
+    function lerFotoAnimalBase64() {
+      const file = document.getElementById('a-foto')?.files?.[0];
+      if (!file) return Promise.resolve('');
+      return compactarFotoAnimal(file, 420, 0.45);
+    }
+
+    function limparFormularioAnimal() {
+      animalEmEdicao = null;
+      document.getElementById('a-nome').value = '';
+      document.getElementById('a-brinco').value = '';
+      document.getElementById('a-sexo').value = '';
+      document.getElementById('a-idade').value = '';
+      document.getElementById('a-data-nascimento').value = '';
+      document.getElementById('a-castrado').value = 'nao';
+      document.getElementById('a-prenha').value = 'nao';
+      document.getElementById('a-data-prenha').value = '';
+      document.getElementById('a-lactacao').value = 'nao';
+      const campoTotalCrias = document.getElementById('a-total-crias'); if (campoTotalCrias) campoTotalCrias.value = '0';
+      document.getElementById('a-fase-corte').value = '';
+      if (document.getElementById('a-lote-corte')) document.getElementById('a-lote-corte').value = '';
+      document.getElementById('a-peso').value = '';
+      document.getElementById('a-peso-inicial').value = '';
+      document.getElementById('a-data-peso-inicial').value = '';
+      document.getElementById('a-sistema-alimentar').value = '';
+      document.getElementById('a-mae').value = '';
+      document.getElementById('a-pai').value = '';
+      document.getElementById('a-avo-materna').value = '';
+      document.getElementById('a-avo-materno').value = '';
+      document.getElementById('a-avo-paterna').value = '';
+      document.getElementById('a-avo-paterno').value = '';
+      document.getElementById('a-vacina').value = '';
+      document.getElementById('a-vermifugo').value = '';
+      document.getElementById('a-carrapato').value = '';
+      document.getElementById('a-obs').value = '';
+      document.getElementById('a-foto').value = '';
+      document.getElementById('a-categoria-box').textContent = 'Informe sexo e data de nascimento. A categoria será calculada automaticamente.';
+      togglePrenha();
+      document.getElementById('preview-foto-box')?.classList.add('hidden');
+      document.getElementById('preview-foto-img').src = '';
+      atualizarVisibilidadeCamposCadastro();
+      atualizarTextoFormularioAnimal();
+    }
+
+    function getHomeFeatures(area) {
+      if (area === 'corte') {
+        return [
+          { icon: '🐂', label: 'Meu Rebanho', desc: 'Cadastre e acompanhe os animais com peso, lote e histórico.', action: "showPage('rebanho')" },
+          { icon: '📦', label: 'Lotes', desc: 'Gerencie lotes, peso médio, custo e resumo do confinamento.', action: "showPage('lotes-corte')" },
+          { icon: '⚖️', label: 'Pesagens', desc: 'Registre pesagens e acompanhe GMD e ganho de peso.', action: "showPage('pesagens-corte')" },
+          { icon: '💉', label: 'Vacinas/Medicamentos', desc: 'Aplicações por animal ou lote com custo por cabeça.', action: "showPage('vacinas-medicamentos-corte')" },
+          { icon: '💹', label: 'Financeiro', desc: 'Despesas, receitas, saldo, custo por lote e por animal.', action: "showPage('financeiro-corte')" },
+          { icon: '🥣', label: 'Registrar trato por animal', desc: 'Informe kg/dia por animal e veja custo automático no lote e financeiro.', action: "showPage('trato-corte')" },
+          { icon: '📦', label: 'Registrar compra de ração/silo', desc: 'Registre compras de milho, silo, ração e forme estoque/custo por kg.', action: "showPage('despesas-corte')" },
+          { icon: '📋', label: 'Mortes/Vendas', desc: 'Registre saídas com histórico e integração financeira.', action: "showPage('mortes-vendas-corte')" },
+          { icon: '🏭', label: 'Fábrica de Ração', desc: 'Monte a mistura e envie para o estoque.', action: "showPage('fabrica-racao')" },
+          { icon: '🩺', label: 'Veterinário', desc: 'Consulte orientações práticas quando precisar.', action: "showPage('veterinario')" },
+        ];
+      }
+
+      return [
+        { icon: '🐄', label: 'Meu Rebanho', desc: 'Cadastre, organize e acompanhe seus animais.', action: "showPage('rebanho')" },
+        { icon: '🥛', label: 'Registrar Pesagem Leite', desc: 'Lance a pesagem por animal e gere histórico automático.', action: "showPage('producao')" },
+        { icon: '📦', label: 'Despesas/reg.entrega(Ração/Silo)', desc: 'Controle estoque de ração e veja quando vai acabar.', action: "showPage('despesas')" },
+        { icon: '💹', label: 'Resumo Faturamento-Gastos Mensal', desc: 'Relatório financeiro automático: receitas, despesas e lucro.', action: "abrirRelatorioFinanceiro()" },
+        { icon: '🏭', label: 'Fábrica de Ração', desc: 'Crie uma mistura e envie o total para o estoque da ração.', action: "showPage('fabrica-racao')" },
+        { icon: '🩺', label: 'Veterinário', desc: 'Biblioteca prática com causas, sintomas e medidas iniciais.', action: "showPage('veterinario')" },
+        { icon: '📅', label: 'Calendário', desc: 'Secagem, pré-parto, parto e protocolos fixos.', action: "showPage('calendario')" },
+        { icon: '☁️', label: 'Backup', desc: 'Exporte ou importe seu banco do app quando quiser.', action: "openBackupModal()" }
+      ];
+    }
+
+    function atualizarHomeArea() {
+      const area = obterAreaAtual();
+      const title = document.getElementById('area-status-title');
+      const desc = document.getElementById('area-status-desc');
+      const guideTitle = document.getElementById('home-guide-title');
+      const guideContent = document.getElementById('home-guide-content');
+      const grid = document.getElementById('features-grid-home');
+      const cardLeite = document.getElementById('area-card-leiteiro');
+      const cardCorte = document.getElementById('area-card-corte');
+
+      if (cardLeite) cardLeite.classList.toggle('active', area === 'leiteiro');
+      if (cardCorte) cardCorte.classList.toggle('active', area === 'corte');
+
+      if (title && desc) {
+        if (area === 'leiteiro') {
+          title.textContent = 'Área atual: Gado Leiteiro';
+          desc.textContent = 'Você está no modo leiteiro. Produção, despesas e calendário permanecem ativos normalmente.';
+        } else if (area === 'corte') {
+          title.textContent = 'Área atual: Confinamento';
+          desc.textContent = 'Você está no modo confinamento. Use Lotes, Pesagens, Vacinas/Medicamentos, Financeiro, Registrar Trato, Compras de Ração/Silo e Mortes/Vendas para gestão completa.';
+        } else {
+          title.textContent = 'Área atual: ainda não selecionada';
+          desc.textContent = 'Escolha uma das duas áreas acima para o sistema adaptar a navegação inicial. Sua escolha fica salva para o usuário logado.';
+        }
+      }
+
+      if (guideTitle && guideContent) {
+        if (area === 'corte') {
+          if (guideTitle) guideTitle.textContent = '📘 Como usar a área de confinamento';
+          if (guideContent) guideContent.innerHTML = `
+            <p style="margin-bottom:8px;"><strong>1.</strong> Crie <strong>Lotes</strong> e cadastre animais em <strong>Meu Rebanho</strong> vinculando ao lote.</p>
+            <p style="margin-bottom:8px;"><strong>2.</strong> Registre <strong>Pesagens</strong> para acompanhar GMD e ganho de peso.</p>
+            <p style="margin-bottom:8px;"><strong>3.</strong> Em <strong>Vacinas/Medicamentos</strong>, registre aplicações por animal ou lote — o custo vai automaticamente ao financeiro.</p>
+            <p style="margin-bottom:8px;"><strong>4.</strong> Use <strong>Financeiro</strong> para registrar despesas e receitas. O saldo e custo por animal são calculados automaticamente.</p>
+            <p><strong>5.</strong> Em <strong>Mortes/Vendas</strong>, acompanhe saídas do rebanho. Vendas entram como receita no financeiro.</p>
+          `;
+        } else {
+          if (guideTitle) guideTitle.textContent = '📘 Como usar o IA Rural';
+          if (guideContent) guideContent.innerHTML = `
+            <p style="margin-bottom:8px;"><strong>1.</strong> Escolha a área principal em <strong>Gado Leiteiro</strong> ou <strong>Confinamento</strong>.</p>
+            <p style="margin-bottom:8px;"><strong>2.</strong> Vá em <strong>Meu Rebanho</strong> e cadastre seus animais com nome, brinco, sexo e idade em meses.</p>
+            <p style="margin-bottom:8px;"><strong>3.</strong> No modo leiteiro, use <strong>Registrar Pesagem Leite</strong>, <strong>Despesas/reg.entrega(Ração/Silo)</strong> e <strong>Calendário</strong> normalmente.</p>
+            <p style="margin-bottom:8px;"><strong>4.</strong> No modo corte, o rebanho fica separado e você já pode usar as abas de sanitário, nutrição e manejo.</p>
+            <p><strong>5.</strong> Seus dados ficam salvos no navegador e também na nuvem do usuário logado.</p>
+          `;
+        }
+      }
+
+      if (grid) {
+        grid.innerHTML = getHomeFeatures(area).map(item => `
+          <div class="feat-card" onclick="${item.action}">
+            <div class="feat-icon">${item.icon}</div>
+            <div class="feat-label">${item.label}</div>
+            <div class="feat-desc">${item.desc}</div>
+          </div>
+        `).join('');
+      }
+    }
+
+    function aplicarAreaNaInterface() {
+      const area = obterAreaAtual();
+      const leiteiroAtivo = area !== 'corte';
+      const corteAtivo = area === 'corte';
+
+      // Controle forte de visibilidade por área.
+      // Não altera a área leiteira: apenas garante que abas leiteiras não apareçam quando a área ativa é Confinamento/Corte.
+      document.querySelectorAll('[data-area="leiteiro"]').forEach(el => {
+        el.classList.toggle('hidden', !leiteiroAtivo);
+        if (!leiteiroAtivo) el.style.setProperty('display', 'none', 'important');
+        else el.style.removeProperty('display');
+      });
+
+      document.querySelectorAll('[data-area="corte"]').forEach(el => {
+        const legadoOculto = ['sanitario-corte', 'nutricao-corte', 'manejo-corte'].includes(el.dataset.page || '');
+        el.classList.toggle('hidden', !corteAtivo || legadoOculto);
+        if (!corteAtivo || legadoOculto) el.style.setProperty('display', 'none', 'important');
+        else el.style.removeProperty('display');
+      });
+
+      const paginasLeiteirasNoMenuCorte = ['producao', 'despesas', 'protocolar-vaca', 'vacas-protocoladas', 'calendario', 'genealogia'];
+      if (corteAtivo) {
+        paginasLeiteirasNoMenuCorte.forEach(page => {
+          document.querySelectorAll(`.nav-tab[data-page="${page}"]`).forEach(el => {
+            el.classList.add('hidden');
+            el.style.setProperty('display', 'none', 'important');
+          });
+        });
+      }
+
+      const gateProd = document.getElementById('gate-producao');
+      const gateDesp = document.getElementById('gate-despesas');
+      const gateCal = document.getElementById('gate-calendario');
+
+      if (gateProd) gateProd.classList.toggle('hidden', leiteiroAtivo);
+      if (gateDesp) gateDesp.classList.toggle('hidden', leiteiroAtivo);
+      if (gateCal) gateCal.classList.toggle('hidden', leiteiroAtivo);
+
+      atualizarHomeArea();
+      atualizarVisibilidadeCamposCadastro();
+    }
+
+    async function selecionarArea(area) {
+      if (!AREAS_DISPONIVEIS.includes(area)) return;
+      const areaContaDesejada = areaInternaParaConta(area);
+      if (!usuarioPodeAcessarArea(areaContaDesejada)) {
+        aplicarAreaPermitidaOuRedirecionar(areaContaDesejada);
+        aplicarAreaNaInterface();
+        atualizarCategoria();
+        showPage('inicio');
+        return;
+      }
+      DB.areaSelecionada = area;
+      areaLoginSelecionada = areaContaDesejada;
+      aplicarAreaNaInterface();
+      atualizarCategoria();
+      await salvarDB();
+    }
+
+    function irParaAreaPrincipal() {
+      const area = obterAreaAtual();
+      if (area === 'corte') {
+        showPage('rebanho');
+        return;
+      }
+
+      if (area === 'leiteiro') {
+        showPage('producao');
+        return;
+      }
+
+      alert('Escolha primeiro se deseja entrar em Gado Leiteiro ou Confinamento.');
+    }
+
+    function obterAreaContaAtualSegura() {
+      const interna = AREAS_DISPONIVEIS.includes(DB?.areaSelecionada) ? DB.areaSelecionada : areaContaParaInterna(areaLoginSelecionada || 'leiteira');
+      return areaInternaParaConta(interna);
+    }
+
+    function obterRefDadosArea(uid = usuarioFirebase?.uid) {
+      if (!uid) return null;
+      const areaConta = obterAreaContaAtualSegura();
+      return db
+        .collection('areas')
+        .doc(areaConta)
+        .collection('usuarios')
+        .doc(uid)
+        .collection('dados')
+        .doc('principal');
+    }
+
+
+    function obterRefUsuarioArea(uid = usuarioFirebase?.uid) {
+      if (!uid) return null;
+      const areaConta = obterAreaContaAtualSegura();
+      return db
+        .collection('areas')
+        .doc(areaConta)
+        .collection('usuarios')
+        .doc(uid);
+    }
+
+    function limparIdFirestore(id) {
+      return String(id || `${Date.now()}_${Math.random()}`).replace(/[\/]/g, '_');
+    }
+
+    function prepararAppDataPrincipal(dbAtual) {
+      const limpo = normalizarDB(dbAtual || {});
+      return { ...limpo, animais: [], arquivados: [], protocolosVacas: [] };
+    }
+
+    function normalizarIdDocumentoFirestore(id, prefixo = 'doc') {
+      return String(id || `${prefixo}_${Date.now()}_${Math.random()}`).replace(/[\/]/g, '_');
+    }
+
+
+    function limparParaFirestore(valor) {
+      if (valor === undefined) return null;
+      if (valor === null) return null;
+      if (valor instanceof Date) return valor;
+      if (Array.isArray(valor)) return valor.map(limparParaFirestore).filter(v => v !== undefined);
+      if (typeof valor === 'object') {
+        const limpo = {};
+        Object.entries(valor).forEach(([chave, item]) => {
+          if (item !== undefined) limpo[chave] = limparParaFirestore(item);
+        });
+        return limpo;
+      }
+      return valor;
+    }
+
+    async function carregarColecaoProtocolosVacas() {
+      if (!usuarioFirebase) return [];
+      const refUsuarioArea = obterRefUsuarioArea(usuarioFirebase.uid);
+      if (!refUsuarioArea) return [];
+      const snap = await refUsuarioArea.collection('protocolosVacas').get();
+      return snap.docs.map(doc => normalizarProtocoloVaca({ id: doc.id, ...(doc.data() || {}) }));
+    }
+
+    async function sincronizarColecaoProtocolosVacas(lista) {
+      if (!usuarioFirebase) return;
+      const refUsuarioArea = obterRefUsuarioArea(usuarioFirebase.uid);
+      if (!refUsuarioArea) return;
+      const col = refUsuarioArea.collection('protocolosVacas');
+      const snap = await col.get();
+      const idsAtuais = new Set((Array.isArray(lista) ? lista : []).map(item => normalizarIdDocumentoFirestore(item.id, 'pv')));
+      let batch = db.batch();
+      let operacoes = 0;
+
+      snap.docs.forEach(doc => {
+        if (!idsAtuais.has(doc.id)) {
+          batch.delete(doc.ref);
+          operacoes++;
+        }
+      });
+
+      (Array.isArray(lista) ? lista : []).forEach(item => {
+        const protocolo = normalizarProtocoloVaca(item || {});
+        const id = normalizarIdDocumentoFirestore(protocolo.id, 'pv');
+        protocolo.id = id;
+        batch.set(col.doc(id), limparParaFirestore(protocolo), { merge: true });
+        operacoes++;
+      });
+
+      if (operacoes > 0) await batch.commit();
+    }
+
+    function renderTudo() {
+      try { renderRebanho(); } catch(e) {}
+      try { renderProducao(); } catch(e) {}
+      try { renderDespesas(); } catch(e) {}
+      try { renderCalendario(); } catch(e) {}
+      try { renderVacasProtocoladas(); } catch(e) {}
+      try { renderVet(); } catch(e) {}
+      try { renderArquivados(); } catch(e) {}
+      try { renderGenealogia(); } catch(e) {}
+      try { renderDespesasCorte(); } catch(e) {}
+      try { renderTratoCorte(); } catch(e) {}
+      try { renderSanitarioCorte(); } catch(e) {}
+      try { renderNutricaoCorte(); } catch(e) {}
+      try { renderManejoCorte(); } catch(e) {}
+      try { renderVendidosCorte(); } catch(e) {}
+      try { renderListaProdutosCorte(); } catch(e) {}
+      try { carregarPrecoLitroNaTela(); } catch(e) {}
+      try { carregarLeiteBezerrosNaTela(); } catch(e) {}
+      try { renderListaProdutosLavagem();
+        try { renderListaOutrosGastosLeite(); } catch(e) {} } catch(e) {}
+      try { renderLotesCorte(); } catch(e) {}
+      try { renderPesagensCorte(); } catch(e) {}
+      try { renderVacinasMedicamentosCorte(); } catch(e) {}
+      try { renderFinanceiroCorte(); } catch(e) {}
+      try { renderMovimentacoesCorte(); } catch(e) {}
+    }
+
+    async function carregarColecaoAnimais(nomeColecao) {
+      if (!usuarioFirebase) return [];
+      const areaConta = obterAreaContaAtualSegura();
+      const uid = usuarioFirebase.uid;
+      const porId = new Map();
+
+      const adicionarLista = (lista) => {
+        (Array.isArray(lista) ? lista : []).forEach(item => {
+          if (!item) return;
+          const normalizado = normalizarAnimal(item);
+          const id = limparIdFirestore(normalizado.id || item.id || item._id || `1777479305352_${Math.random()}`);
+          normalizado.id = id;
+          porId.set(id, normalizado);
+        });
+      };
+
+      const carregarSnap = async (ref, rotulo) => {
+        try {
+          const snap = await ref.get();
+          adicionarLista(snap.docs.map(doc => ({ id: doc.id, ...(doc.data() || {}) })));
+        } catch (e) {
+          console.warn('Não foi possível carregar ' + rotulo + ':', e);
+        }
+      };
+
+      const refUsuarioArea = obterRefUsuarioArea(uid);
+      if (refUsuarioArea) await carregarSnap(refUsuarioArea.collection(nomeColecao), `subcoleção principal ${nomeColecao}`);
+
+      return Array.from(porId.values());
+    }
+
+    async function sincronizarColecaoAnimais(nomeColecao, lista) {
+      if (!usuarioFirebase) return;
+      const refUsuarioArea = obterRefUsuarioArea(usuarioFirebase.uid);
+      if (!refUsuarioArea) return;
+      const col = refUsuarioArea.collection(nomeColecao);
+      const snap = await col.get();
+      const idsAtuais = new Set((Array.isArray(lista) ? lista : []).map(item => limparIdFirestore(item.id)));
+      let batch = db.batch();
+      let operacoes = 0;
+
+      snap.docs.forEach(doc => {
+        if (!idsAtuais.has(doc.id)) {
+          batch.delete(doc.ref);
+          operacoes++;
+        }
+      });
+
+      (Array.isArray(lista) ? lista : []).forEach(item => {
+        const animal = normalizarAnimal(item || {});
+        const id = limparIdFirestore(animal.id);
+        animal.id = id;
+        batch.set(col.doc(id), limparParaFirestore(animal), { merge: true });
+        operacoes++;
+      });
+
+      if (operacoes > 0) await batch.commit();
+    }
+
+    async function salvarDadosSeparadosNaNuvem() {
+      await sincronizarColecaoAnimais('animais', DB.animais);
+      await sincronizarColecaoAnimais('arquivados', DB.arquivados);
+      await sincronizarColecaoProtocolosVacas(DB.protocolosVacas);
+    }
+
+    async function salvarNuvem(opcoes = {}) {
+      if ((!usuarioFirebase || !usuarioFirebase.uid) && auth.currentUser) {
+        usuarioFirebase = auth.currentUser;
+      }
+      if (!usuarioFirebase || !usuarioFirebase.uid) return false;
+
+      try {
+        const areaConta = obterAreaContaAtualSegura();
+        const areaInterna = areaContaParaInterna(areaConta);
+        DB.areaSelecionada = areaInterna;
+
+        const refDadosArea = obterRefDadosArea(usuarioFirebase.uid);
+        if (!refDadosArea) return false;
+
+        const deveSincronizarAnimais = opcoes.sincronizarAnimais !== false;
+        if (deveSincronizarAnimais) {
+          await salvarDadosSeparadosNaNuvem();
+        }
+
+        await refDadosArea.set(limparParaFirestore({
+          username: usuarioLogado || '',
+          uid: usuarioFirebase.uid,
+          area: areaConta,
+          areaSistema: areaConta,
+          appData: prepararAppDataPrincipal(DB),
+          armazenamentoAnimais: 'subcolecoes',
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }), { merge: true });
+
+        return true;
+      } catch (e) {
+        console.error('Erro ao salvar na nuvem:', e);
+        return false;
+      }
+    }
+
+    async function salvarDB(opcoes = {}) {
+      // Primeiro salva na nuvem no caminho isolado por usuário/área.
+      // O backup local fica apenas como cache depois da confirmação da nuvem, para não mascarar erro de permissão.
+      const ok = await salvarNuvem(opcoes);
+      if (ok) salvarLocal();
+      else console.warn('salvarDB: a nuvem não confirmou sincronização. Verifique regras/permissões.');
+      return ok;
+    }
+
+
+    function mostrarCarregandoDadosIniciais() {
+      const lista = document.getElementById('lista-rebanho');
+      if (lista) {
+        lista.innerHTML = '<div class="loading-state"><strong>Carregando rebanho...</strong><br>Buscando as informações salvas na nuvem.</div>';
+      }
+      const contador = document.getElementById('count-rebanho');
+      if (contador) contador.textContent = '...';
+    }
+
+    async function carregarFirestore() {
+      if ((!usuarioFirebase || !usuarioFirebase.uid) && auth.currentUser) {
+        usuarioFirebase = auth.currentUser;
+      }
+      if (!usuarioFirebase || !usuarioFirebase.uid) return;
+
+      let dadosLocais = DB_PADRAO();
+
+      try {
+        // Busca a área real do usuário direto no Firestore antes de qualquer outra coisa.
+        // Isso garante que em aba anônima (sem localStorage) o caminho correto seja usado.
+        try {
+          const userDoc = await db.collection('users').doc(usuarioFirebase.uid).get();
+          if (userDoc.exists) {
+            const userData = userDoc.data() || {};
+            const areaSistemaFirestore = userData.areaSistema || userData.area || '';
+            if (areaSistemaFirestore && AREAS_CONTA.includes(areaSistemaFirestore)) {
+              usuarioAreaPermitida = usuarioAreaPermitida || normalizarAreaAcesso(areaSistemaFirestore);
+            }
+            usuarioAreaPermitida = usuarioAreaPermitida || await buscarAreaPermitidaUsuario(usuarioFirebase.uid, usuarioLogado);
+            aplicarAreaPermitidaOuRedirecionar(areaLoginSelecionada || areaSistemaFirestore || usuarioAreaPermitida || 'leiteira');
+          }
+        } catch (erroArea) {
+          console.warn('Nao foi possivel buscar area do usuario:', erroArea);
+        }
+
+        const areaConta = obterAreaContaAtualSegura();
+        const areaInterna = areaContaParaInterna(areaConta);
+        dadosLocais = carregarLocalPorUsuario(usuarioLogado || '');
+        const refArea = obterRefDadosArea(usuarioFirebase.uid);
+
+        let appDataNuvem = {};
+        if (refArea) {
+          const docArea = await refArea.get();
+          if (docArea.exists && docArea.data() && docArea.data().appData) {
+            appDataNuvem = docArea.data().appData || {};
+          }
+        }
+
+        const animaisSeparados = await carregarColecaoAnimais('animais');
+        const arquivadosSeparados = await carregarColecaoAnimais('arquivados');
+        const protocolosSeparados = await carregarColecaoProtocolosVacas();
+
+        const nuvemNormalizada = {
+          ...appDataNuvem,
+          animais: animaisSeparados.length ? animaisSeparados : (appDataNuvem.animais || []),
+          arquivados: arquivadosSeparados.length ? arquivadosSeparados : (appDataNuvem.arquivados || []),
+          protocolosVacas: protocolosSeparados.length ? protocolosSeparados : (appDataNuvem.protocolosVacas || [])
+        };
+
+        DB = mesclarDBSeguro(nuvemNormalizada, dadosLocais);
+
+        if ((!DB.animais || !DB.animais.length) && dadosLocais.animais && dadosLocais.animais.length) {
+          DB.animais = dadosLocais.animais.map(normalizarAnimal);
+        }
+        if ((!DB.protocolosVacas || !DB.protocolosVacas.length) && dadosLocais.protocolosVacas && dadosLocais.protocolosVacas.length) {
+          DB.protocolosVacas = dadosLocais.protocolosVacas.map(normalizarProtocoloVaca);
+        }
+
+        // Segurança contra perda visual após Ctrl+F5: se a nuvem vier vazia por regra/conexão,
+        // mantemos o que já estava salvo neste navegador em vez de zerar a lista.
+        if ((!nuvemNormalizada.animais || !nuvemNormalizada.animais.length) && dadosLocais.animais && dadosLocais.animais.length && (!DB.animais || !DB.animais.length)) {
+          DB.animais = dadosLocais.animais.map(normalizarAnimal);
+        }
+        if ((!nuvemNormalizada.protocolosVacas || !nuvemNormalizada.protocolosVacas.length) && dadosLocais.protocolosVacas && dadosLocais.protocolosVacas.length && (!DB.protocolosVacas || !DB.protocolosVacas.length)) {
+          DB.protocolosVacas = dadosLocais.protocolosVacas.map(normalizarProtocoloVaca);
+        }
+
+        DB.areaSelecionada = areaInterna;
+        salvarLocal();
+        setTimeout(async () => {
+          try {
+            const fotosForamReduzidas = await reduzirFotosGrandesDoRebanho();
+            if (fotosForamReduzidas) {
+              salvarLocal();
+              renderRebanho();
+              await sincronizarColecaoAnimais('animais', DB.animais);
+              await sincronizarColecaoAnimais('arquivados', DB.arquivados);
+            }
+          } catch (erroOtimizacaoFotos) {
+            console.warn('Não foi possível otimizar fotos antigas agora:', erroOtimizacaoFotos);
+          }
+        }, 1500);
+
+        // Se este navegador tinha dados locais e a nuvem estava vazia/bloqueada antes,
+        // tenta subir o backup local para a nuvem agora que as regras corretas foram publicadas.
+        try {
+          const temLocalParaResgatar = (dadosLocais.animais && dadosLocais.animais.length) || (dadosLocais.protocolosVacas && dadosLocais.protocolosVacas.length);
+          const nuvemSemAnimais = !animaisSeparados.length && !(appDataNuvem.animais && appDataNuvem.animais.length);
+          if (temLocalParaResgatar && nuvemSemAnimais && typeof salvarDadosSeparadosNaNuvem === 'function') {
+            await salvarDadosSeparadosNaNuvem();
+          }
+        } catch (erroResgateNuvem) {
+          console.warn('Não foi possível enviar backup local para a nuvem agora:', erroResgateNuvem);
+        }
+
+        renderTudo();
+      } catch (e) {
+        console.error('Erro ao carregar Firestore:', e);
+        DB = dadosLocais;
+        DB.areaSelecionada = areaContaParaInterna(areaLoginSelecionada || 'leiteira');
+        salvarLocal();
+        renderTudo();
+      }
+    }
+
+    function abrirEdicaoAnimal(id) {
+      const animal = (DB.animais || []).find(a => a && a.id === id);
+      if (!animal) {
+        alert('Animal não encontrado para edição.');
+        return;
+      }
+      animalEmEdicao = id;
+      const set = (campo, valor) => { const el = document.getElementById(campo); if (el) el.value = valor ?? ''; };
+      set('a-nome', animal.nome || '');
+      set('a-brinco', animal.brinco || '');
+      set('a-sexo', animal.sexo || '');
+      set('a-idade', animal.idadeMeses || '');
+      set('a-data-nascimento', animal.dataNascimento || '');
+      set('a-castrado', animal.castrado ? 'sim' : 'nao');
+      set('a-prenha', animal.prenha ? 'sim' : 'nao');
+      set('a-data-prenha', animal.dataPrenha || '');
+      set('a-lactacao', animal.lactacao ? 'sim' : 'nao');
+      set('a-total-crias', parseInt(animal.totalCrias, 10) || 0);
+      if ((animal.area || obterAreaAtual()) === 'corte' && typeof popularSelectLotes === 'function') {
+        popularSelectLotes('a-lote-corte');
+      }
+      set('a-fase-corte', animal.faseCorte || '');
+      set('a-lote-corte', animal.loteCorte || animal.loteId || '');
+      set('a-peso', animal.pesoEstimado || '');
+      set('a-peso-inicial', animal.pesoInicial || '');
+      set('a-data-peso-inicial', animal.dataPesoInicial || '');
+      set('a-sistema-alimentar', animal.sistemaAlimentar || '');
+      set('a-mae', animal.genealogia?.mae || '');
+      set('a-pai', animal.genealogia?.pai || '');
+      set('a-avo-materna', animal.genealogia?.avoMaterna || '');
+      set('a-avo-materno', animal.genealogia?.avoMaterno || '');
+      set('a-avo-paterna', animal.genealogia?.avoPaterna || '');
+      set('a-avo-paterno', animal.genealogia?.avoPaterno || '');
+      set('a-vacina', animal.vacinaData || '');
+      set('a-vermifugo', animal.vermifugoData || '');
+      set('a-carrapato', animal.carrapatoData || '');
+      set('a-obs', animal.obs || '');
+      const form = document.getElementById('form-animal');
+      form?.classList.remove('hidden');
+      const previewBox = document.getElementById('preview-foto-box');
+      const previewImg = document.getElementById('preview-foto-img');
+      if (animal.foto && previewBox && previewImg) { previewImg.src = animal.foto; previewBox.classList.remove('hidden'); }
+      else { previewBox?.classList.add('hidden'); if (previewImg) previewImg.src = ''; }
+      atualizarVisibilidadeCamposCadastro();
+      atualizarCategoria();
+      togglePrenha();
+      atualizarTextoFormularioAnimal();
+      form?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function cancelarEdicaoAnimal() {
+      animalEmEdicao = null;
+      limparFormularioAnimal();
+      document.getElementById('form-animal').classList.add('hidden');
+      atualizarTextoFormularioAnimal();
+    }
+
+    async function salvarAnimal() {
+      const btnSalvar = document.getElementById('btn-salvar-animal');
+
+      const setBotao = (salvando) => {
+        if (!btnSalvar) return;
+        btnSalvar.disabled = !!salvando;
+        btnSalvar.textContent = salvando ? (animalEmEdicao ? 'Salvando edição...' : 'Salvando animal...') : '✓ Salvar Animal';
+      };
+
+      const valor = (id) => {
+        const el = document.getElementById(id);
+        return el && typeof el.value === 'string' ? el.value.trim() : '';
+      };
+
+      const salvarLocalSeguro = () => {
+        try {
+          if (typeof salvarLocal === 'function') {
+            salvarLocal();
+          } else {
+            const chave = typeof getLocalKey === 'function'
+              ? getLocalKey()
+              : 'ia_rural_db_' + String(usuarioLogado || 'anonimo').toLowerCase().replace(/\s+/g, '_');
+            localStorage.setItem(chave, JSON.stringify(DB));
+          }
+          return true;
+        } catch (erroLocal) {
+          console.error('Erro ao salvar no navegador/localStorage:', erroLocal);
+          return false;
+        }
+      };
+
+      const tentarSalvarAnimalNaNuvem = async (animal) => {
+        try {
+          if ((!usuarioFirebase || !usuarioFirebase.uid) && auth.currentUser) {
+            usuarioFirebase = auth.currentUser;
+          }
+          if (!usuarioFirebase || !usuarioFirebase.uid || !animal || !animal.id || !db) return false;
+
+          const areaInterna = AREAS_DISPONIVEIS.includes(animal.area) ? animal.area : (obterAreaAtual() || 'leiteiro');
+          DB.areaSelecionada = areaInterna;
+          const areaConta = typeof areaInternaParaConta === 'function'
+            ? areaInternaParaConta(areaInterna)
+            : (areaInterna === 'corte' ? 'confinamento' : 'leiteira');
+
+          const idLimpo = typeof limparIdFirestore === 'function'
+            ? limparIdFirestore(animal.id)
+            : String(animal.id).replace(/[\/]/g, '_');
+
+          const animalLimpo = typeof limparParaFirestore === 'function'
+            ? limparParaFirestore(animal)
+            : JSON.parse(JSON.stringify(animal));
+
+          const salvarEm = async (ref, rotulo) => {
+            try {
+              await ref.set(animalLimpo, { merge: true });
+              return true;
+            } catch (e) {
+              console.warn('Falha ao salvar animal em ' + rotulo + ':', e);
+              return false;
+            }
+          };
+
+          // Caminho único e seguro da nuvem. Não usa mais caminhos antigos que podem ser bloqueados pelas regras.
+          const okAnimal = await salvarEm(
+            db.collection('areas').doc(areaConta).collection('usuarios').doc(usuarioFirebase.uid).collection('animais').doc(idLimpo),
+            'areas/' + areaConta + '/usuarios/' + usuarioFirebase.uid + '/animais/' + idLimpo
+          );
+
+          if (!okAnimal) return false;
+
+          try {
+            await db
+              .collection('areas')
+              .doc(areaConta)
+              .collection('usuarios')
+              .doc(usuarioFirebase.uid)
+              .collection('dados')
+              .doc('principal')
+              .set({
+                uid: usuarioFirebase.uid,
+                username: usuarioLogado || '',
+                area: areaConta,
+                areaSistema: areaConta,
+                armazenamentoAnimais: 'subcolecoes',
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+              }, { merge: true });
+          } catch (erroPrincipal) {
+            console.warn('Animal salvo na subcoleção, mas não atualizou documento principal:', erroPrincipal);
+          }
+
+          return true;
+        } catch (erroNuvem) {
+          console.error('Erro ao salvar animal individual na nuvem:', erroNuvem);
+          return false;
+        }
+      };
+
+      try {
+        if ((!usuarioFirebase || !usuarioFirebase.uid) && auth.currentUser) {
+          usuarioFirebase = auth.currentUser;
+        }
+
+        if (!usuarioFirebase || !usuarioFirebase.uid) {
+          alert('Você precisa estar logado para salvar o animal. Saia e entre novamente.');
+          return;
+        }
+
+        if (!DB || typeof DB !== 'object') DB = DB_PADRAO();
+        if (!Array.isArray(DB.animais)) DB.animais = [];
+        if (!Array.isArray(DB.arquivados)) DB.arquivados = [];
+        if (!Array.isArray(DB.protocolosVacas)) DB.protocolosVacas = [];
+
+        const area = AREAS_DISPONIVEIS.includes(obterAreaAtual())
+          ? obterAreaAtual()
+          : (areaLoginSelecionada === 'confinamento' ? 'corte' : 'leiteiro');
+        DB.areaSelecionada = area;
+
+        const nome = valor('a-nome');
+        const brinco = valor('a-brinco');
+        const sexo = valor('a-sexo');
+        const dataNascimento = valor('a-data-nascimento');
+        const castrado = valor('a-castrado') === 'sim';
+        const prenha = valor('a-prenha') === 'sim';
+        const dataPrenha = valor('a-data-prenha');
+        const lactacao = valor('a-lactacao') === 'sim';
+        const faseCorte = valor('a-fase-corte');
+        const loteCorte = area === 'corte' ? valor('a-lote-corte') : '';
+        const loteSelecionadoCorte = loteCorte ? ((typeof getLotesCorte === 'function' ? getLotesCorte() : []).find(l => l.id === loteCorte) || null) : null;
+        const pesoEstimado = parseFloat(valor('a-peso')) || 0;
+        const pesoInicial = parseFloat(valor('a-peso-inicial')) || 0;
+        const dataPesoInicial = valor('a-data-peso-inicial');
+        const sistemaAlimentar = valor('a-sistema-alimentar');
+        const vacinaData = valor('a-vacina');
+        const vermifugoData = valor('a-vermifugo');
+        const carrapatoData = valor('a-carrapato');
+        const obs = valor('a-obs');
+
+        if (!nome) {
+          alert('Informe o nome do animal.');
+          return;
+        }
+        if (!sexo) {
+          alert('Selecione o sexo do animal.');
+          return;
+        }
+        if (!dataNascimento) {
+          alert('Informe a data de nascimento para o sistema calcular a categoria automaticamente.');
+          return;
+        }
+        if (area === 'leiteiro' && prenha && !dataPrenha) {
+          alert('Como o animal está marcado como prenha, informe a data de confirmação da prenhez para calcular secagem e previsão de parto.');
+          document.getElementById('a-data-prenha')?.focus();
+          return;
+        }
+
+        let idade = 0;
+        try {
+          idade = typeof calcularIdadeEmMeses === 'function' ? calcularIdadeEmMeses(dataNascimento) : 0;
+        } catch (_) {
+          idade = 0;
+        }
+        if (!Number.isFinite(idade) || idade < 0) {
+          alert('A data de nascimento informada não é válida.');
+          return;
+        }
+
+        setBotao(true);
+
+        let categoria = '';
+        try {
+          categoria = typeof getCategoriaPorArea === 'function'
+            ? getCategoriaPorArea(area, sexo, idade, castrado)
+            : (sexo === 'Fêmea' ? (idade < 12 ? 'Bezerra' : idade < 24 ? 'Novilha' : 'Vaca') : (idade < 12 ? 'Bezerro' : idade < 24 ? 'Garrote' : (castrado ? 'Boi' : 'Touro')));
+        } catch (_) {
+          categoria = sexo === 'Fêmea' ? (idade < 12 ? 'Bezerra' : idade < 24 ? 'Novilha' : 'Vaca') : (idade < 12 ? 'Bezerro' : idade < 24 ? 'Garrote' : (castrado ? 'Boi' : 'Touro'));
+        }
+
+        let fotoNova = '';
+        try {
+          fotoNova = typeof lerFotoAnimalBase64 === 'function' ? await lerFotoAnimalBase64() : '';
+        } catch (fotoErro) {
+          console.warn('Foto ignorada por erro de leitura:', fotoErro);
+          fotoNova = '';
+        }
+
+        const agoraIso = new Date().toISOString();
+        const genealogia = {
+          mae: valor('a-mae'),
+          pai: valor('a-pai'),
+          avoMaterna: valor('a-avo-materna'),
+          avoMaterno: valor('a-avo-materno'),
+          avoPaterna: valor('a-avo-paterna'),
+          avoPaterno: valor('a-avo-paterno')
+        };
+
+        const previsoesPrenhez = (area === 'leiteiro' && prenha && dataPrenha) ? calcularPrevisoesPrenhez(dataPrenha) : { parto: '', secagem: '', preParto: '' };
+        const totalCrias = Math.max(0, parseInt(valor('a-total-crias'), 10) || 0);
+        let animalFinal;
+
+        if (animalEmEdicao) {
+          const idx = DB.animais.findIndex(a => a && a.id === animalEmEdicao);
+          if (idx < 0) {
+            alert('Animal não encontrado para edição. Atualize a página e tente novamente.');
+            return;
+          }
+          const atual = DB.animais[idx] || {};
+          animalFinal = {
+            ...atual,
+            id: atual.id || animalEmEdicao,
+            area,
+            nome,
+            brinco,
+            sexo,
+            idadeMeses: idade,
+            dataNascimento,
+            categoria,
+            castrado,
+            prenha: area === 'leiteiro' ? prenha : false,
+            dataPrenha: area === 'leiteiro' && prenha ? dataPrenha : '',
+            previsaoParto: area === 'leiteiro' && prenha ? previsoesPrenhez.parto : '',
+            previsaoSecagem: area === 'leiteiro' && prenha ? previsoesPrenhez.secagem : '',
+            previsaoPreParto: area === 'leiteiro' && prenha ? previsoesPrenhez.preParto : '',
+            lactacao: area === 'leiteiro' ? lactacao : false,
+            totalCrias: area === 'leiteiro' ? totalCrias : 0,
+            obs,
+            foto: fotoNova || atual.foto || '',
+            faseCorte: area === 'corte' ? faseCorte : '',
+            loteCorte: area === 'corte' ? loteCorte : '',
+            loteId: area === 'corte' ? loteCorte : '',
+            nomeLote: area === 'corte' ? (loteSelecionadoCorte?.nome || '') : '',
+            pesoEstimado: area === 'corte' ? pesoEstimado : 0,
+            sistemaAlimentar: area === 'corte' ? sistemaAlimentar : '',
+            pesoInicial: area === 'corte' ? pesoInicial : 0,
+            dataPesoInicial: area === 'corte' ? dataPesoInicial : '',
+            genealogia,
+            dataEntradaConfinamento: area === 'corte' ? (atual.dataEntradaConfinamento || atual.dataCadastro || agoraIso) : '',
+            vacinaData: area === 'corte' ? vacinaData : '',
+            vermifugoData: area === 'corte' ? vermifugoData : '',
+            carrapatoData: area === 'corte' ? carrapatoData : '',
+            atualizadoEm: agoraIso
+          };
+          try { animalFinal = typeof normalizarAnimal === 'function' ? normalizarAnimal(animalFinal) : animalFinal; } catch (_) {}
+          DB.animais[idx] = animalFinal;
+        } else {
+          animalFinal = {
+            id: 'animal_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10),
+            area,
+            nome,
+            brinco,
+            sexo,
+            idadeMeses: idade,
+            dataNascimento,
+            categoria,
+            castrado,
+            prenha: area === 'leiteiro' ? prenha : false,
+            dataPrenha: area === 'leiteiro' && prenha ? dataPrenha : '',
+            previsaoParto: area === 'leiteiro' && prenha ? previsoesPrenhez.parto : '',
+            previsaoSecagem: area === 'leiteiro' && prenha ? previsoesPrenhez.secagem : '',
+            previsaoPreParto: area === 'leiteiro' && prenha ? previsoesPrenhez.preParto : '',
+            lactacao: area === 'leiteiro' ? lactacao : false,
+            totalCrias: area === 'leiteiro' ? totalCrias : 0,
+            obs,
+            foto: fotoNova,
+            faseCorte: area === 'corte' ? faseCorte : '',
+            loteCorte: area === 'corte' ? loteCorte : '',
+            loteId: area === 'corte' ? loteCorte : '',
+            nomeLote: area === 'corte' ? (loteSelecionadoCorte?.nome || '') : '',
+            pesoEstimado: area === 'corte' ? pesoEstimado : 0,
+            sistemaAlimentar: area === 'corte' ? sistemaAlimentar : '',
+            pesoInicial: area === 'corte' ? pesoInicial : 0,
+            dataPesoInicial: area === 'corte' ? dataPesoInicial : '',
+            genealogia,
+            dataEntradaConfinamento: area === 'corte' ? agoraIso : '',
+            vacinaData: area === 'corte' ? vacinaData : '',
+            vermifugoData: area === 'corte' ? vermifugoData : '',
+            carrapatoData: area === 'corte' ? carrapatoData : '',
+            dataCadastro: agoraIso,
+            criadoEm: agoraIso
+          };
+          try { animalFinal = typeof normalizarAnimal === 'function' ? normalizarAnimal(animalFinal) : animalFinal; } catch (_) {}
+          DB.animais.push(animalFinal);
+        }
+
+        const nuvemOk = await tentarSalvarAnimalNaNuvem(animalFinal);
+        let sincronizacaoCompletaOk = false;
+        if (nuvemOk) {
+          // Depois que o animal foi gravado no caminho correto, atualiza o documento principal e mantém cache local do mesmo usuário.
+          try {
+            sincronizacaoCompletaOk = typeof salvarNuvem === 'function' ? await salvarNuvem() : true;
+          } catch (erroSyncCompleta) {
+            console.warn('Animal salvo, mas a sincronização completa falhou:', erroSyncCompleta);
+          }
+          salvarLocalSeguro();
+        } else {
+          // Não confirma salvamento local quando a nuvem nega. Evita achar que salvou enquanto outro aparelho não verá o animal.
+          if (animalEmEdicao) {
+            // Em edição, recarrega da nuvem para manter a tela consistente.
+            try { await carregarFirestore(); } catch (_) {}
+          } else {
+            DB.animais = (DB.animais || []).filter(a => a && a.id !== animalFinal.id);
+          }
+          alert('Não foi possível salvar este animal na nuvem. Verifique se as regras corretas foram publicadas no Firebase e tente novamente.');
+          return;
+        }
+
+        animalEmEdicao = null;
+        try { if (typeof limparFormularioAnimal === 'function') limparFormularioAnimal(); } catch (e) { console.warn('Falha ao limpar formulário:', e); }
+        try { document.getElementById('form-animal')?.classList.add('hidden'); } catch (_) {}
+        try { if (typeof atualizarTextoFormularioAnimal === 'function') atualizarTextoFormularioAnimal(); } catch (e) { console.warn('Falha ao atualizar formulário:', e); }
+        try { if (typeof renderTudo === 'function') renderTudo(); } catch (e) { console.warn('Falha ao renderizar:', e); }
+        try { if (typeof showPage === 'function') showPage('rebanho'); } catch (e) { console.warn('Falha ao abrir rebanho:', e); }
+
+        alert('Animal salvo com sucesso.');
+      } catch (erroGeral) {
+        console.error('Erro real ao salvar animal:', erroGeral);
+        salvarLocalSeguro();
+        alert('Não foi possível salvar este animal. Erro técnico: ' + (erroGeral && erroGeral.message ? erroGeral.message : erroGeral));
+      } finally {
+        setBotao(false);
+      }
+    }
+
+    async function atualizarCampoAnimal(id, campo, valor) {
+      const animal = DB.animais.find(a => a.id === id);
+      if (!animal) return;
+      animal[campo] = valor;
+      if (animal.area === 'corte') {
+        animal.consumoEstimado = getConsumoTotalAnimal(animal);
+      }
+      await salvarDB();
+      renderRebanho();
+      renderSanitarioCorte();
+      renderNutricaoCorte();
+      renderManejoCorte();
+      renderDespesasCorte();
+      renderVendidosCorte();
+      renderListaProdutosCorte();
+    }
+
+
+    function escapeHtml(valor) {
+      return String(valor ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function escapeAttr(valor) {
+      return escapeHtml(valor);
+    }
+
+    
+    function getEntregasCorte() {
+      return Array.isArray(DB.entregasCorte) ? DB.entregasCorte : [];
+    }
+
+    function formatarTipoProdutoCorte(tipo) {
+      const mapa = { milho: 'Milho', silagem: 'Silagem', racao: 'Ração' };
+      return mapa[tipo] || tipo;
+    }
+
+    function renderListaProdutosCorte() {
+      const datalist = document.getElementById('produtos-corte-lista');
+      if (!datalist) return;
+      datalist.innerHTML = ['Milho','Silagem','Ração'].map(nome => `<option value="${escapeAttr(nome)}"></option>`).join('');
+    }
+
+    function normalizarTipoProduto(tipo) {
+      const t = String(tipo || '').trim().toLowerCase();
+      if (t === 'ração' || t === 'racao') return 'racao';
+      if (t === 'silagem' || t === 'silo') return 'silagem';
+      if (t === 'milho') return 'milho';
+      return t;
+    }
+
+    function getEntregasPorTipo(tipo) {
+      const alvo = normalizarTipoProduto(tipo);
+      return getEntregasCorte().filter(e => normalizarTipoProduto(e.tipo || e.produto) === alvo);
+    }
+
+    function getTotalKgProduto(tipo) {
+      return getEntregasPorTipo(tipo).reduce((sum, e) => sum + (parseFloat(e.totalKg) || 0), 0);
+    }
+
+    function getCustoTotalProduto(tipo) {
+      return getEntregasPorTipo(tipo).reduce((sum, e) => sum + (parseFloat(e.precoTotal) || 0), 0);
+    }
+
+    function getCustoMedioProdutoKg(tipo) {
+      const kg = getTotalKgProduto(tipo);
+      if (!kg) return 0;
+      return getCustoTotalProduto(tipo) / kg;
+    }
+
+    function getConsumoDiarioPorTipo(tipo) {
+      const campoMap = {
+        milho: 'consumoMilho',
+        silagem: 'consumoSilagem',
+        racao: 'consumoRacao'
+      };
+      const campo = campoMap[normalizarTipoProduto(tipo)];
+      if (!campo) return 0;
+      return getAnimaisDaArea('corte').reduce((sum, a) => sum + (parseFloat(a[campo]) || 0), 0);
+    }
+
+    function getConsumoTotalAnimal(a) {
+      const milho = parseFloat(a?.consumoMilho) || 0;
+      const silagem = parseFloat(a?.consumoSilagem) || 0;
+      const racao = parseFloat(a?.consumoRacao) || 0;
+      return milho + silagem + racao;
+    }
+
+    function obterCustosDiariosAnimal(animal) {
+      const milhoKg = parseFloat(animal?.consumoMilho) || 0;
+      const silagemKg = parseFloat(animal?.consumoSilagem) || 0;
+      const racaoKg = parseFloat(animal?.consumoRacao) || 0;
+      const custoMilhoKg = getCustoMedioProdutoKg('milho');
+      const custoSilagemKg = getCustoMedioProdutoKg('silagem');
+      const custoRacaoKg = getCustoMedioProdutoKg('racao');
+      const custoMilhoDia = milhoKg * custoMilhoKg;
+      const custoSilagemDia = silagemKg * custoSilagemKg;
+      const custoRacaoDia = racaoKg * custoRacaoKg;
+      return {
+        milhoKg,
+        silagemKg,
+        racaoKg,
+        custoMilhoKg,
+        custoSilagemKg,
+        custoRacaoKg,
+        custoMilhoDia,
+        custoSilagemDia,
+        custoRacaoDia,
+        totalKgDia: milhoKg + silagemKg + racaoKg,
+        totalReaisDia: custoMilhoDia + custoSilagemDia + custoRacaoDia
+      };
+    }
+
+    function formatCurrencyBR(v) {
+      const n = parseFloat(v) || 0;
+      return n.toFixed(2).replace('.', ',');
+    }
+
+    function diasEntreDatas(inicioISO, fimISO) {
+      const inicio = new Date((inicioISO || '').slice(0,10) + 'T12:00:00');
+      const fim = new Date((fimISO || '').slice(0,10) + 'T12:00:00');
+      if (isNaN(inicio.getTime()) || isNaN(fim.getTime())) return 0;
+      const diff = Math.round((fim - inicio) / 86400000);
+      return Math.max(0, diff);
+    }
+
+    function montarResumoVenda(animal, precoVenda, dataVenda) {
+      const inicio = animal.dataEntradaConfinamento || animal.dataCadastro || dataVenda;
+      const diasConfinado = diasEntreDatas(inicio, dataVenda);
+      const custosDia = obterCustosDiariosAnimal(animal);
+      const milhoConsumido = custosDia.milhoKg * diasConfinado;
+      const silagemConsumida = custosDia.silagemKg * diasConfinado;
+      const racaoConsumida = custosDia.racaoKg * diasConfinado;
+      const custoMilho = milhoConsumido * custosDia.custoMilhoKg;
+      const custoSilagem = silagemConsumida * custosDia.custoSilagemKg;
+      const custoRacao = racaoConsumida * custosDia.custoRacaoKg;
+      const custoAlimentar = custoMilho + custoSilagem + custoRacao;
+      const pesoFinal = parseFloat(animal.pesoEstimado) || 0;
+      return {
+        diasConfinado,
+        pesoFinal,
+        precoVenda: parseFloat(precoVenda) || 0,
+        milhoConsumido,
+        silagemConsumida,
+        racaoConsumida,
+        custoMilho,
+        custoSilagem,
+        custoRacao,
+        kilosConsumidos: milhoConsumido + silagemConsumida + racaoConsumida,
+        custoAlimentar,
+        resultadoBruto: (parseFloat(precoVenda) || 0) - custoAlimentar,
+        dataVendaFmt: dataVenda ? new Date(dataVenda + 'T12:00:00').toLocaleDateString('pt-BR') : '—',
+        pesoFinalFmt: pesoFinal.toFixed(1).replace('.', ','),
+        milhoConsumidoFmt: milhoConsumido.toFixed(1).replace('.', ','),
+        silagemConsumidaFmt: silagemConsumida.toFixed(1).replace('.', ','),
+        racaoConsumidaFmt: racaoConsumida.toFixed(1).replace('.', ','),
+        kilosConsumidosFmt: (milhoConsumido + silagemConsumida + racaoConsumida).toFixed(1).replace('.', ','),
+        custoMilhoFmt: formatCurrencyBR(custoMilho),
+        custoSilagemFmt: formatCurrencyBR(custoSilagem),
+        custoRacaoFmt: formatCurrencyBR(custoRacao),
+        custoAlimentarFmt: formatCurrencyBR(custoAlimentar),
+        precoVendaFmt: formatCurrencyBR(precoVenda),
+        resultadoBrutoFmt: formatCurrencyBR((parseFloat(precoVenda) || 0) - custoAlimentar)
+      };
+    }
+
+    
+    function toggleCompraFields(tipo) {
+      if (tipo === 'milho') {
+        const formato = document.getElementById('dc-milho-formato')?.value || 'saco';
+        document.getElementById('dc-milho-saco-row')?.classList.toggle('hidden', formato !== 'saco');
+        document.getElementById('dc-milho-price-row')?.classList.toggle('hidden', formato !== 'saco');
+        document.getElementById('dc-milho-ton-row')?.classList.toggle('hidden', formato !== 'tonelada');
+      }
+    }
+
+    function calcCompraProduto(tipo) {
+      if (tipo === 'milho') {
+        const formato = document.getElementById('dc-milho-formato')?.value || 'saco';
+        const totalEl = document.getElementById('dc-milho-total');
+        if (!totalEl) return;
+        let totalKg = 0;
+        let precoTotal = 0;
+        if (formato === 'saco') {
+          const kgSaco = parseFloat(document.getElementById('dc-milho-saco-kg')?.value) || 0;
+          const sacos = parseFloat(document.getElementById('dc-milho-sacos')?.value) || 0;
+          const precoSaco = parseFloat(document.getElementById('dc-milho-preco-saco')?.value) || 0;
+          totalKg = kgSaco * sacos;
+          precoTotal = sacos * precoSaco;
+          totalEl.textContent = totalKg > 0 ? `${totalKg.toFixed(1).replace('.', ',')} kg · R$ ${formatCurrencyBR(precoTotal)} no total` : '—';
+        } else {
+          const ton = parseFloat(document.getElementById('dc-milho-ton')?.value) || 0;
+          const precoTon = parseFloat(document.getElementById('dc-milho-preco-ton')?.value) || 0;
+          totalKg = ton * 1000;
+          precoTotal = ton * precoTon;
+          totalEl.textContent = totalKg > 0 ? `${totalKg.toFixed(1).replace('.', ',')} kg · R$ ${formatCurrencyBR(precoTotal)} no total` : '—';
+        }
+        return;
+      }
+
+      if (tipo === 'silagem') {
+        const ton = parseFloat(document.getElementById('dc-silagem-ton')?.value) || 0;
+        const precoTon = parseFloat(document.getElementById('dc-silagem-preco-ton')?.value) || 0;
+        const totalKg = ton * 1000;
+        const precoTotal = ton * precoTon;
+        const totalEl = document.getElementById('dc-silagem-total');
+        if (totalEl) totalEl.textContent = totalKg > 0 ? `${totalKg.toFixed(1).replace('.', ',')} kg · R$ ${formatCurrencyBR(precoTotal)} no total` : '—';
+        return;
+      }
+
+      if (tipo === 'racao') {
+        const kgSaco = parseFloat(document.getElementById('dc-racao-saco-kg')?.value) || 0;
+        const sacos = parseFloat(document.getElementById('dc-racao-sacos')?.value) || 0;
+        const precoSaco = parseFloat(document.getElementById('dc-racao-preco-saco')?.value) || 0;
+        const totalKg = kgSaco * sacos;
+        const precoTotal = sacos * precoSaco;
+        const totalEl = document.getElementById('dc-racao-total');
+        if (totalEl) totalEl.textContent = totalKg > 0 ? `${totalKg.toFixed(1).replace('.', ',')} kg · R$ ${formatCurrencyBR(precoTotal)} no total` : '—';
+      }
+    }
+
+    async function salvarCompraProduto(tipo) {
+      if (!Array.isArray(DB.entregasCorte)) DB.entregasCorte = [];
+
+      let registro = null;
+
+      if (tipo === 'milho') {
+        const data = document.getElementById('dc-milho-data')?.value || '';
+        const formato = document.getElementById('dc-milho-formato')?.value || 'saco';
+        if (!data) return alert('Informe a data da entrega do milho.');
+
+        if (formato === 'saco') {
+          const kgSaco = parseFloat(document.getElementById('dc-milho-saco-kg')?.value) || 0;
+          const sacos = parseFloat(document.getElementById('dc-milho-sacos')?.value) || 0;
+          const precoSaco = parseFloat(document.getElementById('dc-milho-preco-saco')?.value) || 0;
+          if (sacos <= 0) return alert('Informe a quantidade de sacos de milho.');
+          if (precoSaco <= 0) return alert('Informe o preço por saco do milho.');
+          registro = {
+            id: Date.now().toString(),
+            data,
+            tipo: 'milho',
+            produto: 'Milho',
+            formato,
+            kgPorSaco: kgSaco,
+            quantidade: sacos,
+            totalKg: kgSaco * sacos,
+            precoUnitario: precoSaco,
+            precoTotal: sacos * precoSaco
+          };
+        } else {
+          const ton = parseFloat(document.getElementById('dc-milho-ton')?.value) || 0;
+          const precoTon = parseFloat(document.getElementById('dc-milho-preco-ton')?.value) || 0;
+          if (ton <= 0) return alert('Informe as toneladas de milho.');
+          if (precoTon <= 0) return alert('Informe o preço por tonelada do milho.');
+          registro = {
+            id: Date.now().toString(),
+            data,
+            tipo: 'milho',
+            produto: 'Milho',
+            formato,
+            quantidade: ton,
+            totalKg: ton * 1000,
+            precoUnitario: precoTon,
+            precoTotal: ton * precoTon
+          };
+        }
+
+        DB.entregasCorte.push(registro);
+        await salvarDB({ sincronizarAnimais: false });
+        ['dc-milho-data','dc-milho-sacos','dc-milho-preco-saco','dc-milho-ton','dc-milho-preco-ton'].forEach(id => {
+          const el = document.getElementById(id); if (el) el.value = '';
+        });
+        document.getElementById('dc-milho-formato').value = 'saco';
+        document.getElementById('dc-milho-saco-kg').value = '40';
+        toggleCompraFields('milho');
+        calcCompraProduto('milho');
+      }
+
+      if (tipo === 'silagem') {
+        const data = document.getElementById('dc-silagem-data')?.value || '';
+        const ton = parseFloat(document.getElementById('dc-silagem-ton')?.value) || 0;
+        const precoTon = parseFloat(document.getElementById('dc-silagem-preco-ton')?.value) || 0;
+        if (!data) return alert('Informe a data da entrega da silagem.');
+        if (ton <= 0) return alert('Informe as toneladas de silagem.');
+        if (precoTon <= 0) return alert('Informe o preço por tonelada da silagem.');
+        DB.entregasCorte.push({
+          id: Date.now().toString(),
+          data,
+          tipo: 'silagem',
+          produto: 'Silagem',
+          formato: 'tonelada',
+          quantidade: ton,
+          totalKg: ton * 1000,
+          precoUnitario: precoTon,
+          precoTotal: ton * precoTon
+        });
+        await salvarDB({ sincronizarAnimais: false });
+        ['dc-silagem-data','dc-silagem-ton','dc-silagem-preco-ton'].forEach(id => {
+          const el = document.getElementById(id); if (el) el.value = '';
+        });
+        calcCompraProduto('silagem');
+      }
+
+      if (tipo === 'racao') {
+        const data = document.getElementById('dc-racao-data')?.value || '';
+        const kgSaco = parseFloat(document.getElementById('dc-racao-saco-kg')?.value) || 0;
+        const sacos = parseFloat(document.getElementById('dc-racao-sacos')?.value) || 0;
+        const precoSaco = parseFloat(document.getElementById('dc-racao-preco-saco')?.value) || 0;
+        if (!data) return alert('Informe a data da entrega da ração.');
+        if (sacos <= 0) return alert('Informe a quantidade de sacos da ração.');
+        if (precoSaco <= 0) return alert('Informe o preço por saco da ração.');
+        DB.entregasCorte.push({
+          id: Date.now().toString(),
+          data,
+          tipo: 'racao',
+          produto: 'Ração',
+          formato: 'saco',
+          kgPorSaco: kgSaco,
+          quantidade: sacos,
+          totalKg: kgSaco * sacos,
+          precoUnitario: precoSaco,
+          precoTotal: sacos * precoSaco
+        });
+        await salvarDB({ sincronizarAnimais: false });
+        ['dc-racao-data','dc-racao-sacos','dc-racao-preco-saco'].forEach(id => {
+          const el = document.getElementById(id); if (el) el.value = '';
+        });
+        document.getElementById('dc-racao-saco-kg').value = '40';
+        calcCompraProduto('racao');
+      }
+
+      renderDespesasCorte();
+      renderNutricaoCorte();
+      renderVendidosCorte();
+      renderListaProdutosCorte();
+    }
+
+    async function excluirEntregaCorte(indice) {
+      if (!Array.isArray(DB.entregasCorte)) DB.entregasCorte = [];
+      const i = parseInt(indice, 10);
+      if (isNaN(i) || i < 0 || i >= DB.entregasCorte.length) {
+        alert('Entrega não encontrada para excluir.');
+        return;
+      }
+
+      const item = DB.entregasCorte[i];
+      const nomeProduto = item?.produto || item?.tipo || 'esta entrega';
+      const dataFmt = item?.data ? new Date(item.data + 'T12:00:00').toLocaleDateString('pt-BR') : '';
+      const confirmar = confirm(`Deseja excluir ${nomeProduto}${dataFmt ? ' de ' + dataFmt : ''} do histórico?`);
+      if (!confirmar) return;
+
+      DB.entregasCorte.splice(i, 1);
+      await salvarDB({ sincronizarAnimais: false });
+      renderDespesasCorte();
+      renderNutricaoCorte();
+      renderVendidosCorte();
+      renderListaProdutosCorte();
+      alert('Entrega excluída com sucesso.');
+    }
+
+    function renderDespesasCorte() {
+      const painel = document.getElementById('painel-estoque-corte');
+      const historico = document.getElementById('historico-corte');
+      const painelAnimal = document.getElementById('painel-custo-animal-corte');
+      const painelGeral = document.getElementById('painel-total-geral-corte');
+      const painelMensal = document.getElementById('painel-total-mensal-corte');
+      if (!painel || !historico || !painelAnimal || !painelGeral || !painelMensal) return;
+
+      const tipos = ['milho', 'silagem', 'racao'];
+
+      painel.innerHTML = tipos.map(tipo => {
+        const estoqueKg = getTotalKgProduto(tipo);
+        const consumoDia = getConsumoDiarioPorTipo(tipo);
+        const diasRestantes = consumoDia > 0 ? Math.floor(estoqueKg / consumoDia) : null;
+        const custoKg = getCustoMedioProdutoKg(tipo);
+        return `
+          <div class="delivery-item">
+            <h4>${formatarTipoProdutoCorte(tipo)}</h4>
+            <p>Estoque atual: <strong>${estoqueKg.toFixed(1).replace('.', ',')} kg</strong></p>
+            <p>Consumo diário estimado: <strong>${consumoDia.toFixed(1).replace('.', ',')} kg/dia</strong></p>
+            <p>Custo médio: <strong>R$ ${formatCurrencyBR(custoKg)}/kg</strong></p>
+            <p>Dias restantes estimados: <strong>${diasRestantes === null ? '—' : diasRestantes}</strong></p>
+          </div>
+        `;
+      }).join('');
+
+      const animais = getAnimaisDaArea('corte');
+      if (!animais.length) {
+        painelAnimal.innerHTML = `<div class="empty-state"><div class="empty-icon">🐂</div>Nenhum animal cadastrado na área de confinamento ainda.</div>`;
+      } else {
+        painelAnimal.innerHTML = animais.map(a => {
+          const c = obterCustosDiariosAnimal(a);
+          return `
+            <div class="delivery-item">
+              <h4>${escapeHtml(a.nome)}</h4>
+              <p>Sistema alimentar: <strong>${escapeHtml(a.sistemaAlimentar || 'Não informado')}</strong></p>
+              <p>Milho: <strong>${c.milhoKg.toFixed(1).replace('.', ',')} kg/dia</strong> · R$ ${formatCurrencyBR(c.custoMilhoDia)}/dia</p>
+              <p>Silagem: <strong>${c.silagemKg.toFixed(1).replace('.', ',')} kg/dia</strong> · R$ ${formatCurrencyBR(c.custoSilagemDia)}/dia</p>
+              <p>Ração: <strong>${c.racaoKg.toFixed(1).replace('.', ',')} kg/dia</strong> · R$ ${formatCurrencyBR(c.custoRacaoDia)}/dia</p>
+              <p>Total do animal: <strong>${c.totalKgDia.toFixed(1).replace('.', ',')} kg/dia</strong> · <strong>R$ ${formatCurrencyBR(c.totalReaisDia)}/dia</strong></p>
+            </div>
+          `;
+        }).join('');
+      }
+
+      const totalMilhoDia = getConsumoDiarioPorTipo('milho');
+      const totalSilagemDia = getConsumoDiarioPorTipo('silagem');
+      const totalRacaoDia = getConsumoDiarioPorTipo('racao');
+      const totalReaisDia = getAnimaisDaArea('corte').reduce((sum, a) => sum + obterCustosDiariosAnimal(a).totalReaisDia, 0);
+
+      painelGeral.innerHTML = `
+        <div class="delivery-item">
+          <h4>Resumo diário geral</h4>
+          <p>Milho total por dia: <strong>${totalMilhoDia.toFixed(1).replace('.', ',')} kg</strong></p>
+          <p>Silagem total por dia: <strong>${totalSilagemDia.toFixed(1).replace('.', ',')} kg</strong></p>
+          <p>Ração total por dia: <strong>${totalRacaoDia.toFixed(1).replace('.', ',')} kg</strong></p>
+          <p>Total geral em kg por dia: <strong>${(totalMilhoDia + totalSilagemDia + totalRacaoDia).toFixed(1).replace('.', ',')} kg</strong></p>
+          <p>Total geral em reais por dia: <strong>R$ ${formatCurrencyBR(totalReaisDia)}</strong></p>
+        </div>
+      `;
+
+      const totalMilhoMes = totalMilhoDia * 30;
+      const totalSilagemMes = totalSilagemDia * 30;
+      const totalRacaoMes = totalRacaoDia * 30;
+      const totalReaisMes = totalReaisDia * 30;
+
+      painelMensal.innerHTML = `
+        <div class="delivery-item">
+          <h4>Resumo mensal automático</h4>
+          <p>Milho total por mês: <strong>${totalMilhoMes.toFixed(1).replace('.', ',')} kg</strong></p>
+          <p>Silagem total por mês: <strong>${totalSilagemMes.toFixed(1).replace('.', ',')} kg</strong></p>
+          <p>Ração total por mês: <strong>${totalRacaoMes.toFixed(1).replace('.', ',')} kg</strong></p>
+          <p>Total geral em kg por mês: <strong>${(totalMilhoMes + totalSilagemMes + totalRacaoMes).toFixed(1).replace('.', ',')} kg</strong></p>
+          <p>Gasto mensal automático: <strong>R$ ${formatCurrencyBR(totalReaisMes)}</strong></p>
+          <p style="margin-top:6px; color: var(--muted); font-size:12px;">Cálculo automático com base em 30 dias usando o consumo diário atual de todos os animais da área de corte.</p>
+        </div>
+      `;
+
+      const entregas = getEntregasCorte().map((e, indiceOriginal) => ({ ...e, indiceOriginal })).sort((a,b) => new Date(b.data) - new Date(a.data));
+      if (!entregas.length) {
+        historico.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📦</div>
+            Nenhuma compra registrada ainda na área de corte.
+          </div>
+        `;
+      } else {
+        historico.innerHTML = entregas.map(e => `
+          <div class="delivery-item">
+            <h4>${new Date(e.data + 'T12:00:00').toLocaleDateString('pt-BR')} · ${escapeHtml(e.produto)}</h4>
+            <p>Formato: <strong>${escapeHtml(e.formato || '—')}</strong></p>
+            <p>Quantidade lançada: <strong>${(parseFloat(e.quantidade)||0).toFixed(2).replace('.', ',')}</strong>${e.formato === 'saco' ? ' saco(s)' : e.formato === 'tonelada' ? ' tonelada(s)' : ' kg'}</p>
+            <p>Total em kg: <strong>${(parseFloat(e.totalKg)||0).toFixed(1).replace('.', ',')} kg</strong></p>
+            <p>Compra: <strong>R$ ${formatCurrencyBR(e.precoTotal || 0)}</strong></p>
+            <p>Custo médio: <strong>R$ ${formatCurrencyBR((parseFloat(e.precoTotal)||0) / Math.max(parseFloat(e.totalKg)||1,1))}/kg</strong></p>
+            <button class="btn btn-danger" onclick="excluirEntregaCorte(${e.indiceOriginal})">Excluir</button>
+          </div>
+        `).join('');
+      }
+      renderListaProdutosCorte();
+    }
+
+    function renderSanitarioCorte() {
+      const lista = document.getElementById('lista-sanitario-corte');
+      if (!lista) return;
+      const animais = getAnimaisDaArea('corte');
+
+      if (!animais.length) {
+        lista.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">🧴</div>
+            Nenhum animal cadastrado na área de confinamento ainda.
+          </div>
+        `;
+        return;
+      }
+
+      lista.innerHTML = animais.map(a => `
+        <div class="cut-card">
+          <div class="cut-card-header">
+            <div>
+              <div class="cut-card-title">${a.nome}</div>
+              <div class="cut-helper">${a.categoria || 'Não definido'}${a.faseCorte ? ' · ' + a.faseCorte : ''}</div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Última vacinação</label>
+              <input type="date" value="${a.vacinaData || ''}" onchange="atualizarCampoAnimal('${a.id}','vacinaData', this.value)" />
+            </div>
+            <div class="form-group">
+              <label>Última vermifugação</label>
+              <input type="date" value="${a.vermifugoData || ''}" onchange="atualizarCampoAnimal('${a.id}','vermifugoData', this.value)" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Controle de carrapato</label>
+              <input type="date" value="${a.carrapatoData || ''}" onchange="atualizarCampoAnimal('${a.id}','carrapatoData', this.value)" />
+            </div>
+            <div class="form-group">
+              <label>Observação sanitária</label>
+              <input type="text" placeholder="Ex: mancando, tosse, tudo normal" value="${(a.obsSanitaria || '').replace(/"/g, '&quot;')}" onchange="atualizarCampoAnimal('${a.id}','obsSanitaria', this.value)" />
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    
+    function renderNutricaoCorte() {
+      const lista = document.getElementById('lista-nutricao-corte');
+      if (!lista) return;
+      const animais = getAnimaisDaArea('corte');
+
+      if (!animais.length) {
+        lista.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">🌾</div>
+            Nenhum animal cadastrado na área de confinamento ainda.
+          </div>
+        `;
+        return;
+      }
+
+      lista.innerHTML = animais.map(a => {
+        const custos = obterCustosDiariosAnimal(a);
+        return `
+        <div class="cut-card">
+          <div class="cut-card-header">
+            <div>
+              <div class="cut-card-title">${escapeHtml(a.nome)}</div>
+              <div class="cut-helper">${escapeHtml(a.categoria || 'Não definido')}${a.sistemaAlimentar ? ' · ' + escapeHtml(a.sistemaAlimentar) : ''}</div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Fase</label>
+              <select onchange="atualizarCampoAnimal('${a.id}','faseCorte', this.value)">
+                <option value="" ${!a.faseCorte ? 'selected' : ''}>Selecione</option>
+                <option ${a.faseCorte === 'Cria' ? 'selected' : ''}>Cria</option>
+                <option ${a.faseCorte === 'Recria' ? 'selected' : ''}>Recria</option>
+                <option ${a.faseCorte === 'Engorda' ? 'selected' : ''}>Engorda</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Sistema alimentar</label>
+              <select onchange="atualizarCampoAnimal('${a.id}','sistemaAlimentar', this.value)">
+                <option value="" ${!a.sistemaAlimentar ? 'selected' : ''}>Selecione</option>
+                <option ${a.sistemaAlimentar === 'Pasto' ? 'selected' : ''}>Pasto</option>
+                <option ${a.sistemaAlimentar === 'Semi-confinamento' ? 'selected' : ''}>Semi-confinamento</option>
+                <option ${a.sistemaAlimentar === 'Confinamento' ? 'selected' : ''}>Confinamento</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Peso estimado (kg)</label>
+              <input type="number" min="0" step="0.1" value="${a.pesoEstimado || ''}" onchange="atualizarCampoAnimal('${a.id}','pesoEstimado', parseFloat(this.value) || 0)" />
+            </div>
+            <div class="form-group">
+              <label>Data de entrada no confinamento</label>
+              <input type="date" value="${(a.dataEntradaConfinamento || a.dataCadastro || '').slice(0,10)}" onchange="atualizarCampoAnimal('${a.id}','dataEntradaConfinamento', this.value)" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Peso inicial (kg)</label>
+              <input type="number" min="0" step="0.1" value="${a.pesoInicial || ''}" onchange="atualizarCampoAnimal('${a.id}','pesoInicial', parseFloat(this.value) || 0)" />
+            </div>
+            <div class="form-group">
+              <label>Data do peso inicial</label>
+              <input type="date" value="${(a.dataPesoInicial || '').slice(0,10)}" onchange="atualizarCampoAnimal('${a.id}','dataPesoInicial', this.value)" />
+            </div>
+          </div>
+          <div class="form-row-3">
+            <div class="form-group">
+              <label>Milho (kg/dia)</label>
+              <input type="number" min="0" step="0.1" value="${a.consumoMilho || ''}" onchange="atualizarCampoAnimal('${a.id}','consumoMilho', parseFloat(this.value) || 0)" />
+            </div>
+            <div class="form-group">
+              <label>Silagem (kg/dia)</label>
+              <input type="number" min="0" step="0.1" value="${a.consumoSilagem || ''}" onchange="atualizarCampoAnimal('${a.id}','consumoSilagem', parseFloat(this.value) || 0)" />
+            </div>
+            <div class="form-group">
+              <label>Ração (kg/dia)</label>
+              <input type="number" min="0" step="0.1" value="${a.consumoRacao || ''}" onchange="atualizarCampoAnimal('${a.id}','consumoRacao', parseFloat(this.value) || 0)" />
+            </div>
+          </div>
+          <div class="info-box" style="margin-bottom:10px;">
+            Total diário do animal: <strong>${custos.totalKgDia.toFixed(1).replace('.', ',')} kg/dia</strong><br />
+            Gasto diário com milho: <strong>R$ ${formatCurrencyBR(custos.custoMilhoDia)}</strong><br />
+            Gasto diário com silagem: <strong>R$ ${formatCurrencyBR(custos.custoSilagemDia)}</strong><br />
+            Gasto diário com ração: <strong>R$ ${formatCurrencyBR(custos.custoRacaoDia)}</strong><br />
+            Gasto diário total: <strong>R$ ${formatCurrencyBR(custos.totalReaisDia)}</strong>
+          </div>
+          <div class="form-group">
+            <label>Observação nutricional</label>
+            <textarea onchange="atualizarCampoAnimal('${a.id}','obsNutricao', this.value)" placeholder="Ex: adaptação de dieta, cocho, escore, consumo, mistura...">${a.obsNutricao || ''}</textarea>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function renderManejoCorte() {
+      const lista = document.getElementById('lista-manejo-corte');
+      if (!lista) return;
+      const animais = getAnimaisDaArea('corte');
+
+      if (!animais.length) {
+        lista.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📋</div>
+            Nenhum animal cadastrado na área de confinamento ainda.
+          </div>
+        `;
+        return;
+      }
+
+      lista.innerHTML = animais.map(a => `
+        <div class="cut-card">
+          <div class="cut-card-header">
+            <div>
+              <div class="cut-card-title">${a.nome}</div>
+              <div class="cut-helper">${a.categoria || 'Não definido'}</div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Lote / Piquete</label>
+              <input type="text" value="${(a.loteCorte || '').replace(/"/g, '&quot;')}" onchange="atualizarCampoAnimal('${a.id}','loteCorte', this.value)" placeholder="Ex: lote 1" />
+            </div>
+            <div class="form-group">
+              <label>Objetivo</label>
+              <input type="text" value="${(a.objetivoCorte || '').replace(/"/g, '&quot;')}" onchange="atualizarCampoAnimal('${a.id}','objetivoCorte', this.value)" placeholder="Ex: ganho de peso, terminação" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Anotação rápida</label>
+            <input type="text" value="${(a.anotacaoRapida || '').replace(/"/g, '&quot;')}" onchange="atualizarCampoAnimal('${a.id}','anotacaoRapida', this.value)" placeholder="Ex: comeu bem hoje" />
+          </div>
+          <div class="form-group">
+            <label>Observação de manejo</label>
+            <textarea onchange="atualizarCampoAnimal('${a.id}','obsManejo', this.value)" placeholder="Ex: apartação, comportamento, adaptação, casqueamento...">${a.obsManejo || ''}</textarea>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function obterProducaoAnimal(animalId) {
+      const p = DB.producao?.[animalId] || {};
+      const manha = parseFloat(p.manha) || 0;
+      const tarde = parseFloat(p.tarde) || 0;
+      const noite = parseFloat(p.noite) || 0;
+      const total = manha + tarde + noite;
+      return { manha, tarde, noite, total, racao: total / 3 };
+    }
+
+    function calcularIndicadoresPeso(animal) {
+      const pesoAtual = parseFloat(animal?.pesoEstimado) || 0;
+      const pesoInicial = parseFloat(animal?.pesoInicial) || 0;
+      const dataInicial = animal?.dataPesoInicial || '';
+      const dataFinal = animal?.dataVenda || new Date().toISOString().slice(0, 10);
+      const dias = dataInicial ? diasEntreDatas(dataInicial, dataFinal) : 0;
+      const ganhoTotal = pesoAtual && pesoInicial ? (pesoAtual - pesoInicial) : 0;
+      const ganhoMedioDia = dias > 0 ? ganhoTotal / dias : 0;
+      return { pesoAtual, pesoInicial, dataInicial, dataFinal, dias, ganhoTotal, ganhoMedioDia };
+    }
+
+    function obterResumoFinanceiroLeite() {
+      const estoque = parseFloat(DB.estoqueRacao) || 0;
+      const consumoDia = getConsumoDiario();
+      const diasRestantes = consumoDia > 0 ? Math.floor(estoque / consumoDia) : null;
+      const entregas = Array.isArray(DB.entregas) ? DB.entregas : [];
+      const totalEntregueKg = entregas.reduce((sum, e) => sum + (parseFloat(e.totalKg) || 0), 0);
+      return { estoque, consumoDia, diasRestantes, totalEntregueKg, entregas };
+    }
+
+    function obterResumoFinanceiroCorte() {
+      const entregas = getEntregasCorte();
+      const totalComprado = entregas.reduce((sum, e) => sum + (parseFloat(e.precoTotal) || 0), 0);
+      const estoqueMilho = getTotalKgProduto('milho');
+      const estoqueSilagem = getTotalKgProduto('silagem');
+      const estoqueRacao = getTotalKgProduto('racao');
+      const custoAnimalDia = (animal) => obterCustosDiariosAnimal(animal).totalReaisDia;
+      const totalDia = getAnimaisDaArea('corte').reduce((sum, a) => sum + custoAnimalDia(a), 0);
+      return { entregas, totalComprado, estoqueMilho, estoqueSilagem, estoqueRacao, totalDia, totalMes: totalDia * 30 };
+    }
+
+    function formatarCampo(valor, fallback = 'Não informado') {
+      if (valor === null || valor === undefined || valor === '') return fallback;
+      return String(valor);
+    }
+
+    function montarRelatorioAnimalData(animal) {
+      const area = animal?.area || obterAreaAtual() || 'leiteiro';
+      const producao = obterProducaoAnimal(animal.id);
+      const peso = calcularIndicadoresPeso(animal);
+      const resumoLeite = area === 'leiteiro' ? obterResumoFinanceiroLeite() : null;
+      const resumoCorte = area === 'corte' ? obterResumoFinanceiroCorte() : null;
+      const entregasRecentes = area === 'leiteiro'
+        ? (resumoLeite?.entregas || []).slice().sort((a,b) => new Date(b.data) - new Date(a.data)).slice(0, 5)
+        : (resumoCorte?.entregas || []).slice().sort((a,b) => new Date(b.data) - new Date(a.data)).slice(0, 5);
+      const genealogia = animal.genealogia || {};
+      return { area, animal, producao, peso, resumoLeite, resumoCorte, entregasRecentes, genealogia };
+    }
+
+    function gerarHtmlRelatorioAnimal(rel) {
+      const { area, animal, producao, peso, resumoLeite, resumoCorte, entregasRecentes, genealogia } = rel;
+      const resumoVenda = animal.resumoVenda || null;
+      const rec = area === 'corte' ? gerarRecomendacoesCorte(animal) : null;
+      const blocos = [];
+      const addSec = (titulo, conteudo) => blocos.push(`<div style="margin-top:18px;"><h2 style="font-size:16px;margin:0 0 8px 0;color:#111">${titulo}</h2><div>${conteudo}</div></div>`);
+
+      addSec('Identificação do animal', `
+        <p><strong>Nome:</strong> ${escapeHtml(formatarCampo(animal.nome))}</p>
+        <p><strong>Área:</strong> ${area === 'leiteiro' ? 'Gado Leiteiro' : 'Confinamento'}</p>
+        <p><strong>Brinco:</strong> ${escapeHtml(formatarCampo(animal.brinco))}</p>
+        <p><strong>Sexo:</strong> ${escapeHtml(formatarCampo(animal.sexo))}</p>
+        <p><strong>Categoria:</strong> ${escapeHtml(formatarCampo(animal.categoria))}</p>
+        <p><strong>Idade:</strong> ${animal.idadeMeses ? escapeHtml(String(animal.idadeMeses) + ' meses') : 'Não informada'}</p>
+        <p><strong>Data de nascimento:</strong> ${animal.dataNascimento ? new Date(animal.dataNascimento + 'T12:00:00').toLocaleDateString('pt-BR') : 'Não informada'}</p>
+        <p><strong>Data de cadastro:</strong> ${animal.dataCadastro ? formatarDataHora(animal.dataCadastro) : 'Não informada'}</p>
+        <p><strong>Observações:</strong> ${escapeHtml(formatarCampo(animal.obs))}</p>
+      `);
+
+      addSec('Árvore genealógica', `
+        <p><strong>Mãe:</strong> ${escapeHtml(formatarCampo(genealogia.mae))}</p>
+        <p><strong>Pai:</strong> ${escapeHtml(formatarCampo(genealogia.pai))}</p>
+        <p><strong>Avó materna:</strong> ${escapeHtml(formatarCampo(genealogia.avoMaterna))}</p>
+        <p><strong>Avô materno:</strong> ${escapeHtml(formatarCampo(genealogia.avoMaterno))}</p>
+        <p><strong>Avó paterna:</strong> ${escapeHtml(formatarCampo(genealogia.avoPaterna))}</p>
+        <p><strong>Avô paterno:</strong> ${escapeHtml(formatarCampo(genealogia.avoPaterno))}</p>
+      `);
+
+      if (area === 'leiteiro') {
+        addSec('Dados leiteiros', `
+          <p><strong>Prenha:</strong> ${animal.prenha ? 'Sim' : 'Não'}</p>
+          <p><strong>Data da confirmação da prenhez:</strong> ${animal.dataPrenha ? new Date(animal.dataPrenha + 'T12:00:00').toLocaleDateString('pt-BR') : 'Não informada'}</p>
+          <p><strong>Em lactação:</strong> ${animal.lactacao ? 'Sim' : 'Não'}</p>
+          <p><strong>Produção manhã:</strong> ${producao.manha.toFixed(1).replace('.', ',')} L</p>
+          <p><strong>Produção tarde:</strong> ${producao.tarde.toFixed(1).replace('.', ',')} L</p>
+          <p><strong>Produção noite:</strong> ${producao.noite.toFixed(1).replace('.', ',')} L</p>
+          <p><strong>Total diário:</strong> ${producao.total.toFixed(1).replace('.', ',')} L</p>
+          <p><strong>Ração estimada do animal:</strong> ${producao.racao.toFixed(1).replace('.', ',')} kg/dia</p>
+        `);
+
+        addSec('Gastos e estoque da área leiteira', `
+          <p><strong>Estoque atual de ração:</strong> ${(resumoLeite.estoque || 0).toFixed(1).replace('.', ',')} kg</p>
+          <p><strong>Consumo diário atual da área:</strong> ${(resumoLeite.consumoDia || 0).toFixed(1).replace('.', ',')} kg/dia</p>
+          <p><strong>Dias restantes estimados:</strong> ${resumoLeite.diasRestantes === null ? '—' : resumoLeite.diasRestantes}</p>
+          <p><strong>Total já entregue de ração:</strong> ${(resumoLeite.totalEntregueKg || 0).toFixed(1).replace('.', ',')} kg</p>
+        `);
+      }
+
+      if (area === 'corte') {
+        const custos = obterCustosDiariosAnimal(animal);
+        addSec('Dados de corte / engorda', `
+          <p><strong>Fase:</strong> ${escapeHtml(formatarCampo(animal.faseCorte))}</p>
+          <p><strong>Sistema alimentar:</strong> ${escapeHtml(formatarCampo(animal.sistemaAlimentar))}</p>
+          <p><strong>Peso atual:</strong> ${peso.pesoAtual ? peso.pesoAtual.toFixed(1).replace('.', ',') + ' kg' : 'Não informado'}</p>
+          <p><strong>Peso inicial:</strong> ${peso.pesoInicial ? peso.pesoInicial.toFixed(1).replace('.', ',') + ' kg' : 'Não informado'}</p>
+          <p><strong>Data do peso inicial:</strong> ${peso.dataInicial ? new Date(peso.dataInicial + 'T12:00:00').toLocaleDateString('pt-BR') : 'Não informada'}</p>
+          <p><strong>Ganho total de peso:</strong> ${peso.dias > 0 ? peso.ganhoTotal.toFixed(1).replace('.', ',') + ' kg' : 'Não há registros suficientes para calcular'}</p>
+          <p><strong>Índice de ganho de peso:</strong> ${peso.dias > 0 ? peso.ganhoMedioDia.toFixed(3).replace('.', ',') + ' kg/dia' : 'Não há registros suficientes para calcular'}</p>
+          <p><strong>Consumo milho:</strong> ${custos.milhoKg.toFixed(1).replace('.', ',')} kg/dia</p>
+          <p><strong>Consumo silagem:</strong> ${custos.silagemKg.toFixed(1).replace('.', ',')} kg/dia</p>
+          <p><strong>Consumo ração:</strong> ${custos.racaoKg.toFixed(1).replace('.', ',')} kg/dia</p>
+          <p><strong>Gasto diário total:</strong> R$ ${formatCurrencyBR(custos.totalReaisDia)}</p>
+          <p><strong>Vacinação:</strong> ${animal.vacinaData ? new Date(animal.vacinaData + 'T12:00:00').toLocaleDateString('pt-BR') : 'Não informada'}</p>
+          <p><strong>Vermifugação:</strong> ${animal.vermifugoData ? new Date(animal.vermifugoData + 'T12:00:00').toLocaleDateString('pt-BR') : 'Não informada'}</p>
+          <p><strong>Controle de carrapato:</strong> ${animal.carrapatoData ? new Date(animal.carrapatoData + 'T12:00:00').toLocaleDateString('pt-BR') : 'Não informada'}</p>
+          <p><strong>Obs. sanitária:</strong> ${escapeHtml(formatarCampo(animal.obsSanitaria))}</p>
+          <p><strong>Obs. nutricional:</strong> ${escapeHtml(formatarCampo(animal.obsNutricao))}</p>
+          <p><strong>Obs. manejo:</strong> ${escapeHtml(formatarCampo(animal.obsManejo))}</p>
+          <p><strong>Lote:</strong> ${escapeHtml(formatarCampo(animal.loteCorte))}</p>
+          <p><strong>Objetivo:</strong> ${escapeHtml(formatarCampo(animal.objetivoCorte))}</p>
+        `);
+
+        addSec('Gastos da área de corte / engorda', `
+          <p><strong>Estoque milho:</strong> ${(resumoCorte.estoqueMilho || 0).toFixed(1).replace('.', ',')} kg</p>
+          <p><strong>Estoque silagem:</strong> ${(resumoCorte.estoqueSilagem || 0).toFixed(1).replace('.', ',')} kg</p>
+          <p><strong>Estoque ração:</strong> ${(resumoCorte.estoqueRacao || 0).toFixed(1).replace('.', ',')} kg</p>
+          <p><strong>Total comprado na área:</strong> R$ ${formatCurrencyBR(resumoCorte.totalComprado || 0)}</p>
+          <p><strong>Gasto diário atual da área:</strong> R$ ${formatCurrencyBR(resumoCorte.totalDia || 0)}</p>
+          <p><strong>Gasto mensal automático:</strong> R$ ${formatCurrencyBR(resumoCorte.totalMes || 0)}</p>
+        `);
+
+        addSec('Recomendações atuais da área de corte', `
+          <p><strong>Veterinário:</strong> ${escapeHtml(rec.veterinario)}</p>
+          <p><strong>Sanitário:</strong> ${escapeHtml(rec.sanitario)}</p>
+          <p><strong>Nutricional:</strong> ${escapeHtml(rec.nutricional)}</p>
+        `);
+      }
+
+      if (entregasRecentes.length) {
+        addSec('Lançamentos recentes de gastos / entregas', entregasRecentes.map(e => {
+          if (area === 'leiteiro') {
+            return `<p>• ${new Date(e.data + 'T12:00:00').toLocaleDateString('pt-BR')} — ${e.sacos} saco(s) de ${e.tipoKg} kg · total ${e.totalKg} kg${(parseFloat(e.valorTotal)||0)>0 ? ' · R$ ' + formatCurrencyBR(e.valorTotal) + ' · R$ ' + formatCurrencyBR(e.valorKg) + '/kg' : ''}</p>`;
+          }
+          return `<p>• ${new Date(e.data + 'T12:00:00').toLocaleDateString('pt-BR')} — ${escapeHtml(e.produto || '')} · ${(parseFloat(e.totalKg)||0).toFixed(1).replace('.', ',')} kg · R$ ${formatCurrencyBR(e.precoTotal || 0)}</p>`;
+        }).join(''));
+      }
+
+      if (resumoVenda) {
+        addSec('Resumo da venda', `
+          <p><strong>Data da venda:</strong> ${escapeHtml(resumoVenda.dataVendaFmt || '—')}</p>
+          <p><strong>Preço:</strong> R$ ${escapeHtml(resumoVenda.precoVendaFmt || '0,00')}</p>
+          <p><strong>Custo alimentar:</strong> R$ ${escapeHtml(resumoVenda.custoAlimentarFmt || '0,00')}</p>
+          <p><strong>Resultado bruto:</strong> R$ ${escapeHtml(resumoVenda.resultadoBrutoFmt || '0,00')}</p>
+        `);
+      }
+
+      return `
+        <div style="font-family:Arial,sans-serif;color:#111;background:#fff;padding:24px;line-height:1.5;">
+          <div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start;border-bottom:2px solid #111;padding-bottom:12px;">
+            <div>
+              <h1 style="margin:0;font-size:22px;">IA Rural</h1>
+              <div style="font-size:14px;margin-top:4px;">Relatório completo do animal</div>
+            </div>
+            <div style="text-align:right;font-size:12px;">
+              <div><strong>Gerado em:</strong> ${new Date().toLocaleString('pt-BR')}</div>
+              <div><strong>Usuário:</strong> ${escapeHtml(usuarioLogado || '')}</div>
+            </div>
+          </div>
+          ${animal.foto ? `<div style="margin-top:16px;"><img src="${animal.foto}" alt="Foto do animal" style="max-width:180px;max-height:180px;border:1px solid #ddd;border-radius:12px;object-fit:cover;" /></div>` : ''}
+          ${blocos.join('')}
+        </div>
+      `;
+    }
+
+    async function baixarPdfAnimal(idOuNome) {
+      const animal = DB.animais.find(a => a.id === idOuNome) || DB.arquivados.find(a => a.id === idOuNome) || DB.animais.find(a => (a.nome || '').toLowerCase() === String(idOuNome || '').toLowerCase());
+      if (!animal) {
+        alert('Animal não encontrado para gerar o PDF.');
+        return;
+      }
+
+      if (!window.jspdf?.jsPDF) {
+        alert('Biblioteca de PDF não carregada. Atualize a página e tente novamente.');
+        return;
+      }
+
+      const rel = montarRelatorioAnimalData(animal);
+      const html = gerarHtmlRelatorioAnimal(rel);
+      const wrap = document.createElement('div');
+      wrap.style.position = 'fixed';
+      wrap.style.left = '-99999px';
+      wrap.style.top = '0';
+      wrap.style.width = '760px';
+      wrap.innerHTML = html;
+      document.body.appendChild(wrap);
+
+      try {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'pt', 'a4');
+        await pdf.html(wrap, {
+          margin: [24, 24, 24, 24],
+          autoPaging: 'text',
+          html2canvas: { scale: 0.5, useCORS: true },
+          width: 547,
+          windowWidth: 760
+        });
+        const nome = (animal.nome || 'animal').replace(/[^a-z0-9_-]+/gi, '_');
+        pdf.save(`IA_Rural_${nome}.pdf`);
+      } catch (erro) {
+        console.error(erro);
+        alert('Não foi possível gerar o PDF deste animal.');
+      } finally {
+        wrap.remove();
+      }
+    }
+
+    function montarCardGenealogiaResultado(animal) {
+      const rel = montarRelatorioAnimalData(animal);
+      const { area, producao, peso, genealogia } = rel;
+      return `
+        <div class="animal-item" style="align-items:flex-start;">
+          ${animal.foto ? `<img class="animal-photo" src="${animal.foto}" alt="Foto de ${escapeAttr(animal.nome)}" />` : `<div class="animal-avatar">${emojiAnimal(animal.categoria)}</div>`}
+          <div class="animal-body">
+            <div class="animal-name">${escapeHtml(animal.nome)} ${animal.brinco ? `<span style="font-size:11px;color:var(--muted);font-weight:400;">· Brinco ${escapeHtml(animal.brinco)}</span>` : ''}</div>
+            <div class="animal-meta">${area === 'leiteiro' ? 'Área leiteira' : 'Área confinamento'} · ${escapeHtml(animal.categoria || 'Não definido')}</div>
+            <div class="rec-grid" style="margin-top:12px;">
+              <div class="rec-box"><h5>Mãe</h5><p>${escapeHtml(formatarCampo(genealogia.mae))}</p></div>
+              <div class="rec-box"><h5>Pai</h5><p>${escapeHtml(formatarCampo(genealogia.pai))}</p></div>
+              <div class="rec-box"><h5>Avó materna</h5><p>${escapeHtml(formatarCampo(genealogia.avoMaterna))}</p></div>
+              <div class="rec-box"><h5>Avô materno</h5><p>${escapeHtml(formatarCampo(genealogia.avoMaterno))}</p></div>
+              <div class="rec-box"><h5>Avó paterna</h5><p>${escapeHtml(formatarCampo(genealogia.avoPaterna))}</p></div>
+              <div class="rec-box"><h5>Avô paterno</h5><p>${escapeHtml(formatarCampo(genealogia.avoPaterno))}</p></div>
+              ${area === 'leiteiro' ? `<div class="rec-box"><h5>Total diário de leite</h5><p>${producao.total.toFixed(1).replace('.', ',')} L</p></div><div class="rec-box"><h5>Ração estimada</h5><p>${producao.racao.toFixed(1).replace('.', ',')} kg/dia</p></div>` : `<div class="rec-box"><h5>Peso atual</h5><p>${peso.pesoAtual ? peso.pesoAtual.toFixed(1).replace('.', ',') + ' kg' : 'Não informado'}</p></div><div class="rec-box"><h5>Ganho de peso</h5><p>${peso.dias > 0 ? peso.ganhoMedioDia.toFixed(3).replace('.', ',') + ' kg/dia' : 'Não há registros suficientes'}</p></div>`}
+            </div>
+            <div class="animal-actions" style="margin-top:12px;">
+              <button class="btn btn-primary btn-sm" onclick="baixarPdfAnimal('${animal.id}')">Baixar PDF</button>
+              <button class="btn btn-outline btn-sm" onclick="abrirEdicaoAnimal('${animal.id}');showPage('rebanho')">Editar animal</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function buscarAnimalGenealogia() {
+      const busca = (document.getElementById('genealogia-busca')?.value || '').trim().toLowerCase();
+      const area = obterAreaAtual() || 'leiteiro';
+      const alvo = document.getElementById('genealogia-resultado');
+      if (!alvo) return;
+      if (!busca) {
+        alvo.innerHTML = '<div class="empty-state"><div class="empty-icon">🌳</div>Digite o nome do animal para buscar.</div>';
+        return;
+      }
+      const lista = getAnimaisDaArea(area).filter(a => (a.nome || '').toLowerCase().includes(busca) || (a.brinco || '').toLowerCase().includes(busca));
+      if (!lista.length) {
+        alvo.innerHTML = '<div class="empty-state"><div class="empty-icon">🔎</div>Nenhum animal encontrado com esse nome na área atual.</div>';
+        return;
+      }
+      alvo.innerHTML = lista.map(montarCardGenealogiaResultado).join('');
+    }
+
+    function limparBuscaGenealogia() {
+      const input = document.getElementById('genealogia-busca');
+      const alvo = document.getElementById('genealogia-resultado');
+      if (input) input.value = '';
+      if (alvo) alvo.innerHTML = '<div class="empty-state"><div class="empty-icon">🌳</div>Digite o nome do animal para visualizar a árvore genealógica e baixar o PDF completo.</div>';
+    }
+
+
+
+    function emojiAnimal(categoria) {
+      const c = String(categoria || '').toLowerCase();
+      if (c.includes('bezerra') || c.includes('bezerro')) return '🐄';
+      if (c.includes('novilha')) return '🐄';
+      if (c.includes('vaca')) return '🐄';
+      if (c.includes('garrote') || c.includes('boi') || c.includes('touro')) return '🐂';
+      return (typeof obterAreaAtual === 'function' && obterAreaAtual() === 'corte') ? '🐂' : '🐄';
+    }
+
+    function tagClass(categoria) {
+      const c = String(categoria || '').toLowerCase();
+      if (c.includes('bezerra') || c.includes('bezerro')) return 'tag-bezerro';
+      if (c.includes('novilha')) return 'tag-novilha';
+      if (c.includes('vaca')) return 'tag-vaca';
+      if (c.includes('garrote')) return 'tag-garrote';
+      if (c.includes('boi')) return 'tag-boi';
+      if (c.includes('touro')) return 'tag-touro';
+      return '';
+    }
+
+    function renderGenealogia() {
+      const alvo = document.getElementById('genealogia-resultado');
+      if (!alvo) return;
+      const busca = (document.getElementById('genealogia-busca')?.value || '').trim();
+      if (!getAnimaisDaArea(obterAreaAtual() || 'leiteiro').length) {
+        alvo.innerHTML = '<div class="empty-state"><div class="empty-icon">🌳</div>Nenhum animal cadastrado na área atual ainda.</div>';
+        return;
+      }
+      if (busca) {
+        buscarAnimalGenealogia();
+        return;
+      }
+      alvo.innerHTML = '<div class="empty-state"><div class="empty-icon">🌳</div>Digite o nome do animal para visualizar a árvore genealógica e baixar o PDF completo.</div>';
+    }
+
+    function obterFotoLeveParaLista(animal) {
+      const foto = animal && (animal.fotoThumb || animal.foto) ? String(animal.fotoThumb || animal.foto) : '';
+      // Evita travar a lista com base64 gigante antigo. A compactação roda em segundo plano.
+      if (foto && foto.length > 220000) return '';
+      return foto;
+    }
+
+    function blocoCustoRacaoLeiteRebanho(animalId) {
+      const c = obterCustoRacaoAnimalLeite(animalId);
+      if (!c.kgDia && !c.valorKg) return '';
+      if (!c.valorKg) {
+        return `<div class="note-badge">💰 Custo da ração: cadastre o valor da entrega para calcular em R$.</div>`;
+      }
+      return `
+        <div class="note-badge">
+          💰 Ração: ${c.kgDia.toFixed(1).replace('.', ',')} kg/dia · R$ ${formatCurrencyBR(c.reaisDia)}/dia · R$ ${formatCurrencyBR(c.reaisMes)}/mês
+        </div>
+      `;
+    }
+
+    function renderRebanho() {
+      const area = obterAreaAtual() || 'leiteiro';
+      const lista = document.getElementById('lista-rebanho');
+      const contador = document.getElementById('count-rebanho');
+      if (!lista) return;
+
+      const termoBusca = (document.getElementById('busca-rebanho')?.value || '').trim().toLowerCase();
+      const animaisDaAreaBase = (typeof getAnimaisDaArea === 'function' ? getAnimaisDaArea(area) : [])
+        .filter(a => a && typeof a === 'object');
+      const animaisDaArea = termoBusca
+        ? animaisDaAreaBase.filter(a => {
+            const buscaCampos = [
+              String(a.nome || '').toLowerCase(),
+              String(a.brinco || '').toLowerCase(),
+              String(a.loteCorte || '').toLowerCase(),
+              String(a.categoria || '').toLowerCase(),
+              String(a.obs || '').toLowerCase(),
+              String(a.anotacaoRapida || '').toLowerCase(),
+              String(a.status || '').toLowerCase()
+            ];
+            return buscaCampos.some(c => c.includes(termoBusca));
+          })
+        : animaisDaAreaBase;
+
+      if (contador) contador.textContent = animaisDaArea.length;
+
+      if (!animaisDaArea.length) {
+        lista.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">${area === 'corte' ? '🐂' : '🐄'}</div>
+            ${termoBusca ? 'Nenhum animal encontrado com essa busca.' : 'Nenhum animal cadastrado nesta área ainda.<br />Clique em <strong>+ Cadastrar Animal</strong> para começar.'}
+          </div>
+        `;
+        return;
+      }
+
+      try {
+        lista.innerHTML = animaisDaArea.map(a => {
+          const nomeSeguro = escapeHtml(a.nome || 'Animal sem nome');
+          const nomeAttr = escapeAttr(a.nome || 'Animal');
+          const brincoSeguro = escapeHtml(a.brinco || '');
+          const sexoSeguro = escapeHtml(a.sexo || 'Sexo não informado');
+          const categoriaSeguro = escapeHtml(a.categoria || 'Não definido');
+          const obsSeguro = escapeHtml(a.obs || '');
+          const anotacaoSeguro = escapeHtml(a.anotacaoRapida || '');
+          const idAttr = escapeAttr(a.id || '');
+          const nomeJs = String(a.nome || 'Animal').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+          const rec = area === 'corte' && typeof gerarRecomendacoesCorte === 'function' ? gerarRecomendacoesCorte(a) : null;
+          const fotoLista = obterFotoLeveParaLista(a);
+          const avatar = fotoLista
+            ? `<img class="animal-photo" src="${escapeAttr(fotoLista)}" alt="Foto de ${nomeAttr}" loading="lazy" decoding="async" />`
+            : `<div class="animal-avatar">${emojiAnimal(a.categoria)}</div>`;
+
+          // Bloco de info do corte (pesagem/lote)
+          let blocoCorte = '';
+          if (area === 'corte') {
+            const ultimaPesagem = calcularUltimaPesagemAnimal(a.id);
+            const loteResolvido = resolverLoteDoAnimal(a);
+            const loteDisplay = loteResolvido.loteNome || loteResolvido.loteId || '';
+            const ultimaSanitario = (DB.sanitarioCorteHistorico || [])
+              .filter(s => s.animalId === a.id || s.animalNome === a.nome)
+              .sort((x,y) => (y.data||'').localeCompare(x.data||''))[0];
+            blocoCorte = `
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;">
+                <div style="background:#0f0f0f;border:1px solid var(--border);border-radius:8px;padding:8px;">
+                  <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:2px;">Lote</div>
+                  <div style="font-size:12px;color:#fff;">${loteDisplay ? escapeHtml(loteDisplay) : '—'}</div>
+                </div>
+                <div style="background:#0f0f0f;border:1px solid var(--border);border-radius:8px;padding:8px;">
+                  <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:2px;">Último peso</div>
+                  <div style="font-size:12px;color:#fff;">${ultimaPesagem ? ultimaPesagem.peso + ' kg' : (a.pesoEstimado ? a.pesoEstimado + ' kg (est.)' : '—')}</div>
+                </div>
+                <div style="background:#0f0f0f;border:1px solid var(--border);border-radius:8px;padding:8px;">
+                  <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:2px;">Data pesagem</div>
+                  <div style="font-size:12px;color:#fff;">${ultimaPesagem ? new Date(ultimaPesagem.data+'T12:00:00').toLocaleDateString('pt-BR') : '—'}</div>
+                </div>
+                <div style="background:#0f0f0f;border:1px solid var(--border);border-radius:8px;padding:8px;">
+                  <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:2px;">Última sanidade</div>
+                  <div style="font-size:12px;color:#fff;">${ultimaSanitario ? escapeHtml(ultimaSanitario.produto||ultimaSanitario.tipo||'—') : '—'}</div>
+                </div>
+              </div>
+            `;
+          }
+
+          return `
+          <div class="animal-item">
+            ${avatar}
+
+            <div class="animal-body">
+              <div class="animal-name">
+                ${nomeSeguro}
+                ${brincoSeguro ? `<span style="font-size:11px;color:var(--muted);font-weight:400;">· Brinco ${brincoSeguro}</span>` : ''}
+              </div>
+
+              <div class="animal-meta">
+                ${sexoSeguro}
+                ${a.dataNascimento ? `· Nasc.: ${new Date(a.dataNascimento + 'T12:00:00').toLocaleDateString('pt-BR')}` : ''}
+              </div>
+
+              <div class="tag-wrap">
+                <span class="tag ${tagClass(a.categoria)}">${categoriaSeguro}</span>
+                ${renderTagsStatusReprodutivo(a)}
+                ${area === 'corte' && a.faseCorte ? `<span class="tag" style="background:#111111;color:#ffffff;">${escapeHtml(a.faseCorte)}</span>` : ''}
+                ${area === 'corte' && a.sistemaAlimentar ? `<span class="tag" style="background:#111111;color:#ffffff;">${escapeHtml(a.sistemaAlimentar)}</span>` : ''}
+              </div>
+
+              ${area === 'leiteiro' ? blocoUltimaPesagemRebanho(a.id) : ''}
+              ${area === 'leiteiro' ? blocoCustoRacaoLeiteRebanho(a.id) : ''}
+              ${area === 'leiteiro' ? blocoCustoProdutosLeiteRebanho(a.id) : ''}
+              ${area === 'leiteiro' ? blocoPrevisoesPrenhezRebanho(a) : ''}
+
+              ${area === 'corte' ? blocoCorte : ''}
+
+              ${obsSeguro ? `<div class="animal-obs">${obsSeguro}</div>` : ''}
+              ${anotacaoSeguro ? `<div class="note-badge">📝 ${anotacaoSeguro}</div>` : ''}
+
+              ${area === 'corte' && rec ? `
+                <div class="rec-grid">
+                  <div class="rec-box"><h5>🩺 Veterinário</h5><p>${escapeHtml(rec.veterinario || '')}</p></div>
+                  <div class="rec-box"><h5>🧴 Sanitário</h5><p>${escapeHtml(rec.sanitario || '')}</p></div>
+                  <div class="rec-box"><h5>🌾 Nutricional</h5><p>${escapeHtml(rec.nutricional || '')}</p></div>
+                </div>
+              ` : ''}
+
+              <div class="animal-actions">
+                <button class="btn btn-outline btn-sm" onclick="abrirEdicaoAnimal('${idAttr}')">Editar</button>
+                <button class="btn btn-outline btn-sm" onclick="editarAnotacaoRapida('${idAttr}', '${nomeJs}')">📝 Anotar</button>
+                ${area === 'corte' ? `<button class="btn btn-outline btn-sm" onclick="abrirHistoricoAnimal('${idAttr}')">📋 Prontuário</button>` : ''}
+                <button class="btn btn-outline btn-sm" onclick="abrirExcluir('${idAttr}', '${nomeJs}')">Excluir</button>
+              </div>
+            </div>
+          </div>
+        `}).join('');
+      } catch (erroRenderRebanho) {
+        console.error('Erro ao renderizar rebanho:', erroRenderRebanho, animaisDaArea);
+        lista.innerHTML = animaisDaArea.map(a => `
+          <div class="animal-item">
+            <div class="animal-avatar">🐄</div>
+            <div class="animal-body">
+              <div class="animal-name">${escapeHtml(a?.nome || 'Animal sem nome')}</div>
+              <div class="animal-meta">${escapeHtml(a?.categoria || 'Animal cadastrado')}</div>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    async function editarAnotacaoRapida(id, nome) {
+      const animal = DB.animais.find(a => a.id === id);
+      if (!animal) return;
+      const atual = animal.anotacaoRapida || '';
+      const nova = prompt(`Digite a anotação rápida para ${nome}:`, atual);
+      if (nova === null) return;
+      animal.anotacaoRapida = nova.trim();
+      await salvarDB();
+      renderRebanho();
+    }
+
+    function abrirExcluir(id, nome) {
+      animalParaExcluir = id;
+      document.getElementById('modal-excluir-titulo').textContent = 'O que aconteceu com ' + nome + '?';
+      document.getElementById('modal-excluir').classList.add('open');
+    }
+
+    async function confirmarExclusao(motivo) {
+      const idx = DB.animais.findIndex(a => a.id === animalParaExcluir);
+      if (idx < 0) return;
+
+      const animal = DB.animais[idx];
+      if ((animal.area || 'leiteiro') === 'corte' && motivo === 'vendido') {
+        document.getElementById('venda-preco').value = animal.precoVenda || '';
+        document.getElementById('venda-data').value = new Date().toISOString().slice(0, 10);
+        document.getElementById('venda-obs').value = '';
+        fecharModal('modal-excluir');
+        document.getElementById('modal-venda').classList.add('open');
+        return;
+      }
+
+      // Para animal de corte que faleceu: abrir modal de morte detalhado
+      if ((animal.area || 'leiteiro') === 'corte' && (motivo === 'faleceu' || motivo === 'morte' || motivo === 'morreu')) {
+        document.getElementById('morte-data').value = new Date().toISOString().slice(0, 10);
+        document.getElementById('morte-motivo').value = '';
+        document.getElementById('morte-peso').value = animal.pesoEstimado || '';
+        document.getElementById('morte-prejuizo').value = '';
+        document.getElementById('morte-obs').value = '';
+        fecharModal('modal-excluir');
+        document.getElementById('modal-morte-corte').classList.add('open');
+        return;
+      }
+
+      const removido = DB.animais.splice(idx, 1)[0];
+      removido.motivoArquivo = motivo;
+      removido.dataArquivo = new Date().toISOString();
+      DB.arquivados.push(removido);
+
+      delete DB.producao[removido.id];
+      await salvarDB();
+
+      fecharModal('modal-excluir');
+      renderTudo();
+    }
+
+    async function confirmarMorteAnimal(btn) {
+      const dataMorte = document.getElementById('morte-data')?.value;
+      const motivoMorte = (document.getElementById('morte-motivo')?.value || '').trim();
+      const pesoMorte = parseFloat(document.getElementById('morte-peso')?.value) || 0;
+      const prejuizo = parseFloat(document.getElementById('morte-prejuizo')?.value) || 0;
+      const obsMorte = (document.getElementById('morte-obs')?.value || '').trim();
+
+      if (!dataMorte) { alert('Informe a data da morte.'); return; }
+
+      const idx = DB.animais.findIndex(a => a.id === animalParaExcluir);
+      if (idx < 0) { fecharModal('modal-morte-corte'); return; }
+
+      try {
+        if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+        const animal = DB.animais.splice(idx, 1)[0];
+        animal.motivoArquivo = 'morreu';
+        animal.dataArquivo = new Date().toISOString();
+        animal.dataMorte = dataMorte;
+        animal.motivoMorte = motivoMorte;
+        animal.pesoMorte = pesoMorte;
+        animal.prejuizoMorte = prejuizo;
+        animal.obsMorte = obsMorte;
+        DB.arquivados.push(animal);
+
+        // Alimentar financeiro como perda/prejuízo se informado
+        if (prejuizo > 0) {
+          if (!Array.isArray(DB.financeiroCorte)) DB.financeiroCorte = [];
+          const loteMorte = resolverLoteDoAnimal(animal);
+          DB.financeiroCorte.push({
+            id: (typeof gerarIdCorte === 'function') ? gerarIdCorte() : (Date.now() + '_' + Math.random().toString(36).slice(2,7)),
+            tipo: 'despesa',
+            categoria: 'outros_despesa',
+            data: dataMorte,
+            valor: prejuizo,
+            loteId: loteMorte.loteId,
+            loteNome: loteMorte.loteNome,
+            animalId: animal.id,
+            qtdAnimais: 1,
+            custoPorAnimal: prejuizo,
+            descricao: `Morte: ${animal.nome || 'animal'}${motivoMorte ? ' — ' + motivoMorte : ''}`,
+            obs: obsMorte,
+            dataCriacao: new Date().toISOString(),
+            origem: 'morte'
+          });
+        }
+
+        delete DB.producao[animal.id];
+        await salvarDB();
+        fecharModal('modal-morte-corte');
+        renderTudo();
+        showPage('mortes-vendas-corte');
+        if (typeof mostrarMensagemCorte === 'function') mostrarMensagemCorte('Animal marcado como morto. ✓');
+      } catch(e) {
+        alert('Erro ao registrar morte: ' + (e.message || e));
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Confirmar morte'; }
+      }
+    }
+
+    async function confirmarVendaAnimal() {
+      const precoVenda = parseFloat(document.getElementById('venda-preco').value) || 0;
+      const dataVenda = document.getElementById('venda-data').value;
+      const obsVenda = document.getElementById('venda-obs').value.trim();
+
+      if (!precoVenda || precoVenda <= 0) return alert('Informe o preço de venda.');
+      if (!dataVenda) return alert('Informe a data da venda.');
+
+      const idx = DB.animais.findIndex(a => a.id === animalParaExcluir);
+      if (idx < 0) return;
+
+      const animal = DB.animais.splice(idx, 1)[0];
+      const resumoVenda = montarResumoVenda(animal, precoVenda, dataVenda);
+
+      animal.motivoArquivo = 'vendido';
+      animal.dataArquivo = new Date().toISOString();
+      animal.precoVenda = precoVenda;
+      animal.dataVenda = dataVenda;
+      animal.obsVenda = obsVenda;
+      animal.resumoVenda = resumoVenda;
+      DB.arquivados.push(animal);
+
+      // Alimentar financeiro de corte como receita
+      if (animal.area === 'corte') {
+        const loteVenda = resolverLoteDoAnimal(animal);
+        DB.financeiroCorte.push({
+          id: gerarIdCorte(),
+          tipo: 'receita',
+          categoria: 'venda_animal',
+          data: dataVenda,
+          valor: precoVenda,
+          loteId: loteVenda.loteId,
+          loteNome: loteVenda.loteNome,
+          animalId: animal.id,
+          qtdAnimais: 1,
+          custoPorAnimal: precoVenda,
+          descricao: `Venda: ${animal.nome || 'animal'}`,
+          obs: obsVenda,
+          dataCriacao: new Date().toISOString(),
+          origem: 'venda'
+        });
+      }
+
+      await salvarDB();
+      fecharModal('modal-venda');
+      renderTudo();
+      if (animal.area === 'corte') {
+        showPage('mortes-vendas-corte');
+      } else {
+        showPage('vendidos-corte');
+      }
+    }
+
+    function fecharModal(id) {
+      document.getElementById(id).classList.remove('open');
+      if (id === 'modal-venda') {
+        document.getElementById('venda-preco').value = '';
+        document.getElementById('venda-data').value = '';
+        document.getElementById('venda-obs').value = '';
+      }
+      if (id === 'modal-morte-corte') {
+        document.getElementById('morte-data').value = '';
+        document.getElementById('morte-motivo').value = '';
+        document.getElementById('morte-peso').value = '';
+        document.getElementById('morte-prejuizo').value = '';
+        document.getElementById('morte-obs').value = '';
+      }
+    }
+
+    let formularioPesagemAberto = false;
+    let pesagemLeiteEmEdicao = null;
+    let salvandoPesagemLeite = false;
+
+    function getHistoricoPesagensLeite() {
+      if (!Array.isArray(DB.historicoPesagensLeite)) DB.historicoPesagensLeite = [];
+      return DB.historicoPesagensLeite;
+    }
+
+    function formatarDataBR(dataIso) {
+      if (!dataIso) return 'Data não informada';
+      const d = new Date(String(dataIso).slice(0, 10) + 'T12:00:00');
+      return isNaN(d.getTime()) ? 'Data não informada' : d.toLocaleDateString('pt-BR');
+    }
+
+    function obterAnimaisLeiteEmLactacao() {
+      return DB.animais.filter(a => (a.area || 'leiteiro') === 'leiteiro' && a.lactacao);
+    }
+
+    function obterUltimaPesagemAnimal(animalId) {
+      const historico = getHistoricoPesagensLeite()
+        .slice()
+        .sort((a, b) => String(b.data || '').localeCompare(String(a.data || '')) || String(b.criadoEm || '').localeCompare(String(a.criadoEm || '')));
+      for (const pesagem of historico) {
+        const item = (pesagem.itens || []).find(i => i.animalId === animalId);
+        if (item) return { ...item, data: pesagem.data, totalPesagem: pesagem.total || 0 };
+      }
+      const p = DB.producao?.[animalId];
+      if (p) {
+        const total = (parseFloat(p.manha) || 0) + (parseFloat(p.tarde) || 0) + (parseFloat(p.noite) || 0);
+        if (total > 0) return { ...p, data: p.data || '', total };
+      }
+      return null;
+    }
+
+    function recalcularProducaoLeiteAPartirDoHistorico(animalIdsAfetados = null) {
+      if (!DB.producao || typeof DB.producao !== 'object') DB.producao = {};
+      const idsAlvo = animalIdsAfetados instanceof Set ? animalIdsAfetados : null;
+      const historicoOrdenado = getHistoricoPesagensLeite()
+        .slice()
+        .sort((a, b) => String(b.data || '').localeCompare(String(a.data || '')) || String(b.criadoEm || '').localeCompare(String(a.criadoEm || '')));
+
+      const todosIds = new Set(idsAlvo || []);
+      historicoOrdenado.forEach(p => (p.itens || []).forEach(i => {
+        if (i && i.animalId && (!idsAlvo || idsAlvo.has(i.animalId))) todosIds.add(i.animalId);
+      }));
+
+      todosIds.forEach(animalId => {
+        const pesagemMaisRecente = historicoOrdenado.find(p => (p.itens || []).some(i => i.animalId === animalId));
+        if (!pesagemMaisRecente) {
+          delete DB.producao[animalId];
+          return;
+        }
+        const item = (pesagemMaisRecente.itens || []).find(i => i.animalId === animalId);
+        if (!item) {
+          delete DB.producao[animalId];
+          return;
+        }
+        const manha = parseFloat(item.manha) || 0;
+        const tarde = parseFloat(item.tarde) || 0;
+        const noite = parseFloat(item.noite) || 0;
+        const total = parseFloat(item.total) || (manha + tarde + noite);
+        if (total > 0) DB.producao[animalId] = { manha, tarde, noite, total, data: pesagemMaisRecente.data || '' };
+        else delete DB.producao[animalId];
+      });
+    }
+
+    function blocoUltimaPesagemRebanho(animalId) {
+      const ultima = obterUltimaPesagemAnimal(animalId);
+      if (!ultima || !(parseFloat(ultima.total) > 0)) return '';
+      const manha = parseFloat(ultima.manha) || 0;
+      const tarde = parseFloat(ultima.tarde) || 0;
+      const noite = parseFloat(ultima.noite) || 0;
+      const total = parseFloat(ultima.total) || (manha + tarde + noite);
+      return `
+        <div class="note-badge" style="margin-top:8px;">
+          🥛 Última pesagem: <strong>${total.toFixed(1).replace('.', ',')} L</strong>${ultima.data ? ` em ${formatarDataBR(ultima.data)}` : ''}
+          <span style="display:block;font-size:11px;color:var(--muted);margin-top:2px;">Manhã ${manha.toFixed(1).replace('.', ',')} L · Tarde ${tarde.toFixed(1).replace('.', ',')} L · Noite ${noite.toFixed(1).replace('.', ',')} L</span>
+        </div>
+      `;
+    }
+
+    function renderProducao() {
+      const lista = document.getElementById('lista-producao');
+      const emptyEl = document.getElementById('empty-prod');
+      const totalBloco = document.getElementById('bloco-total-prod');
+      const form = document.getElementById('form-pesagem-leite');
+      const emLactacao = obterAnimaisLeiteEmLactacao();
+
+      if (!emLactacao.length) {
+        if (form) { form.innerHTML = ''; form.classList.add('hidden'); }
+        formularioPesagemAberto = false;
+        lista.innerHTML = '';
+        emptyEl.classList.remove('hidden');
+        totalBloco.classList.add('hidden');
+        return;
+      }
+
+      emptyEl.classList.add('hidden');
+      if (!formularioPesagemAberto) totalBloco.classList.add('hidden');
+      renderHistoricoPesagensLeite();
+    }
+
+    function abrirFormularioPesagemLeite() {
+      const form = document.getElementById('form-pesagem-leite');
+      const totalBloco = document.getElementById('bloco-total-prod');
+      const emLactacao = obterAnimaisLeiteEmLactacao();
+      if (!emLactacao.length) return renderProducao();
+      formularioPesagemAberto = true;
+      const hoje = new Date().toISOString().slice(0, 10);
+      form.classList.remove('hidden');
+      totalBloco.classList.remove('hidden');
+      form.innerHTML = `
+        <div class="prod-card">
+          <div class="prod-header">
+            <div class="prod-name">Nova pesagem do leite</div>
+            <button class="btn btn-outline btn-sm" onclick="fecharFormularioPesagemLeite()">Cancelar</button>
+          </div>
+          <label>Data da pesagem</label>
+          <input id="pesagem-leite-data" type="date" value="${hoje}" />
+          <div style="height:10px;"></div>
+          ${emLactacao.map(a => `
+            <div class="prod-card" style="box-shadow:none;border:1px solid var(--border);margin-bottom:10px;">
+              <div class="prod-header">
+                <div class="prod-name">${escapeHtml(a.nome || 'Animal sem nome')} ${a.brinco ? `<span style="font-size:11px;color:var(--muted);font-weight:400;">· Brinco ${escapeHtml(a.brinco)}</span>` : ''}</div>
+              </div>
+              <div class="prod-inputs">
+                <div><div class="prod-input-label">Manhã (L)</div><input class="prod-input-field pesagem-input" data-animal-id="${escapeAttr(a.id)}" data-periodo="manha" type="number" min="0" step="0.1" placeholder="Opcional" oninput="atualizarTotalProducao()" /></div>
+                <div><div class="prod-input-label">Tarde (L)</div><input class="prod-input-field pesagem-input" data-animal-id="${escapeAttr(a.id)}" data-periodo="tarde" type="number" min="0" step="0.1" placeholder="Opcional" oninput="atualizarTotalProducao()" /></div>
+                <div><div class="prod-input-label">Noite (L)</div><input class="prod-input-field pesagem-input" data-animal-id="${escapeAttr(a.id)}" data-periodo="noite" type="number" min="0" step="0.1" placeholder="Opcional" oninput="atualizarTotalProducao()" /></div>
+              </div>
+            </div>
+          `).join('')}
+          <button class="btn btn-primary prevent-double-click" id="btn-salvar-pesagem" onclick="salvarPesagemLeite(this)">Salvar pesagem</button>
+        </div>
+      `;
+      atualizarTotalProducao();
+    }
+
+    function fecharFormularioPesagemLeite() {
+      formularioPesagemAberto = false;
+      pesagemLeiteEmEdicao = null;
+      const form = document.getElementById('form-pesagem-leite');
+      if (form) { form.innerHTML = ''; form.classList.add('hidden'); }
+      const totalBloco = document.getElementById('bloco-total-prod');
+      if (totalBloco) totalBloco.classList.add('hidden');
+    }
+
+    async function salvarPesagemLeite(btn) {
+      if (salvandoPesagemLeite || (btn && btn.disabled)) return;
+      salvandoPesagemLeite = true;
+      if (btn) { btn.disabled = true; btn.dataset.originalText = btn.innerHTML; btn.innerHTML = 'Salvando...'; }
+      const data = document.getElementById('pesagem-leite-data')?.value || new Date().toISOString().slice(0, 10);
+      const emLactacao = obterAnimaisLeiteEmLactacao();
+      const itens = emLactacao.map(a => {
+        const buscar = periodo => parseFloat(document.querySelector(`.pesagem-input[data-animal-id="${CSS.escape(a.id)}"][data-periodo="${periodo}"]`)?.value) || 0;
+        const manha = buscar('manha');
+        const tarde = buscar('tarde');
+        const noite = buscar('noite');
+        const total = manha + tarde + noite;
+        return { animalId: a.id, nome: a.nome || '', brinco: a.brinco || '', manha, tarde, noite, total };
+      }).filter(i => i.total > 0);
+
+      if (!itens.length) {
+        salvandoPesagemLeite = false;
+        if (btn) { btn.disabled = false; btn.innerHTML = btn.dataset.originalText || 'Salvar pesagem'; }
+        return alert('Informe pelo menos uma quantidade de leite antes de salvar.');
+      }
+
+      if (!DB.producao || typeof DB.producao !== 'object') DB.producao = {};
+      itens.forEach(i => {
+        DB.producao[i.animalId] = { manha: i.manha, tarde: i.tarde, noite: i.noite, total: i.total, data };
+      });
+
+      const historico = getHistoricoPesagensLeite();
+      const registro = {
+        id: pesagemLeiteEmEdicao || ('pesagem_' + Date.now()),
+        data,
+        criadoEm: pesagemLeiteEmEdicao ? (historico.find(p => p.id === pesagemLeiteEmEdicao)?.criadoEm || new Date().toISOString()) : new Date().toISOString(),
+        atualizadoEm: new Date().toISOString(),
+        itens,
+        total: itens.reduce((s, i) => s + i.total, 0)
+      };
+      const idsAfetadosEdicao = new Set(itens.map(i => i.animalId).filter(Boolean));
+      if (pesagemLeiteEmEdicao) {
+        const pesagemAntiga = historico.find(p => p.id === pesagemLeiteEmEdicao);
+        (pesagemAntiga?.itens || []).forEach(i => { if (i?.animalId) idsAfetadosEdicao.add(i.animalId); });
+        DB.historicoPesagensLeite = historico.filter(p => p.id !== pesagemLeiteEmEdicao);
+      }
+      getHistoricoPesagensLeite().unshift(registro);
+      recalcularProducaoLeiteAPartirDoHistorico(idsAfetadosEdicao);
+
+      const eraEdicaoPesagem = !!pesagemLeiteEmEdicao;
+      const ok = await salvarDB({ sincronizarAnimais: false });
+      if (!ok) {
+        alert('Não consegui confirmar a pesagem na nuvem. Verifique a internet e tente novamente.');
+        return;
+      }
+      fecharFormularioPesagemLeite();
+      renderProducao();
+      renderRebanho();
+      renderDespesas();
+      alert(eraEdicaoPesagem ? 'Pesagem do leite atualizada com sucesso.' : 'Pesagem do leite salva com sucesso.');
+      pesagemLeiteEmEdicao = null;
+      salvandoPesagemLeite = false;
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = btn.dataset.originalText || 'Salvar pesagem';
+      }
+    }
+
+    function renderHistoricoPesagensLeite() {
+      const lista = document.getElementById('lista-producao');
+      if (!lista) return;
+      const historico = getHistoricoPesagensLeite();
+      if (!historico.length) {
+        lista.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div>Nenhuma pesagem salva ainda.<br/>Clique em <strong>Registrar pesagem</strong> para criar o primeiro histórico.</div>`;
+        return;
+      }
+      lista.innerHTML = historico.map((p, idx) => {
+        const aberta = idx === 0;
+        const total = parseFloat(p.total) || (p.itens || []).reduce((s, i) => s + (parseFloat(i.total) || 0), 0);
+        return `
+          <div class="prod-card">
+            <div class="prod-header">
+              <div class="prod-name">Pesagem do leite dia ${formatarDataBR(p.data)}</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <button class="btn btn-outline btn-sm" onclick="alternarPesagemLeite('${escapeAttr(p.id)}')" id="btn-pesagem-${escapeAttr(p.id)}">${aberta ? 'Mostrar menos' : 'Mostrar mais'}</button>
+                <button class="btn btn-outline btn-sm" onclick="editarPesagemLeite('${escapeAttr(p.id)}', this)">Editar</button>
+                <button class="btn btn-danger btn-sm prevent-double-click" onclick="excluirPesagemLeite('${escapeAttr(p.id)}', this)">Excluir</button>
+              </div>
+            </div>
+            <div class="prod-summary"><span>Total registrado: <strong>${total.toFixed(1).replace('.', ',')} L</strong></span><span>Ração estimada: <strong>${(total / 3).toFixed(1).replace('.', ',')} kg</strong></span></div>
+            <div id="detalhe-pesagem-${escapeAttr(p.id)}" class="${aberta ? '' : 'hidden'}" style="margin-top:10px;">
+              ${(p.itens || []).map(i => `
+                <div class="prod-summary" style="align-items:flex-start;">
+                  <span><strong>${escapeHtml(i.nome || 'Animal')}</strong>${i.brinco ? ` · Brinco ${escapeHtml(i.brinco)}` : ''}</span>
+                  <span>Manhã ${(parseFloat(i.manha)||0).toFixed(1).replace('.', ',')} L · Tarde ${(parseFloat(i.tarde)||0).toFixed(1).replace('.', ',')} L · Noite ${(parseFloat(i.noite)||0).toFixed(1).replace('.', ',')} L · <strong>Total ${(parseFloat(i.total)||0).toFixed(1).replace('.', ',')} L</strong></span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function alternarPesagemLeite(id) {
+      const detalhe = document.getElementById('detalhe-pesagem-' + id);
+      const btn = document.getElementById('btn-pesagem-' + id);
+      if (!detalhe) return;
+      const fechado = detalhe.classList.contains('hidden');
+      detalhe.classList.toggle('hidden', !fechado);
+      if (btn) btn.textContent = fechado ? 'Mostrar menos' : 'Mostrar mais';
+    }
+
+    
+    async function excluirPesagemLeite(id, btn) {
+      const travou = travarBotaoAcao(btn, 'Excluindo...');
+      if (travou === false) return;
+      try {
+        const pesagem = getHistoricoPesagensLeite().find(p => p.id === id);
+        if (!pesagem) {
+          alert('Esta pesagem não foi encontrada. Atualize a página e tente novamente.');
+          return;
+        }
+        if (!confirm('Deseja excluir esta pesagem? Os dados da última pesagem também serão removidos/atualizados no Meu Rebanho.')) return;
+
+        const idsAfetados = new Set((pesagem.itens || []).map(i => i.animalId).filter(Boolean));
+        DB.historicoPesagensLeite = getHistoricoPesagensLeite().filter(p => p.id !== id);
+        recalcularProducaoLeiteAPartirDoHistorico(idsAfetados);
+
+        const ok = await salvarDB({ sincronizarAnimais: false });
+        if (!ok) {
+          alert('Não consegui confirmar a exclusão na nuvem. Verifique a internet e tente novamente.');
+          return;
+        }
+        renderProducao();
+        renderRebanho();
+        renderDespesas();
+        alert('Pesagem excluída com sucesso. O Meu Rebanho foi atualizado.');
+      } catch (e) {
+        console.error('Erro ao excluir pesagem:', e);
+        alert('Falha ao excluir a pesagem. Verifique a internet e tente novamente.');
+      } finally {
+        liberarBotaoAcao(btn);
+      }
+    }
+
+    function editarPesagemLeite(id, btn) {
+      const travou = travarBotaoAcao(btn, 'Abrindo...');
+      if (travou === false) return;
+      setTimeout(() => liberarBotaoAcao(btn), 800);
+      const pesagem = getHistoricoPesagensLeite().find(p => p.id === id);
+      if (!pesagem) return;
+      pesagemLeiteEmEdicao = id;
+      abrirFormularioPesagemLeite();
+      setTimeout(() => {
+        const dataInput = document.getElementById('pesagem-leite-data');
+        if (dataInput) dataInput.value = pesagem.data || '';
+        (pesagem.itens || []).forEach(item => {
+          ['manha','tarde','noite'].forEach(periodo => {
+            const campo = document.querySelector(`.pesagem-input[data-animal-id="${item.animalId}"][data-periodo="${periodo}"]`);
+            if (campo) campo.value = item[periodo] || '';
+          });
+        });
+        atualizarTotalProducao();
+      }, 50);
+    }
+
+    const INGREDIENTES_FABRICA_RACAO = [
+      { id:'milho', nome:'Milho moído', dica:'Fonte de energia comum em leite e confinamento.' },
+      { id:'milheto', nome:'Milheto', dica:'Energia/fibra; alternativa regional ao milho.' },
+      { id:'sorgo', nome:'Sorgo moído', dica:'Fonte energética; use bem processado.' },
+      { id:'farelo_soja', nome:'Farelo de soja', dica:'Principal fonte proteica vegetal.' },
+      { id:'casca_soja', nome:'Casca de soja', dica:'Fibra digestível e energia segura.' },
+      { id:'farelo_algodao', nome:'Farelo de algodão', dica:'Fonte proteica usada em algumas dietas.' },
+      { id:'farelo_trigo', nome:'Farelo de trigo', dica:'Energia, fósforo e fibra.' },
+      { id:'polpa_citrica', nome:'Polpa cítrica', dica:'Energia com boa fermentação ruminal.' },
+      { id:'sal_mineral', nome:'Sal mineral / sal comum', dica:'Atenção à dose indicada pelo fabricante.' },
+      { id:'nucleo', nome:'Núcleo / concentrado', dica:'Usar conforme recomendação técnica.' },
+      { id:'premix', nome:'Premix vitamínico-mineral', dica:'Microingrediente: cuidado com excesso.' },
+      { id:'calcario', nome:'Calcário calcítico', dica:'Fonte de cálcio, dose técnica.' },
+      { id:'fosfato', nome:'Fosfato bicálcico', dica:'Fonte de fósforo e cálcio.' },
+      { id:'ureia', nome:'Ureia pecuária', dica:'Uso restrito e com adaptação. Nunca exceder orientação.' },
+      { id:'melaco', nome:'Melaço', dica:'Palatabilizante e energia.' },
+      { id:'bicarbonato', nome:'Bicarbonato / tamponante', dica:'Comum em dietas de vacas de alta produção.' },
+      { id:'outro', nome:'Outro ingrediente', dica:'Use para ingrediente específico da fazenda.' }
+    ];
+
+    function getFormulasRacao() {
+      if (!Array.isArray(DB.formulasRacao)) DB.formulasRacao = [];
+      return DB.formulasRacao;
+    }
+
+    function getEstoqueIngredientes() {
+      if (!DB.estoqueIngredientes) DB.estoqueIngredientes = {};
+      return DB.estoqueIngredientes;
+    }
+
+    function getReceitasRacao() {
+      if (!Array.isArray(DB.receitasRacao)) DB.receitasRacao = [];
+      return DB.receitasRacao;
+    }
+
+    function getPrecoPorKgIngrediente(id) {
+      const estoque = getEstoqueIngredientes();
+      const e = estoque[id];
+      if (!e || !e.kg || e.kg <= 0) return 0;
+      return (e.preco || 0) / e.kg;
+    }
+
+    function renderEstoqueIngredientes() {
+      const grade = document.getElementById('fr-estoque-ingredientes');
+      if (!grade) return;
+      const estoque = getEstoqueIngredientes();
+      grade.innerHTML = INGREDIENTES_FABRICA_RACAO.map(i => {
+        const e = estoque[i.id] || {};
+        const kg = e.kg || '';
+        const preco = e.preco || '';
+        const precoPorKg = (kg > 0 && preco > 0) ? `R$ ${formatCurrencyBR(preco / kg)}/kg` : '—';
+        return `
+          <div class="formula-item formula-item-light" style="border:1px solid #e2e8f0;border-radius:10px;padding:12px;background:#f8fafc;color:#0f172a;">
+            <label style="font-weight:800;color:#0f172a;">${escapeHtml(i.nome)}</label>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;">
+              <div>
+                <small style="color:#475569;font-weight:700;">Quantidade comprada (kg)</small>
+                <input id="est-kg-${i.id}" type="number" min="0" step="0.1" placeholder="Ex: 1000" value="${escapeAttr(String(kg))}"
+                  oninput="atualizarPrecoPorKg('${i.id}')" style="width:100%;box-sizing:border-box;margin-top:3px;background:#fff;color:#0f172a;border:1px solid #94a3b8;" />
+              </div>
+              <div>
+                <small style="color:#475569;font-weight:700;">Valor pago (R$)</small>
+                <input id="est-preco-${i.id}" type="number" min="0" step="0.01" placeholder="Ex: 1000" value="${escapeAttr(String(preco))}"
+                  oninput="atualizarPrecoPorKg('${i.id}')" style="width:100%;box-sizing:border-box;margin-top:3px;background:#fff;color:#0f172a;border:1px solid #94a3b8;" />
+              </div>
+            </div>
+            <small id="est-precokg-${i.id}" style="color:#047857!important;font-weight:800;margin-top:4px;display:block;">Preço/kg: ${precoPorKg}</small>
+          </div>`;
+      }).join('');
+    }
+
+    function atualizarPrecoPorKg(id) {
+      const kg = parseFloat(document.getElementById('est-kg-' + id)?.value) || 0;
+      const preco = parseFloat(document.getElementById('est-preco-' + id)?.value) || 0;
+      const el = document.getElementById('est-precokg-' + id);
+      if (el) el.textContent = 'Preço/kg: ' + (kg > 0 && preco > 0 ? `R$ ${formatCurrencyBR(preco / kg)}/kg` : '—');
+      calcularFabricaRacao();
+    }
+
+    function travarBotaoAcao(btn, textoProcessando) {
+      if (!btn) return null;
+      if (btn.dataset.processando === '1') return false;
+      btn.dataset.processando = '1';
+      btn.dataset.textoOriginal = btn.innerHTML;
+      btn.disabled = true;
+      btn.style.opacity = '0.75';
+      btn.style.cursor = 'not-allowed';
+      if (textoProcessando) btn.innerHTML = textoProcessando;
+      return true;
+    }
+
+    function liberarBotaoAcao(btn) {
+      if (!btn) return;
+      btn.dataset.processando = '0';
+      if (btn.dataset.textoOriginal) btn.innerHTML = btn.dataset.textoOriginal;
+      btn.disabled = false;
+      btn.style.opacity = '';
+      btn.style.cursor = '';
+    }
+
+    async function salvarEstoqueIngredientes(btn) {
+      const travou = travarBotaoAcao(btn, 'Salvando...');
+      if (travou === false) return;
+      try {
+        if (!DB.estoqueIngredientes) DB.estoqueIngredientes = {};
+        INGREDIENTES_FABRICA_RACAO.forEach(i => {
+          const kg = parseFloat(document.getElementById('est-kg-' + i.id)?.value) || 0;
+          const preco = parseFloat(document.getElementById('est-preco-' + i.id)?.value) || 0;
+          if (kg > 0 || preco > 0) {
+            DB.estoqueIngredientes[i.id] = { kg, preco };
+          }
+        });
+        await salvarDB({ sincronizarAnimais: false });
+        calcularFabricaRacao();
+        alert('Estoque salvo com sucesso.');
+      } finally {
+        liberarBotaoAcao(btn);
+      }
+    }
+
+    function limparEstoqueIngredientes(btn) {
+      const travou = travarBotaoAcao(btn, 'Limpando...');
+      if (travou === false) return;
+      try {
+        INGREDIENTES_FABRICA_RACAO.forEach(i => {
+          const kg = document.getElementById('est-kg-' + i.id);
+          const preco = document.getElementById('est-preco-' + i.id);
+          const label = document.getElementById('est-precokg-' + i.id);
+          if (kg) kg.value = '';
+          if (preco) preco.value = '';
+          if (label) label.textContent = 'Preço/kg: —';
+        });
+        calcularFabricaRacao();
+        alert('Campos do estoque limpos com sucesso.');
+      } finally {
+        liberarBotaoAcao(btn);
+      }
+    }
+
+    function renderReceitasSelect() {
+      const sel = document.getElementById('fr-receita-select');
+      if (!sel) return;
+      const receitas = getReceitasRacao();
+      sel.innerHTML = '<option value="">— Selecione uma receita —</option>' +
+        receitas.map((r, idx) => `<option value="${idx}">${escapeHtml(r.nome || 'Receita ' + (idx+1))}</option>`).join('');
+    }
+
+    function carregarReceitaSelecionada() {
+      const sel = document.getElementById('fr-receita-select');
+      if (!sel || sel.value === '') return;
+      const receitas = getReceitasRacao();
+      const receita = receitas[parseInt(sel.value)];
+      if (!receita) return;
+      const nomeEl = document.getElementById('fr-nome');
+      if (nomeEl) nomeEl.value = receita.nome || '';
+      INGREDIENTES_FABRICA_RACAO.forEach(i => {
+        const el = document.getElementById('fr-' + i.id);
+        if (el) {
+          const item = (receita.composicao || []).find(c => c.id === i.id);
+          el.value = item ? item.kg : '';
+        }
+      });
+      calcularFabricaRacao();
+    }
+
+    function novaReceita(btn) {
+      const travou = travarBotaoAcao(btn, 'Limpando...');
+      if (travou === false) return;
+      try {
+        const sel = document.getElementById('fr-receita-select');
+        if (sel) sel.value = '';
+        limparFabricaRacao(true);
+        alert('Nova receita pronta para preenchimento.');
+      } finally {
+        liberarBotaoAcao(btn);
+      }
+    }
+
+    async function salvarComoReceita(btn) {
+      const travou = travarBotaoAcao(btn, 'Salvando...');
+      if (travou === false) return;
+      try {
+      const nome = (document.getElementById('fr-nome')?.value || '').trim();
+      if (!nome) return alert('Informe o nome da receita antes de salvar.');
+      const composicao = montarComposicaoFabricaRacao();
+      if (!composicao.length) return alert('Informe pelo menos um ingrediente com quantidade maior que zero.');
+      const receitas = getReceitasRacao();
+      // Verifica se já existe receita com esse nome para atualizar
+      const idx = receitas.findIndex(r => r.nome === nome);
+      if (idx >= 0) {
+        receitas[idx] = { nome, composicao };
+        alert(`Receita "${nome}" atualizada!`);
+      } else {
+        receitas.push({ nome, composicao });
+        alert(`Receita "${nome}" salva!`);
+      }
+      DB.receitasRacao = receitas;
+      await salvarDB({ sincronizarAnimais: false });
+      renderReceitasSelect();
+      } finally {
+        liberarBotaoAcao(btn);
+      }
+    }
+
+    async function excluirReceitaSelecionada(btn) {
+      const travou = travarBotaoAcao(btn, 'Excluindo...');
+      if (travou === false) return;
+      try {
+      const sel = document.getElementById('fr-receita-select');
+      if (!sel || sel.value === '') return alert('Selecione uma receita para excluir.');
+      const idx = parseInt(sel.value);
+      const receitas = getReceitasRacao();
+      const nome = receitas[idx]?.nome || 'esta receita';
+      if (!confirm(`Deseja excluir a receita "${nome}"?`)) return;
+      receitas.splice(idx, 1);
+      DB.receitasRacao = receitas;
+      await salvarDB({ sincronizarAnimais: false });
+      renderReceitasSelect();
+      limparFabricaRacao(true);
+      alert('Receita excluída com sucesso.');
+      } finally {
+        liberarBotaoAcao(btn);
+      }
+    }
+
+    function renderFabricaRacao() {
+      const area = obterAreaAtual();
+      const grade = document.getElementById('fr-ingredientes');
+      const areaInfo = document.getElementById('fr-area-info');
+      if (!grade) return;
+      if (!grade.dataset.montado) {
+        grade.innerHTML = INGREDIENTES_FABRICA_RACAO.map(i => `
+          <div class="formula-item">
+            <label for="fr-${i.id}">${escapeHtml(i.nome)}</label>
+            <input id="fr-${i.id}" type="number" min="0" step="0.001" placeholder="0" oninput="calcularFabricaRacao()" />
+            <small>${escapeHtml(i.dica)} Use decimal: 0.2 = 200 g.</small>
+          </div>
+        `).join('');
+        grade.dataset.montado = '1';
+      }
+      const nomeAreaAtual = area === 'corte' ? 'Confinamento' : 'Área Leiteira';
+      if (areaInfo) areaInfo.textContent = nomeAreaAtual;
+      const dataEl = document.getElementById('fr-data');
+      if (dataEl && !dataEl.value) dataEl.value = new Date().toISOString().slice(0,10);
+      renderEstoqueIngredientes();
+      renderReceitasSelect();
+      calcularFabricaRacao();
+      renderHistoricoFabricaRacao();
+    }
+
+    function calcularFabricaRacao() {
+      let total = 0;
+      let custoCalculado = 0;
+      INGREDIENTES_FABRICA_RACAO.forEach(i => {
+        const kg = parseFloat(document.getElementById('fr-' + i.id)?.value) || 0;
+        total += kg;
+        const precoPorKg = getPrecoPorKgIngrediente(i.id);
+        custoCalculado += kg * precoPorKg;
+      });
+      const totalEl = document.getElementById('fr-total-kg');
+      const custoKgEl = document.getElementById('fr-custo-kg');
+      const custoTotalEl = document.getElementById('fr-custo-total');
+      if (totalEl) totalEl.textContent = `${total.toFixed(3).replace('.', ',')} kg`;
+      if (custoKgEl) custoKgEl.textContent = total > 0 && custoCalculado > 0 ? `R$ ${formatCurrencyBR(custoCalculado / total)}/kg` : 'R$ 0,00/kg';
+      if (custoTotalEl) custoTotalEl.textContent = custoCalculado > 0 ? `R$ ${formatCurrencyBR(custoCalculado)}` : 'R$ 0,00';
+      return { total, custo: custoCalculado };
+    }
+
+    function montarComposicaoFabricaRacao() {
+      return INGREDIENTES_FABRICA_RACAO.map(i => ({ id: i.id, nome: i.nome, kg: parseFloat(document.getElementById('fr-' + i.id)?.value) || 0 })).filter(i => i.kg > 0);
+    }
+
+    async function salvarFabricaRacao(btn) {
+      const travou = travarBotaoAcao(btn, 'Salvando...');
+      if (travou === false) return;
+      try {
+      const area = obterAreaAtual();
+      const data = document.getElementById('fr-data')?.value || new Date().toISOString().slice(0,10);
+      const nome = (document.getElementById('fr-nome')?.value || '').trim() || 'Ração fabricada';
+      const { total, custo } = calcularFabricaRacao();
+      const composicao = montarComposicaoFabricaRacao();
+      if (total <= 0 || !composicao.length) return alert('Informe pelo menos um ingrediente com quantidade maior que zero.');
+      const registroFormula = { id: Date.now().toString(), data, nome, area, totalKg: total, custoTotal: custo, composicao };
+      getFormulasRacao().push(registroFormula);
+      if (area === 'corte') {
+        if (!Array.isArray(DB.entregasCorte)) DB.entregasCorte = [];
+        DB.entregasCorte.push({ id: registroFormula.id, data, tipo: 'racao', produto: nome, formato: 'fabrica-racao', quantidade: total, totalKg: total, precoUnitario: total > 0 ? custo / total : 0, precoTotal: custo, origem: 'Fábrica de Ração', composicao });
+      } else {
+        if (!Array.isArray(DB.entregas)) DB.entregas = [];
+        DB.entregas.push({ id: registroFormula.id, data, sacos: 'Fábrica', tipoKg: 'mistura', totalKg: total, produto: nome, precoTotal: custo, origem: 'Fábrica de Ração', composicao });
+        DB.estoqueRacao = (parseFloat(DB.estoqueRacao) || 0) + total;
+      }
+      await salvarDB({ sincronizarAnimais: false });
+      limparFabricaRacao(false);
+      renderFabricaRacao();
+      try { renderDespesas(); } catch(e) {}
+      try { renderDespesasCorte(); } catch(e) {}
+      alert('Ração fabricada salva com sucesso e enviada para o estoque/despesas da área atual.');
+      } finally {
+        liberarBotaoAcao(btn);
+      }
+    }
+
+    function limparFabricaRacao(limparData = true, btn) {
+      const travou = travarBotaoAcao(btn, 'Limpando...');
+      if (travou === false) return;
+      try {
+        const nome = document.getElementById('fr-nome');
+        if (nome) nome.value = '';
+        if (limparData) { const data = document.getElementById('fr-data'); if (data) data.value = new Date().toISOString().slice(0,10); }
+        INGREDIENTES_FABRICA_RACAO.forEach(i => { const el = document.getElementById('fr-' + i.id); if (el) el.value = ''; });
+        calcularFabricaRacao();
+        if (btn) alert('Campos da fábrica de ração limpos com sucesso.');
+      } finally {
+        liberarBotaoAcao(btn);
+      }
+    }
+
+    function renderHistoricoFabricaRacao() {
+      const el = document.getElementById('fr-historico');
+      if (!el) return;
+      const area = obterAreaAtual();
+      const lista = getFormulasRacao().filter(f => (f.area || 'leiteiro') === area).slice().sort((a,b) => new Date(b.data) - new Date(a.data));
+      if (!lista.length) { el.innerHTML = `<div class="empty-state"><div class="empty-icon">🏭</div>Nenhuma ração fabricada registrada nesta área ainda.</div>`; return; }
+      el.innerHTML = lista.map(f => `
+        <div class="delivery-item">
+          <h4>${escapeHtml(f.nome || 'Ração fabricada')}</h4>
+          <p>${f.data ? new Date(f.data + 'T12:00:00').toLocaleDateString('pt-BR') : '—'} · <strong>${(parseFloat(f.totalKg)||0).toFixed(3).replace('.', ',')} kg</strong>${parseFloat(f.custoTotal) > 0 ? ` · Custo total: R$ ${formatCurrencyBR(f.custoTotal)} · R$ ${formatCurrencyBR(f.custoTotal / f.totalKg)}/kg` : ''}</p>
+          <div>${(f.composicao || []).map(c => `<span class="formula-chip">${escapeHtml(c.nome)}: ${(parseFloat(c.kg)||0).toFixed(3).replace('.', ',')} kg</span>`).join('')}</div>
+        </div>
+      `).join('');
+    }
+
+    async function salvarProducao(animalId, periodo, valor) {
+      if (!DB.producao[animalId]) DB.producao[animalId] = {};
+      DB.producao[animalId][periodo] = parseFloat(valor) || 0;
+      DB.producao[animalId].total = (parseFloat(DB.producao[animalId].manha) || 0) + (parseFloat(DB.producao[animalId].tarde) || 0) + (parseFloat(DB.producao[animalId].noite) || 0);
+      DB.producao[animalId].data = new Date().toISOString().slice(0, 10);
+      await salvarDB({ sincronizarAnimais: false });
+      atualizarTotalProducao();
+      renderRebanho();
+      renderDespesas();
+    }
+
+    function atualizarTotalProducao() {
+      let totalL = 0;
+      document.querySelectorAll('.pesagem-input').forEach(input => {
+        totalL += parseFloat(input.value) || 0;
+      });
+
+      const totalLitrosEl = document.getElementById('total-litros-dia');
+      const totalRacaoEl = document.getElementById('total-racao-dia');
+      if (totalLitrosEl) totalLitrosEl.textContent = totalL.toFixed(1).replace('.', ',') + ' L';
+      if (totalRacaoEl) totalRacaoEl.textContent = (totalL / 3).toFixed(1).replace('.', ',') + ' kg';
+    }
+
+    function parseBRNumber(v) {
+      if (typeof v === 'number') return isFinite(v) ? v : 0;
+      const raw = String(v || '').trim();
+      if (!raw) return 0;
+      const txt = raw.includes(',') ? raw.replace(/\./g, '').replace(',', '.') : raw;
+      const n = parseFloat(txt);
+      return isFinite(n) ? n : 0;
+    }
+
+    function obterUltimaEntregaRacaoComValor() {
+      const entregas = Array.isArray(DB.entregas) ? DB.entregas : [];
+      return entregas
+        .filter(e => (parseFloat(e.valorKg) || 0) > 0)
+        .slice()
+        .sort((a, b) => {
+          const da = new Date((a.data || '') + 'T12:00:00').getTime() || 0;
+          const db = new Date((b.data || '') + 'T12:00:00').getTime() || 0;
+          return db - da;
+        })[0] || null;
+    }
+
+    function obterValorKgRacaoAtual() {
+      const ultima = obterUltimaEntregaRacaoComValor();
+      return parseFloat(ultima?.valorKg) || 0;
+    }
+
+    function obterCustoRacaoAnimalLeite(animalId) {
+      const prod = obterProducaoAnimal(animalId);
+      const valorKg = obterValorKgRacaoAtual();
+      const kgDia = parseFloat(prod.racao) || 0;
+      const reaisDia = kgDia * valorKg;
+      return { kgDia, valorKg, reaisDia, reaisMes: reaisDia * 30 };
+    }
+
+
+    function getEntregasProdutosLeite() {
+      if (!Array.isArray(DB.entregasProdutosLeite)) DB.entregasProdutosLeite = [];
+      return DB.entregasProdutosLeite;
+    }
+
+    function calcularResumoProdutosLeiteEstoque() {
+      const entregas = getEntregasProdutosLeite();
+      const hoje = new Date();
+      hoje.setHours(12, 0, 0, 0);
+      const msDia = 24 * 60 * 60 * 1000;
+
+      const itens = entregas.map(e => {
+        const quantidadeKg = parseFloat(e.quantidadeKg) || 0;
+        const valorTotal = parseFloat(e.valorTotal) || 0;
+        const valorKg = parseFloat(e.valorKg) || (quantidadeKg > 0 && valorTotal > 0 ? valorTotal / quantidadeKg : 0);
+        const consumoDia = parseFloat(e.consumoTotalDia) || 0;
+        let diasDecorridos = 0;
+        if (e.data) {
+          const dataEntrega = new Date(e.data + 'T12:00:00');
+          if (!isNaN(dataEntrega.getTime())) {
+            diasDecorridos = Math.max(0, Math.floor((hoje - dataEntrega) / msDia));
+          }
+        }
+        const consumidoKg = consumoDia > 0 ? Math.min(quantidadeKg, diasDecorridos * consumoDia) : 0;
+        const estoqueKg = Math.max(0, quantidadeKg - consumidoKg);
+        const ativo = estoqueKg > 0.0001 && consumoDia > 0;
+        const diasRestantes = ativo ? Math.floor(estoqueKg / consumoDia) : null;
+        const dataFim = diasRestantes !== null ? addDias(new Date(hoje), diasRestantes) : null;
+        return {
+          ...e,
+          quantidadeKg,
+          valorTotal,
+          valorKg,
+          consumoDia,
+          consumidoKg,
+          estoqueKg,
+          ativo,
+          diasRestantes,
+          dataFim,
+          custoDia: ativo ? consumoDia * valorKg : 0,
+          custoMes: ativo ? consumoDia * valorKg * 30 : 0
+        };
+      });
+
+      const ativos = itens.filter(i => i.ativo);
+      const totalKg = itens.reduce((s, i) => s + i.quantidadeKg, 0);
+      const valorTotal = itens.reduce((s, i) => s + i.valorTotal, 0);
+      const estoqueKg = itens.reduce((s, i) => s + i.estoqueKg, 0);
+      const consumoDia = ativos.reduce((s, i) => s + i.consumoDia, 0);
+      const custoDia = ativos.reduce((s, i) => s + i.custoDia, 0);
+      const diasRestantes = consumoDia > 0 ? Math.floor(estoqueKg / consumoDia) : null;
+      const dataFim = diasRestantes !== null ? addDias(new Date(hoje), diasRestantes) : null;
+      const valorKgMedio = totalKg > 0 ? valorTotal / totalKg : 0;
+
+      return {
+        itens,
+        ativos,
+        totalKg,
+        valorTotal,
+        estoqueKg,
+        consumoDia,
+        consumoMes: consumoDia * 30,
+        custoDia,
+        custoMes: custoDia * 30,
+        diasRestantes,
+        dataFim,
+        valorKgMedio
+      };
+    }
+
+    function normalizarNomeProdutoLeite(nome) {
+      return String(nome || 'Produto').trim() || 'Produto';
+    }
+
+    function obterAnimaisLeiteEmLactacaoSeguros() {
+      return DB.animais.filter(a => (a.area || 'leiteiro') === 'leiteiro' && a.lactacao);
+    }
+
+    function obterAnimaisLeiteSeguros() {
+      return DB.animais.filter(a => (a.area || 'leiteiro') === 'leiteiro');
+    }
+
+    function calcEntregaProdutoLeite() {
+      const qtd = parseBRNumber(document.getElementById('dp-quantidade')?.value);
+      const total = parseBRNumber(document.getElementById('dp-valor-total')?.value);
+      const consumoTotalDia = parseBRNumber(document.getElementById('dp-consumo-total-dia')?.value);
+      const valorKg = qtd > 0 && total > 0 ? total / qtd : 0;
+      const el = document.getElementById('dp-total-calc');
+      if (!el) return;
+      if (qtd > 0 || total > 0 || consumoTotalDia > 0) {
+        el.innerHTML = `Quantidade: <strong>${qtd.toFixed(1).replace('.', ',')} kg</strong>` +
+          (total > 0 ? `<br>Valor total: <strong>R$ ${formatCurrencyBR(total)}</strong>` : '') +
+          (valorKg > 0 ? `<br>Valor por kg: <strong>R$ ${formatCurrencyBR(valorKg)}</strong>` : '') +
+          (consumoTotalDia > 0 ? `<br>Consumo diário total informado: <strong>${consumoTotalDia.toFixed(1).replace('.', ',')} kg/dia</strong>` : '');
+      } else {
+        el.textContent = '—';
+      }
+    }
+
+    function abrirListaConsumoProdutoLeite(btn) {
+      const box = document.getElementById('dp-lista-animais');
+      if (!box) return;
+      const aberta = !box.classList.contains('hidden');
+      if (aberta) {
+        box.classList.add('hidden');
+        if (btn) btn.textContent = 'Registrar quantidade por animal';
+        return;
+      }
+      const animais = obterAnimaisLeiteSeguros();
+      if (!animais.length) {
+        box.innerHTML = `<div class="empty-state"><div class="empty-icon">🐄</div>Nenhum animal cadastrado no Meu Rebanho.</div>`;
+      } else {
+        box.innerHTML = `
+          <div class="delivery-item">
+            <h4>Quantidade diária individual</h4>
+            <p class="muted" style="margin-bottom:10px;">Preencha somente os animais que consomem este produto. O valor pode ficar em branco nos demais.</p>
+            ${animais.map(a => `
+              <div class="form-row" style="align-items:end;margin-bottom:8px;">
+                <div class="form-group" style="margin-bottom:0;"><label>${escapeHtml(a.nome || 'Animal sem nome')}</label></div>
+                <div class="form-group" style="margin-bottom:0;"><input class="dp-animal-qtd" data-animal-id="${escapeAttr(a.id)}" data-animal-nome="${escapeAttr(a.nome || '')}" type="number" min="0" step="0.1" placeholder="kg/dia" /></div>
+              </div>
+            `).join('')}
+            <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; margin-top:10px;">
+              <button class="btn btn-success" onclick="salvarEntregaProdutoLeite(this)">Salvar</button>
+            </div>
+          </div>`;
+      }
+      box.classList.remove('hidden');
+      if (btn) btn.textContent = 'Mostrar menos';
+    }
+
+    async function salvarEntregaProdutoLeite(btn) {
+      const travou = travarBotaoAcao(btn, 'Salvando...');
+      if (travou === false) return;
+      try {
+        const data = document.getElementById('dp-data')?.value || '';
+        const produto = normalizarNomeProdutoLeite(document.getElementById('dp-produto')?.value);
+        const quantidadeKg = parseBRNumber(document.getElementById('dp-quantidade')?.value);
+        const valorTotal = parseBRNumber(document.getElementById('dp-valor-total')?.value);
+        const consumoTotalDiaInformado = parseBRNumber(document.getElementById('dp-consumo-total-dia')?.value);
+        if (!data) return alert('Informe a data da entrega do produto.');
+        if (!produto) return alert('Informe o nome do produto.');
+        if (quantidadeKg <= 0) return alert('Informe a quantidade em kg.');
+        if (valorTotal <= 0) return alert('Informe o valor pago no total.');
+
+        const consumoPorAnimal = {};
+        document.querySelectorAll('.dp-animal-qtd').forEach(input => {
+          const animalId = input.dataset.animalId || '';
+          const qtd = parseBRNumber(input.value);
+          if (animalId && qtd > 0) consumoPorAnimal[animalId] = qtd;
+        });
+        const somaIndividual = Object.values(consumoPorAnimal).reduce((s, v) => s + (parseFloat(v) || 0), 0);
+        const consumoTotalDia = somaIndividual > 0 ? somaIndividual : consumoTotalDiaInformado;
+        if (consumoTotalDia <= 0) return alert('Informe a quantidade total usada por dia ou registre a quantidade por animal.');
+
+        getEntregasProdutosLeite().push({
+          id: 'prod_leite_' + Date.now(),
+          data,
+          produto,
+          quantidadeKg,
+          valorTotal,
+          valorKg: quantidadeKg > 0 ? valorTotal / quantidadeKg : 0,
+          consumoTotalDia,
+          consumoPorAnimal,
+          criadoEm: new Date().toISOString()
+        });
+
+        await salvarDB({ sincronizarAnimais: false });
+        ['dp-data','dp-produto','dp-quantidade','dp-valor-total','dp-consumo-total-dia'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+        const lista = document.getElementById('dp-lista-animais');
+        if (lista) { lista.innerHTML = ''; lista.classList.add('hidden'); }
+        const totalEl = document.getElementById('dp-total-calc');
+        if (totalEl) totalEl.textContent = '—';
+        renderDespesas();
+        renderRebanho();
+        alert('Produto registrado com sucesso.');
+      } finally {
+        liberarBotaoAcao(btn);
+      }
+    }
+
+    function alternarDetalheProdutoLeite(id) {
+      const el = document.getElementById('det-prod-leite-' + id);
+      const btn = document.getElementById('btn-prod-leite-' + id);
+      if (!el) return;
+      const aberta = !el.classList.contains('hidden');
+      el.classList.toggle('hidden', aberta);
+      if (btn) btn.textContent = aberta ? 'Mostrar mais' : 'Mostrar menos';
+    }
+
+    async function excluirEntregaProdutoLeite(id, btn) {
+      const travou = travarBotaoAcao(btn, 'Excluindo...');
+      if (travou === false) return;
+      try {
+        const lista = getEntregasProdutosLeite();
+        const idx = lista.findIndex(e => e.id === id);
+        if (idx < 0) return alert('Lançamento não encontrado para excluir.');
+        const item = lista[idx];
+        if (!confirm(`Deseja excluir a entrega de ${item.produto || 'produto'}? O consumo também sairá do Meu Rebanho.`)) return;
+        lista.splice(idx, 1);
+        await salvarDB({ sincronizarAnimais: false });
+        renderDespesas();
+        renderRebanho();
+        alert('Entrega do produto excluída com sucesso.');
+      } finally {
+        liberarBotaoAcao(btn);
+      }
+    }
+
+    function obterConsumoProdutosLeiteAnimal(animalId) {
+      const entregas = getEntregasProdutosLeite();
+      const itens = [];
+      entregas.forEach(e => {
+        const valorKg = parseFloat(e.valorKg) || 0;
+        let kgDia = 0;
+        if (e.consumoPorAnimal && Object.prototype.hasOwnProperty.call(e.consumoPorAnimal, animalId)) {
+          kgDia = parseFloat(e.consumoPorAnimal[animalId]) || 0;
+        }
+        if (kgDia > 0) {
+          itens.push({ produto: e.produto || 'Produto', kgDia, valorKg, reaisDia: kgDia * valorKg, reaisMes: kgDia * valorKg * 30 });
+        }
+      });
+      const kgDia = itens.reduce((s, i) => s + i.kgDia, 0);
+      const reaisDia = itens.reduce((s, i) => s + i.reaisDia, 0);
+      return { itens, kgDia, reaisDia, reaisMes: reaisDia * 30 };
+    }
+
+    function blocoCustoProdutosLeiteRebanho(animalId) {
+      const animal = DB.animais.find(a => a.id === animalId);
+      if (!animal) return '';
+      const extras = obterConsumoProdutosLeiteAnimal(animalId);
+      if (!extras.itens.length) return '';
+      const racao = obterCustoRacaoAnimalLeite(animalId);
+      const linhasExtras = extras.itens.map(i => `${escapeHtml(i.produto)}: R$ ${formatCurrencyBR(i.reaisDia)}/dia · R$ ${formatCurrencyBR(i.reaisMes)}/mês`).join('<br>');
+      const totalDia = (parseFloat(racao.reaisDia) || 0) + extras.reaisDia;
+      const totalMes = totalDia * 30;
+      return `
+        <div class="note-badge" style="margin-top:8px;">
+          🌾 Consumo silo/produtos:<br>${linhasExtras}<br>
+          Ração: R$ ${formatCurrencyBR(racao.reaisDia)}/dia · R$ ${formatCurrencyBR(racao.reaisMes)}/mês<br>
+          <strong>Total: R$ ${formatCurrencyBR(totalDia)}/dia · R$ ${formatCurrencyBR(totalMes)}/mês</strong>
+        </div>`;
+    }
+
+    function renderHistoricoProdutosLeite() {
+      const el = document.getElementById('historico-produtos-leite');
+      if (!el) return;
+      const entregas = getEntregasProdutosLeite().slice().sort((a,b) => new Date(b.data) - new Date(a.data));
+      if (!entregas.length) {
+        el.innerHTML = '';
+        return;
+      }
+      el.innerHTML = `<div class="section-title" style="font-size:18px;margin-top:12px;">🌾 Histórico de Silo / Produtos</div>` + entregas.map(e => {
+        const id = escapeAttr(e.id);
+        const valorKg = parseFloat(e.valorKg) || 0;
+        const consumoDia = parseFloat(e.consumoTotalDia) || 0;
+        const consumoMes = consumoDia * 30;
+        const custoDia = consumoDia * valorKg;
+        const custoMes = custoDia * 30;
+        const resumoItem = calcularResumoProdutosLeiteEstoque().itens.find(x => x.id === e.id) || {};
+        const estoqueItemKg = parseFloat(resumoItem.estoqueKg) || 0;
+        const diasRestItem = resumoItem.diasRestantes;
+        const dataFimItem = resumoItem.dataFim;
+        const individuais = e.consumoPorAnimal && Object.keys(e.consumoPorAnimal).length
+          ? Object.entries(e.consumoPorAnimal).map(([animalId, qtd]) => {
+              const a = DB.animais.find(x => x.id === animalId);
+              return `<p>• ${escapeHtml(a?.nome || 'Animal')}: <strong>${(parseFloat(qtd)||0).toFixed(1).replace('.', ',')} kg/dia</strong></p>`;
+            }).join('')
+          : `<p>Consumo lançado como total diário. Ele entra nos totais do produto, mas não é distribuído no Meu Rebanho porque nenhum animal foi preenchido individualmente.</p>`;
+        return `
+          <div class="delivery-item">
+            <h4>${escapeHtml(e.produto || 'Produto')} · ${formatarDataBR(e.data)}</h4>
+            <p>Total entregue: <strong>${(parseFloat(e.quantidadeKg)||0).toFixed(1).replace('.', ',')} kg</strong> · Valor: <strong>R$ ${formatCurrencyBR(e.valorTotal || 0)}</strong></p>
+            <p>Valor por kg: <strong>R$ ${formatCurrencyBR(valorKg)}</strong></p>
+            <p>Consumo diário total: <strong>${consumoDia.toFixed(1).replace('.', ',')} kg</strong> · <strong>R$ ${formatCurrencyBR(custoDia)}</strong></p>
+            <p>Consumo mensal projetado: <strong>${consumoMes.toFixed(1).replace('.', ',')} kg</strong> · <strong>R$ ${formatCurrencyBR(custoMes)}</strong></p>
+            <p>Estoque restante estimado: <strong>${estoqueItemKg.toFixed(1).replace('.', ',')} kg</strong></p>
+            <p>Previsão de duração: <strong>${diasRestItem === null || diasRestItem === undefined ? '—' : diasRestItem + ' dia(s)'}</strong>${dataFimItem ? ` · até <strong>${formatarData(dataFimItem)}</strong>` : ''}</p>
+            <button class="btn btn-outline btn-sm" id="btn-prod-leite-${id}" onclick="alternarDetalheProdutoLeite('${id}')">Mostrar mais</button>
+            <div id="det-prod-leite-${id}" class="hidden" style="margin-top:10px;">
+              ${individuais}
+              <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:10px;">
+                <button class="btn btn-danger" onclick="excluirEntregaProdutoLeite('${id}', this)">Excluir</button>
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function calcEntregaRacao(origem) {
+      const sacosEl = document.getElementById('d-sacos');
+      const tipoEl = document.getElementById('d-tipo');
+      const valorSacoEl = document.getElementById('d-valor-saco');
+      const valorTotalEl = document.getElementById('d-valor-total');
+      const el = document.getElementById('d-total-calc');
+      const sacos = parseInt(sacosEl?.value) || 0;
+      const tipo = parseInt(tipoEl?.value) || 40;
+      const totalKg = sacos * tipo;
+      let valorSaco = parseBRNumber(valorSacoEl?.value);
+      let valorTotal = parseBRNumber(valorTotalEl?.value);
+
+      if (origem === 'total' && sacos > 0 && valorTotal > 0) {
+        valorSaco = valorTotal / sacos;
+        if (valorSacoEl) valorSacoEl.value = valorSaco.toFixed(2);
+      } else if ((origem === 'saco' || origem === undefined) && sacos > 0 && valorSaco > 0) {
+        valorTotal = valorSaco * sacos;
+        if (valorTotalEl) valorTotalEl.value = valorTotal.toFixed(2);
+      } else if (sacos > 0 && valorTotal > 0 && valorSaco <= 0) {
+        valorSaco = valorTotal / sacos;
+        if (valorSacoEl) valorSacoEl.value = valorSaco.toFixed(2);
+      }
+
+      const valorKg = totalKg > 0 && valorTotal > 0 ? valorTotal / totalKg : 0;
+      if (sacos > 0) {
+        el.innerHTML = `${totalKg} kg (${sacos} sacos de ${tipo} kg)` +
+          (valorTotal > 0 ? `<br>Valor total: <strong>R$ ${formatCurrencyBR(valorTotal)}</strong>` : '') +
+          (valorSaco > 0 ? `<br>Valor por saco: <strong>R$ ${formatCurrencyBR(valorSaco)}</strong>` : '') +
+          (valorKg > 0 ? `<br>Custo por kg: <strong>R$ ${formatCurrencyBR(valorKg)}</strong>` : '');
+      } else {
+        el.textContent = '—';
+      }
+    }
+
+    async function salvarEntregaRacao(btn) {
+      const travou = travarBotaoAcao(btn, 'Salvando...');
+      if (travou === false) return;
+      try {
+      const data = document.getElementById('d-data').value;
+      const sacos = parseInt(document.getElementById('d-sacos').value);
+      const tipo = parseInt(document.getElementById('d-tipo').value);
+      let valorSaco = parseBRNumber(document.getElementById('d-valor-saco')?.value);
+      let valorTotal = parseBRNumber(document.getElementById('d-valor-total')?.value);
+
+      if (!data) return alert('Informe a data da entrega.');
+      if (!sacos || sacos <= 0) return alert('Informe a quantidade de sacos.');
+
+      const totalKg = sacos * tipo;
+      if (valorTotal <= 0 && valorSaco > 0) valorTotal = valorSaco * sacos;
+      if (valorSaco <= 0 && valorTotal > 0) valorSaco = valorTotal / sacos;
+      const valorKg = totalKg > 0 && valorTotal > 0 ? valorTotal / totalKg : 0;
+
+      DB.entregas.push({
+        id: Date.now().toString(),
+        data,
+        sacos,
+        tipoKg: tipo,
+        totalKg,
+        valorSaco,
+        valorTotal,
+        valorKg
+      });
+
+      DB.estoqueRacao += totalKg;
+      await salvarDB({ sincronizarAnimais: false });
+
+      document.getElementById('d-data').value = '';
+      document.getElementById('d-sacos').value = '';
+      document.getElementById('d-tipo').value = '40';
+      const valorSacoEl = document.getElementById('d-valor-saco');
+      const valorTotalEl = document.getElementById('d-valor-total');
+      if (valorSacoEl) valorSacoEl.value = '';
+      if (valorTotalEl) valorTotalEl.value = '';
+      document.getElementById('d-total-calc').textContent = '—';
+
+      renderDespesas();
+      alert('Entrega registrada com sucesso.');
+      } finally {
+        liberarBotaoAcao(btn);
+      }
+    }
+
+    async function excluirEntregaRacao(indice, btn) {
+      const travou = travarBotaoAcao(btn, 'Excluindo...');
+      if (travou === false) return;
+      try {
+      if (!Array.isArray(DB.entregas)) DB.entregas = [];
+      const i = parseInt(indice, 10);
+      if (isNaN(i) || i < 0 || i >= DB.entregas.length) {
+        alert('Entrega não encontrada para excluir.');
+        return;
+      }
+
+      const item = DB.entregas[i];
+      const totalKg = parseFloat(item?.totalKg) || 0;
+      const dataFmt = item?.data ? new Date(item.data + 'T12:00:00').toLocaleDateString('pt-BR') : '';
+      const confirmar = confirm(`Deseja excluir a entrega${dataFmt ? ' de ' + dataFmt : ''} do histórico?`);
+      if (!confirmar) return;
+
+      DB.entregas.splice(i, 1);
+      DB.estoqueRacao = Math.max(0, (parseFloat(DB.estoqueRacao) || 0) - totalKg);
+      await salvarDB({ sincronizarAnimais: false });
+      renderDespesas();
+      alert('Entrega excluída com sucesso.');
+      } finally {
+        liberarBotaoAcao(btn);
+      }
+    }
+
+    function getConsumoDiario() {
+      let total = 0;
+      DB.animais.filter(a => (a.area || 'leiteiro') === 'leiteiro' && a.lactacao).forEach(a => {
+        const p = DB.producao[a.id] || {};
+        const litros = (parseFloat(p.manha) || 0) + (parseFloat(p.tarde) || 0) + (parseFloat(p.noite) || 0);
+        total += litros / 3;
+      });
+      return parseFloat(total.toFixed(2));
+    }
+
+    function renderDespesas() {
+      const consumo = getConsumoDiario();
+      const estoque = DB.estoqueRacao || 0;
+      const diasRestantes = consumo > 0 ? Math.floor(estoque / consumo) : null;
+      const valorKgAtual = obterValorKgRacaoAtual();
+      const consumoMes = consumo * 30;
+      const custoDia = consumo * valorKgAtual;
+      const custoMes = consumoMes * valorKgAtual;
+      const ultimaEntregaValor = obterUltimaEntregaRacaoComValor();
+
+      const alertEl = document.getElementById('alerta-racao');
+      if (diasRestantes !== null && diasRestantes <= 5) {
+        alertEl.innerHTML = `
+          <div class="alert-strip">
+            <strong>⚠ Atenção:</strong> com o consumo atual, a ração deve durar aproximadamente <strong>${diasRestantes} dia(s)</strong>.
+          </div>
+        `;
+      } else {
+        alertEl.innerHTML = '';
+      }
+
+      const painel = document.getElementById('painel-estoque');
+      const historico = document.getElementById('historico-racao');
+      const resumoProdutosLeite = calcularResumoProdutosLeiteEstoque();
+      const avisoFimProdutos = resumoProdutosLeite.diasRestantes !== null && resumoProdutosLeite.dataFim
+        ? `Previsão de duração: <strong>${resumoProdutosLeite.diasRestantes} dia(s)</strong> · até <strong>${formatarData(resumoProdutosLeite.dataFim)}</strong>`
+        : 'Informe o consumo diário para calcular a previsão de duração.';
+
+      const perc = estoque > 0 ? Math.min(100, Math.max(0, (estoque / Math.max(estoque, 1000)) * 100)) : 0;
+
+      painel.innerHTML = `
+        <div class="delivery-item">
+          <h4>Estoque atual de ração</h4>
+          <p><strong>${estoque.toFixed(1)} kg</strong></p>
+          <div style="margin:10px 0 8px;">
+            <div class="progress-track"><div class="progress-fill" style="width:${perc}%"></div></div>
+          </div>
+          <p>Consumo diário estimado: <strong>${consumo.toFixed(1).replace('.', ',')} kg</strong> · <strong>R$ ${formatCurrencyBR(custoDia)}</strong></p>
+          <p>Consumo mensal estimado: <strong>${consumoMes.toFixed(1).replace('.', ',')} kg</strong> · <strong>R$ ${formatCurrencyBR(custoMes)}</strong></p>
+          <p>Custo atual da ração: <strong>${valorKgAtual > 0 ? 'R$ ' + formatCurrencyBR(valorKgAtual) + '/kg' : '—'}</strong></p>
+          <p>${ultimaEntregaValor ? `Baseado na última entrega com valor: <strong>${new Date(ultimaEntregaValor.data + 'T12:00:00').toLocaleDateString('pt-BR')}</strong>` : 'Cadastre o valor da entrega para calcular os custos em reais.'}</p>
+          <p>Dias restantes estimados: <strong>${diasRestantes === null ? '—' : diasRestantes}</strong></p>
+        </div>
+        <div class="delivery-item">
+          <h4>Resumo de Silo / Produtos</h4>
+          <p>Total entregue/comprado: <strong>${resumoProdutosLeite.totalKg.toFixed(1).replace('.', ',')} kg</strong></p>
+          <p>Estoque restante estimado: <strong>${resumoProdutosLeite.estoqueKg.toFixed(1).replace('.', ',')} kg</strong></p>
+          <p>Valor por kg médio: <strong>${resumoProdutosLeite.valorKgMedio > 0 ? 'R$ ' + formatCurrencyBR(resumoProdutosLeite.valorKgMedio) + '/kg' : '—'}</strong></p>
+          <p>Consumo diário ativo: <strong>${resumoProdutosLeite.consumoDia.toFixed(1).replace('.', ',')} kg</strong> · <strong>R$ ${formatCurrencyBR(resumoProdutosLeite.custoDia)}</strong></p>
+          <p>Consumo mensal projetado: <strong>${resumoProdutosLeite.consumoMes.toFixed(1).replace('.', ',')} kg</strong> · <strong>R$ ${formatCurrencyBR(resumoProdutosLeite.custoMes)}</strong></p>
+          <p>${avisoFimProdutos}</p>
+        </div>
+      `;
+
+      if (!DB.entregas.length) {
+        historico.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📦</div>
+            Nenhuma entrega de ração registrada ainda.
+          </div>
+        `;
+        renderHistoricoProdutosLeite();
+        try { carregarLeiteBezerrosNaTela(); } catch(e) {}
+        try { renderListaProdutosLavagem(); } catch(e) {}
+        return;
+      }
+
+      historico.innerHTML = DB.entregas
+        .map((e, indiceOriginal) => ({ ...e, indiceOriginal }))
+        .sort((a, b) => new Date(b.data) - new Date(a.data))
+        .map(e => `
+          <div class="delivery-item">
+            <h4>${new Date(e.data + 'T12:00:00').toLocaleDateString('pt-BR')}</h4>
+            <p>${e.sacos} saco(s) de ${e.tipoKg} kg</p>
+            <p>Total: <strong>${e.totalKg} kg</strong></p>
+            ${(parseFloat(e.valorTotal) || 0) > 0 ? `<p>Valor total: <strong>R$ ${formatCurrencyBR(e.valorTotal)}</strong></p>` : ''}
+            ${(parseFloat(e.valorSaco) || 0) > 0 ? `<p>Valor por saco: <strong>R$ ${formatCurrencyBR(e.valorSaco)}</strong></p>` : ''}
+            ${(parseFloat(e.valorKg) || 0) > 0 ? `<p>Custo por kg: <strong>R$ ${formatCurrencyBR(e.valorKg)}</strong></p>` : ''}
+            <button class="btn btn-danger" onclick="excluirEntregaRacao(${e.indiceOriginal}, this)">Excluir</button>
+          </div>
+        `).join('');
+      renderHistoricoProdutosLeite();
+      // Novos campos: leite bezerros, produtos de lavagem e preço do litro
+      try { carregarLeiteBezerrosNaTela(); } catch(e) {}
+      try { renderListaProdutosLavagem(); } catch(e) {}
+    }
+
+    function setVetFilter(tipo) {
+      vetFilter = tipo;
+      document.getElementById('vet-filter-todos').classList.toggle('active', tipo === 'todos');
+      document.getElementById('vet-filter-bezerros').classList.toggle('active', tipo === 'bezerros');
+      document.getElementById('vet-filter-vacas').classList.toggle('active', tipo === 'vacas');
+      renderVet();
+    }
+
+    function renderVet() {
+      const busca = (document.getElementById('vet-busca')?.value || '').trim().toLowerCase();
+      const lista = document.getElementById('vet-lista');
+
+      let itens = [...VET_DB];
+
+      if (vetFilter !== 'todos') {
+        itens = itens.filter(i => i.grupo === vetFilter);
+      }
+
+      if (busca) {
+        itens = itens.filter(i =>
+          i.nome.toLowerCase().includes(busca) ||
+          i.causas.toLowerCase().includes(busca) ||
+          i.sintomas.toLowerCase().includes(busca)
+        );
+      }
+
+      if (!itens.length) {
+        lista.innerHTML = `
+          <div class="empty-state" style="grid-column:1/-1;">
+            <div class="empty-icon">🩺</div>
+            Nenhum resultado encontrado.
+          </div>
+        `;
+        return;
+      }
+
+      lista.innerHTML = itens.map(item => `
+        <div class="vet-card">
+          <h4>${item.nome}</h4>
+          <p><strong>Grupo:</strong> ${item.grupo === 'bezerros' ? 'Bezerros' : 'Vacas'}</p>
+          <p><strong>Causas:</strong> ${item.causas}</p>
+          <p><strong>Sintomas:</strong> ${item.sintomas}</p>
+          <p><strong>Medidas imediatas:</strong> ${item.medidas}</p>
+          <p><strong>Medicação comum:</strong> ${item.medicacao}</p>
+          <p><strong>Urgência:</strong> ${item.urgencia}</p>
+        </div>
+      `).join('');
+    }
+
+    function addDias(data, dias) {
+      const nova = new Date(data);
+      nova.setDate(nova.getDate() + dias);
+      return nova;
+    }
+
+    function formatarData(d) {
+      if (!(d instanceof Date) || isNaN(d.getTime())) return '—';
+      return d.toLocaleDateString('pt-BR');
+    }
+
+    function renderProtocolarVaca() {
+      const hoje = new Date().toISOString().slice(0,10);
+      const dp = document.getElementById('pv-data-protocolo');
+      if (dp && !dp.value) dp.value = hoje;
+    }
+
+    async function salvarProtocoloVaca() {
+      if (salvandoProtocoloVaca) return;
+      const btn = document.getElementById('btn-salvar-protocolo');
+      const msg = document.getElementById('pv-msg');
+      const animal = document.getElementById('pv-animal').value.trim();
+      const dataProtocolo = document.getElementById('pv-data-protocolo').value;
+      const boi = document.getElementById('pv-boi').value.trim();
+      const dataToque = document.getElementById('pv-data-toque').value;
+      if (!animal || !dataProtocolo || !boi || !dataToque) { alert('Preencha nome/brinco, data do protocolo, nome do boi e data do toque.'); return; }
+      salvandoProtocoloVaca = true;
+      if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+      try {
+        DB.protocolosVacas.unshift(normalizarProtocoloVaca({ id: 'pv_' + Date.now(), animal, dataProtocolo, boi, dataToque, status: 'protocolada', dataCriacao: new Date().toISOString(), historico: [] }));
+        await salvarDB();
+        document.getElementById('pv-animal').value = '';
+        document.getElementById('pv-boi').value = '';
+        document.getElementById('pv-data-toque').value = '';
+        if (msg) { msg.textContent = 'Protocolo salvo e enviado automaticamente para o calendário.'; msg.classList.remove('hidden'); setTimeout(() => msg.classList.add('hidden'), 3500); }
+        renderVacasProtocoladas(); renderCalendario();
+      } finally {
+        salvandoProtocoloVaca = false;
+        if (btn) { btn.disabled = false; btn.textContent = '✓ Salvar protocolo'; }
+      }
+    }
+
+    function renderVacasProtocoladas() {
+      const lista = document.getElementById('lista-vacas-protocoladas');
+      if (!lista) return;
+      const protocolos = (DB.protocolosVacas || []).map(normalizarProtocoloVaca);
+      if (!protocolos.length) { lista.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div>Nenhuma vaca protocolada ainda.</div>'; return; }
+      lista.innerHTML = protocolos.map(p => '<div class="event-item"><h4>' + escapeHtml(p.animal) + ' <span class="tag">' + escapeHtml(p.status) + '</span></h4><p><strong>Data protocolo:</strong> ' + formatarData(new Date(p.dataProtocolo + 'T12:00:00')) + '</p><p><strong>Boi usado:</strong> ' + escapeHtml(p.boi) + '</p><p><strong>Data do toque:</strong> ' + formatarData(new Date(p.dataToque + 'T12:00:00')) + '</p><div class="animal-actions"><button class="btn btn-success btn-sm" onclick="atualizarStatusProtocolo(\'' + p.id + '\',\'Prenhez confirmada\')">✅ Prenhez confirmada</button><button class="btn btn-danger btn-sm" onclick="atualizarStatusProtocolo(\'' + p.id + '\',\'Não confirmada\')">❌ Não confirmada</button><button class="btn btn-outline btn-sm" onclick="novoProtocoloInteligente(\'' + p.id + '\')">🔁 Novo protocolo</button><button class="btn btn-danger btn-sm" onclick="excluirProtocoloVaca(\'' + p.id + '\')">🗑 Excluir</button></div></div>').join('');
+    }
+
+    async function excluirProtocoloVaca(id) {
+      const p = DB.protocolosVacas.find(item => item.id === id);
+      if (!p) return;
+      const nome = p.animal || 'esta vaca protocolada';
+      if (!confirm(`Excluir o protocolo de ${nome}?`)) return;
+      DB.protocolosVacas = DB.protocolosVacas.filter(item => item.id !== id);
+      await salvarDB();
+      renderVacasProtocoladas();
+      renderCalendario();
+    }
+
+    async function atualizarStatusProtocolo(id, status) {
+      const p = DB.protocolosVacas.find(item => item.id === id);
+      if (!p) return;
+      p.status = status;
+      p.historico = Array.isArray(p.historico) ? p.historico : [];
+      p.historico.push({ status, data: new Date().toISOString() });
+      await salvarDB(); renderVacasProtocoladas(); renderCalendario();
+    }
+
+    async function novoProtocoloInteligente(id) {
+      const p = DB.protocolosVacas.find(item => item.id === id);
+      if (!p) return;
+      const alterar = confirm('Alterar nome do boi?\n\nOK = alterar nome do boi\nCancelar = usar o mesmo boi');
+      let boi = p.boi;
+      if (alterar) { const novoBoi = prompt('Digite o nome do novo boi:', p.boi || ''); if (novoBoi === null) return; boi = novoBoi.trim() || p.boi; }
+      const dataProtocolo = prompt('Digite a nova data do protocolo (AAAA-MM-DD):', new Date().toISOString().slice(0,10));
+      if (!dataProtocolo) return;
+      const dataToque = prompt('Digite a nova data do toque (AAAA-MM-DD):', p.dataToque || '');
+      if (!dataToque) return;
+      DB.protocolosVacas.unshift(normalizarProtocoloVaca({ id: 'pv_' + Date.now(), animal: p.animal, dataProtocolo, boi, dataToque, status: 'novo protocolo', dataCriacao: new Date().toISOString(), historico: [{ status: 'Criado a partir de novo protocolo', protocoloAnterior: id, data: new Date().toISOString() }] }));
+      await salvarDB(); renderVacasProtocoladas(); renderCalendario();
+    }
+
+    function renderCalendario() {
+      const lista = document.getElementById('lista-calendario');
+      const vacinas = document.getElementById('lista-vacinas');
+      if (!lista || !vacinas) return;
+
+      let eventos = [];
+
+      DB.animais.filter(a => (a.area || 'leiteiro') === 'leiteiro').forEach(a => {
+        if (a.prenha && a.dataPrenha && !a.partoRegistrado) {
+          const base = new Date(a.dataPrenha + 'T12:00:00');
+          if (!isNaN(base.getTime())) {
+            const prev = (a.previsaoParto && a.previsaoSecagem) ? { parto: a.previsaoParto, secagem: a.previsaoSecagem, preParto: a.previsaoPreParto || '' } : calcularPrevisoesPrenhez(a.dataPrenha);
+            const parto = prev.parto ? new Date(prev.parto + 'T12:00:00') : addDias(base, 280);
+            const secagem = prev.secagem ? new Date(prev.secagem + 'T12:00:00') : addDias(parto, -60);
+            const preParto = prev.preParto ? new Date(prev.preParto + 'T12:00:00') : addDias(parto, -20);
+            const idAttr = escapeAttr(a.id || '');
+
+            if (!a.secaConfirmada && !a.secagemConcluida) {
+              eventos.push({
+                tipo: 'secagem',
+                animalId: a.id,
+                titulo: `Secagem de ${a.nome}`,
+                sub: a.lactacao ? `Início recomendado do período seco para animal em lactação.` : `Data de referência calculada; confirme com o manejo/veterinário se o animal não estiver em lactação.`,
+                data: secagem,
+                acoes: `<button class="btn btn-success btn-sm" data-local-lock="calendario" onclick="marcarAnimalComoSeca('${idAttr}', this)">🌾 Marcar como seca</button>`
+              });
+            }
+
+            eventos.push({
+              tipo: 'preparto',
+              animalId: a.id,
+              titulo: `Pré-parto de ${a.nome}`,
+              sub: (a.secaConfirmada || a.secagemConcluida) ? `Animal já marcado como seco. Separar e observar intensivamente.` : `Separação e observação intensiva.`,
+              data: preParto,
+              acoes: (a.secaConfirmada || a.secagemConcluida) ? '' : `<button class="btn btn-outline btn-sm" data-local-lock="calendario" onclick="marcarAnimalComoSeca('${idAttr}', this)">🌾 Marcar seca agora</button>`
+            });
+
+            eventos.push({
+              tipo: 'parto',
+              animalId: a.id,
+              titulo: `Previsão de parto de ${a.nome}`,
+              sub: `Data estimada com base na confirmação da prenhez. Ao marcar como parida, o sistema atualiza Meu Rebanho, encerra a secagem e cadastra a cria se informado.`,
+              data: parto,
+              acoes: `<button class="btn btn-success btn-sm" data-local-lock="calendario" onclick="marcarAnimalComoParida('${idAttr}', this)">🐣 Marcar como parida</button>`
+            });
+          }
+        }
+      });
+
+      (DB.protocolosVacas || []).forEach(p => {
+        const prot = normalizarProtocoloVaca(p);
+        if (prot.dataProtocolo) {
+          const data = new Date(prot.dataProtocolo + 'T12:00:00');
+          if (!isNaN(data.getTime())) eventos.push({ titulo: 'Protocolo de ' + prot.animal, sub: 'Boi usado: ' + prot.boi, data, acoes: '' });
+        }
+        if (prot.dataToque) {
+          const data = new Date(prot.dataToque + 'T12:00:00');
+          if (!isNaN(data.getTime())) eventos.push({ titulo: 'Toque / exame de ' + prot.animal, sub: 'Verificar confirmação de prenhez. Boi: ' + prot.boi, data, acoes: '' });
+        }
+      });
+
+      eventos = eventos.sort((a, b) => a.data - b.data);
+
+      if (!eventos.length) {
+        lista.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📅</div>
+            Nenhum evento calculado ainda.<br />
+            Marque animais prenhes ou cadastre protocolos de vaca.
+          </div>
+        `;
+      } else {
+        lista.innerHTML = eventos.map(ev => `
+          <div class="event-item">
+            <h4>${escapeHtml(ev.titulo)}</h4>
+            <p>${escapeHtml(ev.sub)}</p>
+            <p><strong>Data:</strong> ${formatarData(ev.data)}</p>
+            ${ev.acoes ? `<div class="animal-actions" style="margin-top:10px;">${ev.acoes}</div>` : ''}
+          </div>
+        `).join('');
+      }
+
+      vacinas.innerHTML = `
+        <div class="event-item">
+          <h4>🧴 Cura de umbigo</h4>
+          <p>Realizar logo após o nascimento, conforme protocolo da fazenda.</p>
+        </div>
+        <div class="event-item">
+          <h4>💉 Vacinação clostridioses</h4>
+          <p>Seguir calendário regional e reforços conforme orientação técnica.</p>
+        </div>
+        <div class="event-item">
+          <h4>🪱 Controle parasitário</h4>
+          <p>Definir com apoio veterinário conforme categoria, peso e manejo da fazenda.</p>
+        </div>
+        <div class="event-item">
+          <h4>🐜 Controle de carrapatos</h4>
+          <p>Manter rotina preventiva e revisar resistência de princípios ativos.</p>
+        </div>
+      `;
+    }
+
+    function renderArquivados() {
+      const lista = document.getElementById('lista-arquivados');
+      const area = obterAreaAtual() || 'leiteiro';
+      const arquivadosDaArea = getArquivadosDaArea(area).filter(a => area === 'corte' ? a.motivoArquivo !== 'vendido' : true);
+
+      if (!arquivadosDaArea.length) {
+        lista.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">🗂</div>
+            Nenhum animal arquivado nesta área.
+          </div>
+        `;
+        return;
+      }
+
+      lista.innerHTML = arquivadosDaArea
+        .slice()
+        .sort((a, b) => new Date(b.dataArquivo || 0) - new Date(a.dataArquivo || 0))
+        .map(a => `
+          <div class="animal-item">
+            ${a.foto ? `<img class="animal-photo" src="${a.foto}" alt="Foto de ${a.nome}" />` : `<div class="animal-avatar">${emojiAnimal(a.categoria)}</div>`}
+
+            <div class="animal-body">
+              <div class="animal-name">
+                ${a.nome}
+                ${a.brinco ? `<span style="font-size:11px;color:var(--muted);font-weight:400;">· Brinco ${a.brinco}</span>` : ''}
+              </div>
+
+              <div class="animal-meta">${a.sexo || 'Sexo não informado'} ${a.idadeMeses ? `· ${a.idadeMeses} meses` : ''}</div>
+
+              <div class="tag-wrap">
+                <span class="tag ${tagClass(a.categoria)}">${a.categoria}</span>
+                <span class="tag" style="background:#111111;color:#ffffff;">${a.motivoArquivo === 'vendido' ? '💰 Vendido' : '🕊 Faleceu'}</span>
+              </div>
+
+              <div class="animal-obs">Arquivado em: ${formatarDataHora(a.dataArquivo)}</div>
+            </div>
+          </div>
+        `).join('');
+    }
+
+    function renderVendidosCorte() {
+      const lista = document.getElementById('lista-vendidos-corte');
+      if (!lista) return;
+      const vendidos = getArquivadosDaArea('corte').filter(a => a.motivoArquivo === 'vendido');
+
+      if (!vendidos.length) {
+        lista.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">💰</div>
+            Nenhum animal vendido registrado ainda.
+          </div>
+        `;
+        return;
+      }
+
+      lista.innerHTML = vendidos
+        .slice()
+        .sort((a, b) => new Date(b.dataVenda || b.dataArquivo || 0) - new Date(a.dataVenda || a.dataArquivo || 0))
+        .map(a => {
+          const r = a.resumoVenda || montarResumoVenda(a, a.precoVenda || 0, a.dataVenda || new Date().toISOString().slice(0,10));
+          return `
+          <div class="animal-item">
+            ${a.foto ? `<img class="animal-photo" src="${a.foto}" alt="Foto de ${a.nome}" />` : `<div class="animal-avatar">${emojiAnimal(a.categoria)}</div>`}
+            <div class="animal-body">
+              <div class="animal-name">${a.nome}${a.brinco ? `<span style="font-size:11px;color:var(--muted);font-weight:400;">· Brinco ${a.brinco}</span>` : ''}</div>
+              <div class="tag-wrap">
+                <span class="tag ${tagClass(a.categoria)}">${a.categoria || 'Não definido'}</span>
+                <span class="tag" style="background:#111111;color:#ffffff;">💰 Vendido</span>
+              </div>
+              <div class="animal-obs">Venda em: ${r.dataVendaFmt} · Preço: <strong>R$ ${r.precoVendaFmt}</strong></div>
+              <div class="rec-grid" style="margin-top:10px;">
+                <div class="rec-box"><h5>⚖ Peso final</h5><p>${r.pesoFinalFmt} kg</p></div>
+                <div class="rec-box"><h5>⏱ Tempo até venda</h5><p>${r.diasConfinado} dia(s)</p></div>
+                <div class="rec-box"><h5>🌽 Milho gasto</h5><p>${r.milhoConsumidoFmt} kg · R$ ${r.custoMilhoFmt}</p></div>
+                <div class="rec-box"><h5>🌾 Silagem gasta</h5><p>${r.silagemConsumidaFmt} kg · R$ ${r.custoSilagemFmt}</p></div>
+                <div class="rec-box"><h5>🥣 Ração gasta</h5><p>${r.racaoConsumidaFmt} kg · R$ ${r.custoRacaoFmt}</p></div>
+                <div class="rec-box"><h5>🌾 Consumo total</h5><p>${r.kilosConsumidosFmt} kg</p></div>
+                <div class="rec-box"><h5>💸 Custo alimentar</h5><p>R$ ${r.custoAlimentarFmt}</p></div>
+                <div class="rec-box"><h5>📈 Resultado bruto</h5><p>R$ ${r.resultadoBrutoFmt}</p></div>
+                <div class="rec-box"><h5>🧾 Sistema alimentar</h5><p>${escapeHtml(a.sistemaAlimentar || 'Não informado')}</p></div>
+              </div>
+              ${a.obsVenda ? `<div class="animal-obs" style="margin-top:8px;">Obs. da venda: ${escapeHtml(a.obsVenda)}</div>` : ''}
+              <div style="margin-top:10px;"><button class="btn btn-primary btn-sm" onclick="abrirDetalhesMovimentacaoCorte('${a.id}', this)">📊 Detalhes</button></div>
+            </div>
+          </div>`;
+        }).join('');
+    }
+
+    function openBackupModal() {
+      document.getElementById('modal-backup').classList.add('open');
+      atualizarUltimoBackup();
+    }
+
+    function atualizarUltimoBackup() {
+      document.getElementById('ultimo-backup').textContent = DB.ultimoBackup ? formatarDataHora(DB.ultimoBackup) : '—';
+    }
+
+    function exportarDados() {
+      DB.ultimoBackup = new Date().toISOString();
+      salvarLocal();
+      atualizarUltimoBackup();
+
+      const blob = new Blob([JSON.stringify(DB, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ia-rural-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    async function importarDados(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      try {
+        const texto = await file.text();
+        const dados = JSON.parse(texto);
+        DB = normalizarDB(dados);
+        DB.ultimoBackup = new Date().toISOString();
+        await salvarDB();
+        renderTudo();
+        fecharModal('modal-backup');
+        alert('Backup importado com sucesso.');
+      } catch (e) {
+        alert('Não foi possível importar este arquivo.');
+      }
+
+      event.target.value = '';
+    }
+
+    window.addEventListener('click', (e) => {
+      if (e.target.classList.contains('modal-bg')) {
+        e.target.classList.remove('open');
+      }
+    });
+
+
+
+    const TUTORIAL_KEY_PREFIX = 'ia_rural_tutorial_concluido_';
+    let tutorialAtivo = false;
+    let tutorialPassoAtual = 0;
+    let tutorialAreaOriginal = null;
+    let tutorialTimerAuto = null;
+
+    const tutorialPassos = [
+      {
+        title: 'Bem-vindo ao IA Rural',
+        text: 'Este tutorial ensina o usuário a mexer em todo o app. Você pode rever depois no botão Tutorial.',
+        page: 'inicio',
+        selector: '.nav-tab[data-page="inicio"]'
+      },
+      {
+        title: 'Escolha da área principal',
+        text: 'Aqui o usuário escolhe se quer trabalhar na área leiteira ou na área de confinamento. O menu se adapta sozinho.',
+        page: 'inicio',
+        selector: '#area-card-leiteiro',
+        before: async () => { await selecionarArea('leiteiro'); }
+      },
+      {
+        title: 'Confinamento / engorda',
+        text: 'Se escolher confinamento, aparecem abas específicas: Meu Rebanho, Lotes, Pesagens, Vacinas/Medicamentos, Financeiro, Registrar Trato, Compra de Ração/Silo, Mortes/Vendas, Fábrica de Ração e Veterinário.',
+        page: 'inicio',
+        selector: '#area-card-corte',
+        before: async () => { await selecionarArea('corte'); }
+      },
+      {
+        title: 'Meu Rebanho',
+        text: 'Nesta aba ficam todos os animais da área atual. Aqui o usuário consulta, edita e gera PDF individual.',
+        area: 'leiteiro',
+        page: 'rebanho',
+        selector: '.nav-tab[data-page="rebanho"]',
+        before: async () => { await selecionarArea('leiteiro'); }
+      },
+      {
+        title: 'Cadastrar Animal',
+        text: 'O cadastro permite informar nome, brinco, sexo, idade, foto, observações e os dados específicos de cada área.',
+        area: 'leiteiro',
+        page: 'rebanho',
+        selector: '#btn-toggle-form-animal',
+        before: async () => {
+          await selecionarArea('leiteiro');
+          showPage('rebanho');
+          const form = document.getElementById('form-animal');
+          if (form && form.classList.contains('hidden')) toggleForm('form-animal');
+        }
+      },
+      {
+        title: 'Genealogia no cadastro',
+        text: 'No cadastro o usuário pode preencher mãe, pai, avós e outras informações para montar a árvore genealógica do animal.',
+        area: 'leiteiro',
+        page: 'rebanho',
+        selector: '#a-mae',
+        before: async () => {
+          await selecionarArea('leiteiro');
+          showPage('rebanho');
+          const form = document.getElementById('form-animal');
+          if (form && form.classList.contains('hidden')) toggleForm('form-animal');
+        }
+      },
+      {
+        title: 'Registrar Pesagem Leite',
+        text: 'Na pesagem o usuário lança os litros por animal, salva o histórico do dia e o rebanho recebe a última pesagem automaticamente.',
+        area: 'leiteiro',
+        page: 'producao',
+        selector: '.nav-tab[data-page="producao"]',
+        before: async () => { await selecionarArea('leiteiro'); }
+      },
+      {
+        title: 'Despesas do leite',
+        text: 'Aqui ele controla estoque, entregas e gasto da atividade leiteira.',
+        area: 'leiteiro',
+        page: 'despesas',
+        selector: '.nav-tab[data-page="despesas"]',
+        before: async () => { await selecionarArea('leiteiro'); }
+      },
+      {
+        title: 'Calendário',
+        text: 'O calendário ajuda a acompanhar secagem, pré-parto, parto e datas importantes da rotina reprodutiva.',
+        area: 'leiteiro',
+        page: 'calendario',
+        selector: '.nav-tab[data-page="calendario"]',
+        before: async () => { await selecionarArea('leiteiro'); }
+      },
+      {
+        title: 'Veterinário',
+        text: 'Esta aba reúne orientações rápidas para consulta dentro do sistema.',
+        page: 'veterinario',
+        selector: '.nav-tab[data-page="veterinario"]'
+      },
+      {
+        title: 'Árvore Genealógica',
+        text: 'Na área leiteira, aqui o usuário digita o nome do animal e vê os dados detalhados já registrados no app.',
+        area: 'leiteiro',
+        page: 'genealogia',
+        selector: '.nav-tab[data-page="genealogia"]',
+        before: async () => { await selecionarArea('leiteiro'); }
+      },
+      {
+        title: 'Busca e PDF do animal',
+        text: 'Nesta tela ele pesquisa um animal específico e pode baixar o PDF com genealogia, leite, peso, ganho e gastos registrados.',
+        area: 'leiteiro',
+        page: 'genealogia',
+        selector: '#genealogia-busca',
+        before: async () => { await selecionarArea('leiteiro'); }
+      },
+      {
+        title: 'Lotes do confinamento',
+        text: 'Na aba Lotes o usuário cria e gerencia lotes de animais. Cada lote mostra resumo de peso médio, custo sanitário, custo alimentar, custo total, mortos e vendidos.',
+        area: 'corte',
+        page: 'lotes-corte',
+        selector: '.nav-tab[data-page="lotes-corte"]',
+        before: async () => { await selecionarArea('corte'); }
+      },
+      {
+        title: 'Pesagens do confinamento',
+        text: 'Em Pesagens o usuário registra o peso de cada animal ou lote e acompanha o GMD (ganho médio diário) e o ganho total de peso.',
+        area: 'corte',
+        page: 'pesagens-corte',
+        selector: '.nav-tab[data-page="pesagens-corte"]',
+        before: async () => { await selecionarArea('corte'); }
+      },
+      {
+        title: 'Vacinas e Medicamentos',
+        text: 'Aqui o usuário registra vacinas, vermífugos, antibióticos e vitaminas por animal ou por lote. O custo entra automaticamente no financeiro.',
+        area: 'corte',
+        page: 'vacinas-medicamentos-corte',
+        selector: '.nav-tab[data-page="vacinas-medicamentos-corte"]',
+        before: async () => { await selecionarArea('corte'); }
+      },
+      {
+        title: 'Financeiro do confinamento',
+        text: 'Em Financeiro o usuário vê despesas, receitas e saldo do confinamento. O sistema calcula custo por lote, custo por animal e resultado estimado.',
+        area: 'corte',
+        page: 'financeiro-corte',
+        selector: '.nav-tab[data-page="financeiro-corte"]',
+        before: async () => { await selecionarArea('corte'); }
+      },
+      {
+        title: 'Custos e Despesas',
+        text: 'Nesta aba o usuário lança milho, silagem e ração e acompanha estoque, custo diário e gasto mensal do confinamento.',
+        area: 'corte',
+        page: 'despesas-corte',
+        selector: '.nav-tab[data-page="despesas-corte"]',
+        before: async () => { await selecionarArea('corte'); }
+      },
+      {
+        title: 'Mortes e Vendas',
+        text: 'Aqui ficam os animais que saíram do rebanho por venda ou morte. Vendas entram como receita e mortes como prejuízo no financeiro automaticamente.',
+        area: 'corte',
+        page: 'mortes-vendas-corte',
+        selector: '.nav-tab[data-page="mortes-vendas-corte"]',
+        before: async () => { await selecionarArea('corte'); }
+      },
+      {
+        title: 'Arquivados',
+        text: 'Na área leiteira, esta aba acompanha animais arquivados ou retirados da rotina principal. No confinamento, os detalhes ficam em Mortes/Vendas.',
+        area: 'leiteiro',
+        page: 'arquivados',
+        selector: '.nav-tab[data-page="arquivados"]',
+        before: async () => { await selecionarArea('leiteiro'); }
+      },
+      {
+        title: 'Tutorial concluído',
+        text: 'Pronto. O usuário já sabe onde mexer em tudo no app. Depois ele pode rever este passo a passo no botão Tutorial.',
+        page: 'inicio',
+        selector: '.nav-tab[data-page="inicio"]',
+        before: async () => { if (tutorialAreaOriginal) { await selecionarArea(tutorialAreaOriginal); } }
+      }
+    ];
+
+    function tutorialStorageKey() {
+      return `${TUTORIAL_KEY_PREFIX}${normalizarUsuario(usuarioLogado || 'anonimo')}`;
+    }
+
+    function criarInterfaceTutorial() {
+      if (document.getElementById('tutorial-overlay')) return;
+
+      const style = document.createElement('style');
+      style.textContent = `
+        .tutorial-highlight {
+          position: relative !important;
+          z-index: 10002 !important;
+          box-shadow: 0 0 0 4px rgba(109,213,109,.65), 0 0 0 9999px rgba(0,0,0,.68) !important;
+          border-radius: 14px !important;
+          transition: box-shadow .2s ease;
+        }
+        #tutorial-overlay {
+          position: fixed;
+          inset: 0;
+          display: none;
+          align-items: flex-end;
+          justify-content: center;
+          padding: 18px;
+          z-index: 10001;
+          pointer-events: none;
+        }
+        #tutorial-card {
+          width: min(460px, 100%);
+          background: #0f0f0f;
+          color: #fff;
+          border: 1px solid #2a2a2a;
+          border-radius: 18px;
+          box-shadow: 0 18px 45px rgba(0,0,0,.42);
+          padding: 18px;
+          pointer-events: auto;
+        }
+        #tutorial-card h3 {
+          font-size: 18px;
+          margin-bottom: 8px;
+        }
+        #tutorial-card p {
+          font-size: 13px;
+          line-height: 1.65;
+          color: #d1d5db;
+          margin-bottom: 12px;
+        }
+        #tutorial-progress {
+          font-size: 11px;
+          color: #9ca3af;
+          margin-bottom: 10px;
+        }
+        #tutorial-actions {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+        #tutorial-actions button {
+          border: 1px solid #2a2a2a;
+          border-radius: 10px;
+          padding: 10px 14px;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 13px;
+          cursor: pointer;
+          font-weight: 700;
+        }
+        #tutorial-prev, #tutorial-skip {
+          background: transparent;
+          color: #fff;
+        }
+        #tutorial-next {
+          background: #fff;
+          color: #000;
+          border-color: #fff;
+        }
+      `;
+      document.head.appendChild(style);
+
+      const overlay = document.createElement('div');
+      overlay.id = 'tutorial-overlay';
+      overlay.innerHTML = `
+        <div id="tutorial-card">
+          <div id="tutorial-progress"></div>
+          <h3 id="tutorial-title"></h3>
+          <p id="tutorial-text"></p>
+          <div id="tutorial-actions">
+            <button id="tutorial-prev" type="button">Voltar</button>
+            <button id="tutorial-skip" type="button">Pular tutorial</button>
+            <button id="tutorial-next" type="button">Próximo</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+
+      document.getElementById('tutorial-prev').addEventListener('click', voltarTutorial);
+      document.getElementById('tutorial-next').addEventListener('click', avancarTutorial);
+      document.getElementById('tutorial-skip').addEventListener('click', () => finalizarTutorial(true));
+    }
+
+    function garantirBotaoTutorial() {
+      if (document.getElementById('btn-tutorial-nav')) return;
+      const navRight = document.querySelector('.nav-right');
+      if (!navRight) return;
+      const btn = document.createElement('button');
+      btn.id = 'btn-tutorial-nav';
+      btn.className = 'nav-btn';
+      btn.textContent = 'Tutorial';
+      btn.onclick = () => iniciarTutorial(true);
+      navRight.insertBefore(btn, navRight.firstChild);
+    }
+
+    function limparHighlightTutorial() {
+      document.querySelectorAll('.tutorial-highlight').forEach(el => el.classList.remove('tutorial-highlight'));
+    }
+
+    async function prepararPassoTutorial(passo) {
+      if (typeof passo.before === 'function') {
+        await passo.before();
+      }
+      if (passo.area) {
+        await selecionarArea(passo.area);
+      }
+      if (passo.page) {
+        showPage(passo.page);
+      }
+      await new Promise(r => setTimeout(r, 220));
+    }
+
+    async function mostrarPassoTutorial() {
+      criarInterfaceTutorial();
+      garantirBotaoTutorial();
+      limparHighlightTutorial();
+
+      const passo = tutorialPassos[tutorialPassoAtual];
+      if (!passo) return;
+
+      await prepararPassoTutorial(passo);
+
+      const overlay = document.getElementById('tutorial-overlay');
+      overlay.style.display = 'flex';
+      document.getElementById('tutorial-progress').textContent = `Passo ${tutorialPassoAtual + 1} de ${tutorialPassos.length}`;
+      document.getElementById('tutorial-title').textContent = passo.title;
+      document.getElementById('tutorial-text').textContent = passo.text;
+      document.getElementById('tutorial-prev').style.display = tutorialPassoAtual === 0 ? 'none' : 'inline-flex';
+      document.getElementById('tutorial-next').textContent = tutorialPassoAtual === tutorialPassos.length - 1 ? 'Concluir' : 'Próximo';
+
+      const alvo = passo.selector ? document.querySelector(passo.selector) : null;
+      if (alvo) {
+        alvo.classList.add('tutorial-highlight');
+        try { alvo.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' }); } catch (_) {}
+      }
+    }
+
+    function tutorialJaConcluido() {
+      return localStorage.getItem(tutorialStorageKey()) === 'true';
+    }
+
+    function marcarTutorialConcluido() {
+      localStorage.setItem(tutorialStorageKey(), 'true');
+    }
+
+    async function iniciarTutorial(forcado = false) {
+      if (!usuarioLogado) return;
+      if (!forcado && tutorialJaConcluido()) return;
+      clearTimeout(tutorialTimerAuto);
+      tutorialAtivo = true;
+      tutorialPassoAtual = 0;
+      tutorialAreaOriginal = obterAreaAtual();
+      await mostrarPassoTutorial();
+    }
+
+    async function avancarTutorial() {
+      if (!tutorialAtivo) return;
+      if (tutorialPassoAtual >= tutorialPassos.length - 1) {
+        finalizarTutorial(false);
+        return;
+      }
+      tutorialPassoAtual += 1;
+      await mostrarPassoTutorial();
+    }
+
+    async function voltarTutorial() {
+      if (!tutorialAtivo || tutorialPassoAtual === 0) return;
+      tutorialPassoAtual -= 1;
+      await mostrarPassoTutorial();
+    }
+
+    async function finalizarTutorial(pulado = false) {
+      tutorialAtivo = false;
+      limparHighlightTutorial();
+      const overlay = document.getElementById('tutorial-overlay');
+      if (overlay) overlay.style.display = 'none';
+      if (tutorialAreaOriginal) {
+        await selecionarArea(tutorialAreaOriginal);
+      }
+      showPage('inicio');
+      if (!pulado) {
+        marcarTutorialConcluido();
+      }
+    }
+
+    function agendarTutorialAutomatico() {
+      if (!usuarioLogado || tutorialJaConcluido() || tutorialAtivo) return;
+      clearTimeout(tutorialTimerAuto);
+      tutorialTimerAuto = setTimeout(() => iniciarTutorial(false), 900);
+    }
+
+    // =====================================================================
+    // MOTOR CENTRAL DE CÁLCULO FINANCEIRO
+    // =====================================================================
+
+    function calcularResumoFinanceiroCentral() {
+      const precoLitro = parseFloat(DB.precoLitroLeite) || 0;
+      const historicoPesagens = getHistoricoPesagensLeite();
+
+      const agora = new Date();
+      const mesAtual = agora.getMonth();
+      const anoAtual = agora.getFullYear();
+      const diasDoMesAtual = new Date(anoAtual, mesAtual + 1, 0).getDate();
+
+      const pesagensMes = historicoPesagens.filter(p => {
+        if (!p.data) return false;
+        const d = new Date(p.data + 'T12:00:00');
+        return d.getMonth() === mesAtual && d.getFullYear() === anoAtual;
+      });
+
+      const litrosMes = pesagensMes.reduce((s, p) => s + (parseFloat(p.total) || 0), 0);
+      const diasComPesagemMes = new Set(pesagensMes.filter(p => p.data).map(p => p.data)).size;
+
+      const totalDiario = (Array.isArray(DB.animais) ? DB.animais : [])
+        .filter(a => (a.area || 'leiteiro') === 'leiteiro' && a.lactacao)
+        .reduce((s, a) => {
+          const p = DB.producao && DB.producao[a.id] ? DB.producao[a.id] : {};
+          return s + (parseFloat(p.manha) || 0) + (parseFloat(p.tarde) || 0) + (parseFloat(p.noite) || 0);
+        }, 0);
+
+      const leiteBezerros = DB.leiteBezerros && typeof DB.leiteBezerros === 'object' ? DB.leiteBezerros : {};
+      const litrosBezDia = parseFloat(leiteBezerros.litrosDia) || 0;
+      const litrosVendaveisDia = Math.max(totalDiario - litrosBezDia, 0);
+      const litrosBezerrosMesReal = litrosBezDia * diasComPesagemMes;
+      const litrosVendaveisMesReal = Math.max(litrosMes - litrosBezerrosMesReal, 0);
+
+      const faturamentoDiario = litrosVendaveisDia * precoLitro;
+      const faturamentoMensalEstimado = faturamentoDiario * diasDoMesAtual;
+      const litrosProjetadosMes = totalDiario * diasDoMesAtual;
+      const litrosBezerrosProjetadoMes = litrosBezDia * diasDoMesAtual;
+      const litrosVendaveisProjetadoMes = Math.max(litrosProjetadosMes - litrosBezerrosProjetadoMes, 0);
+      const faturamentoMensalReal = litrosVendaveisProjetadoMes * precoLitro;
+
+      const consumoRacaoDia = (function() {
+        let total = 0;
+        (Array.isArray(DB.animais) ? DB.animais : [])
+          .filter(a => (a.area || 'leiteiro') === 'leiteiro' && a.lactacao)
+          .forEach(a => {
+            const p = DB.producao && DB.producao[a.id] ? DB.producao[a.id] : {};
+            const litros = (parseFloat(p.manha) || 0) + (parseFloat(p.tarde) || 0) + (parseFloat(p.noite) || 0);
+            total += litros / 3;
+          });
+        return parseFloat(total.toFixed(2));
+      })();
+
+      const valorKgRacao = obterValorKgRacaoAtual();
+      const custoRacaoDia = consumoRacaoDia * valorKgRacao;
+      const custoRacaoMes = custoRacaoDia * diasDoMesAtual;
+
+      const resumoProdutosLeite = calcularResumoProdutosLeiteEstoque();
+      const custoProdutosDia = resumoProdutosLeite.custoDia;
+      const custoSiloMes = resumoProdutosLeite.custoMes;
+
+      const custoLeiteBezerrosDia = litrosBezDia * precoLitro;
+      const custoLeiteBezerrosMes = custoLeiteBezerrosDia * diasDoMesAtual;
+      const descontoLeiteBezerrosRealMes = litrosBezerrosProjetadoMes * precoLitro;
+
+      const produtosLavagem = Array.isArray(DB.produtosLavagem) ? DB.produtosLavagem : [];
+      const custoProdutosLavagemMes = produtosLavagem.reduce((s, p) => s + (parseFloat(p.valorMensal) || 0), 0);
+
+      const outrosGastosLeite = Array.isArray(DB.outrosGastosLeite) ? DB.outrosGastosLeite : [];
+      const custoOutrosGastosMes = outrosGastosLeite.reduce((s, p) => s + (parseFloat(p.valorMensal) || 0), 0);
+
+      const totalDespesasMes = custoRacaoMes + custoSiloMes + custoProdutosLavagemMes + custoOutrosGastosMes;
+      const lucroBruto = faturamentoMensalEstimado;
+      const lucroLiquido = faturamentoMensalEstimado - totalDespesasMes;
+      const resultadoParcialMes = faturamentoMensalReal - totalDespesasMes;
+
+      return {
+        precoLitro, totalDiario, faturamentoDiario, faturamentoMensalEstimado,
+        faturamentoMensalReal, litrosMes, diasComPesagemMes, diasDoMesAtual,
+        litrosProjetadosMes, litrosVendaveisDia, litrosVendaveisMesReal,
+        litrosProjetadosMes, litrosVendaveisProjetadoMes, litrosBezerrosMesReal,
+        litrosBezerrosProjetadoMes, custoRacaoDia, custoRacaoMes,
+        consumoRacaoDia, custoProdutosDia, custoSiloMes, litrosBezDia,
+        custoLeiteBezerrosDia, custoLeiteBezerrosMes, descontoLeiteBezerrosRealMes,
+        custoProdutosLavagemMes, produtosLavagem, outrosGastosLeite, custoOutrosGastosMes,
+        totalDespesasMes, lucroBruto, lucroLiquido, resultadoParcialMes, resumoProdutosLeite
+      };
+    }
+
+    // =====================================================================
+    // PREÇO DO LITRO DE LEITE
+    // =====================================================================
+
+    function carregarPrecoLitroNaTela() {
+      const input = document.getElementById('preco-litro-leite');
+      if (input && DB.precoLitroLeite) {
+        input.value = parseFloat(DB.precoLitroLeite).toFixed(2);
+      }
+    }
+
+    async function salvarPrecoLitroLeite(btn) {
+      const travou = travarBotaoAcao(btn, 'Salvando...');
+      if (travou === false) return;
+      try {
+        const val = parseFloat(document.getElementById('preco-litro-leite')?.value) || 0;
+        if (val <= 0) { alert('Informe um valor válido para o preço do litro.'); return; }
+        DB.precoLitroLeite = val;
+        const ok = await salvarDB({ sincronizarAnimais: false });
+        if (!ok) { alert('Não foi possível salvar o preço na nuvem. Verifique a conexão.'); return; }
+        const status = document.getElementById('preco-litro-status');
+        if (status) {
+          status.textContent = '✓ Preço salvo: R$ ' + val.toFixed(2).replace('.', ',') + '/L — todos os cálculos foram atualizados.';
+          setTimeout(() => { if (status) status.textContent = ''; }, 5000);
+        }
+        renderDespesas();
+      } finally {
+        liberarBotaoAcao(btn);
+      }
+    }
+
+    // =====================================================================
+    // LEITE PARA BEZERROS
+    // =====================================================================
+
+    function calcPreviewBezerros() {
+      const litros = parseFloat(document.getElementById('bezerros-litros-dia')?.value) || 0;
+      const preco = parseFloat(DB.precoLitroLeite) || 0;
+      const el = document.getElementById('bezerros-preview');
+      if (!el) return;
+      if (litros > 0) {
+        const custoDia = litros * preco;
+        const custoMes = custoDia * 30;
+        el.innerHTML = litros.toFixed(1).replace('.', ',') + ' L/dia · ' +
+          (preco > 0 ? 'Custo: <strong>R$ ' + formatCurrencyBR(custoDia) + '/dia · R$ ' + formatCurrencyBR(custoMes) + '/mês</strong>' : 'Cadastre o preço do litro para ver o custo em R$');
+      } else {
+        el.textContent = '—';
+      }
+    }
+
+    function carregarLeiteBezerrosNaTela() {
+      const lb = DB.leiteBezerros && typeof DB.leiteBezerros === 'object' ? DB.leiteBezerros : {};
+      const litros = document.getElementById('bezerros-litros-dia');
+      const qtd = document.getElementById('bezerros-quantidade');
+      if (litros && (parseFloat(lb.litrosDia) || 0) > 0) litros.value = parseFloat(lb.litrosDia);
+      if (qtd && (parseFloat(lb.quantidadeBezerros) || 0) > 0) qtd.value = parseFloat(lb.quantidadeBezerros);
+      calcPreviewBezerros();
+    }
+
+    async function salvarLeiteBezerros(btn) {
+      const travou = travarBotaoAcao(btn, 'Salvando...');
+      if (travou === false) return;
+      try {
+        const litrosDia = parseFloat(document.getElementById('bezerros-litros-dia')?.value) || 0;
+        const quantidadeBezerros = parseFloat(document.getElementById('bezerros-quantidade')?.value) || 0;
+        DB.leiteBezerros = { litrosDia, quantidadeBezerros };
+        const ok = await salvarDB({ sincronizarAnimais: false });
+        if (!ok) { alert('Não foi possível salvar na nuvem. Verifique a conexão.'); return; }
+        const status = document.getElementById('bezerros-status');
+        if (status) {
+          status.textContent = '✓ Salvo! ' + litrosDia.toFixed(1).replace('.', ',') + ' L/dia para bezerros registrados.';
+          setTimeout(() => { if (status) status.textContent = ''; }, 4000);
+        }
+        calcPreviewBezerros();
+      } finally {
+        liberarBotaoAcao(btn);
+      }
+    }
+
+    // =====================================================================
+    // PRODUTOS DE LAVAGEM DA ORDENHA
+    // =====================================================================
+
+    function getProdutosLavagem() {
+      if (!Array.isArray(DB.produtosLavagem)) DB.produtosLavagem = [];
+      return DB.produtosLavagem;
+    }
+
+    function renderListaProdutosLavagem() {
+      const el = document.getElementById('lista-produtos-lavagem');
+      if (!el) return;
+      const lista = getProdutosLavagem();
+      if (!lista.length) {
+        el.innerHTML = '<div class="muted" style="font-size:12px;margin-top:6px;">Nenhum produto cadastrado ainda.</div>';
+        return;
+      }
+      el.innerHTML = lista.map((p, i) => `
+        <div class="delivery-item" style="margin-bottom:8px;padding:10px 12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+            <div>
+              <strong>${escapeHtml(p.nome || 'Produto')}</strong>
+              <span style="font-size:12px;color:var(--muted);margin-left:8px;">R$ ${formatCurrencyBR(p.valorMensal || 0)}/mês</span>
+            </div>
+            <button class="btn btn-danger btn-sm" onclick="excluirProdutoLavagem(${i}, this)">Excluir</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function salvarProdutoLavagem(btn) {
+      const travou = travarBotaoAcao(btn, 'Salvando...');
+      if (travou === false) return;
+      try {
+        const nome = (document.getElementById('lavagem-produto-nome')?.value || '').trim();
+        const valorMensal = parseFloat(document.getElementById('lavagem-produto-valor')?.value) || 0;
+        if (!nome) { alert('Informe o nome do produto.'); return; }
+        if (valorMensal <= 0) { alert('Informe o valor mensal do produto.'); return; }
+        getProdutosLavagem().push({ id: 'lav_' + Date.now(), nome, valorMensal, criadoEm: new Date().toISOString() });
+        const ok = await salvarDB({ sincronizarAnimais: false });
+        if (!ok) { alert('Não foi possível salvar na nuvem. Verifique a conexão.'); return; }
+        const nomeEl = document.getElementById('lavagem-produto-nome');
+        const valorEl = document.getElementById('lavagem-produto-valor');
+        if (nomeEl) nomeEl.value = '';
+        if (valorEl) valorEl.value = '';
+        const status = document.getElementById('lavagem-status');
+        if (status) {
+          status.textContent = '✓ Produto salvo com sucesso!';
+          setTimeout(() => { if (status) status.textContent = ''; }, 4000);
+        }
+        renderListaProdutosLavagem();
+      } finally {
+        liberarBotaoAcao(btn);
+      }
+    }
+
+    async function excluirProdutoLavagem(indice, btn) {
+      const travou = travarBotaoAcao(btn, 'Excluindo...');
+      if (travou === false) return;
+      try {
+        const lista = getProdutosLavagem();
+        if (indice < 0 || indice >= lista.length) return;
+        const item = lista[indice];
+        if (!confirm('Deseja excluir o produto "' + (item.nome || 'produto') + '"?')) return;
+        lista.splice(indice, 1);
+        await salvarDB({ sincronizarAnimais: false });
+        renderListaProdutosLavagem();
+        alert('Produto excluído com sucesso.');
+      } finally {
+        liberarBotaoAcao(btn);
+      }
+    }
+
+
+
+    // =====================================================================
+    // OUTROS GASTOS DO LEITE
+    // =====================================================================
+
+    function getOutrosGastosLeite() {
+      if (!Array.isArray(DB.outrosGastosLeite)) DB.outrosGastosLeite = [];
+      return DB.outrosGastosLeite;
+    }
+
+    function renderListaOutrosGastosLeite() {
+      const el = document.getElementById('lista-outros-gastos');
+      if (!el) return;
+      const lista = getOutrosGastosLeite();
+      if (!lista.length) {
+        el.innerHTML = '<div class="muted" style="font-size:12px;margin-top:6px;">Nenhum outro gasto cadastrado ainda.</div>';
+        return;
+      }
+      el.innerHTML = lista.map((p, i) => `
+        <div class="delivery-item" style="margin-bottom:8px;padding:10px 12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+            <div>
+              <strong>${escapeHtml(p.nome || 'Outro gasto')}</strong>
+              <span style="font-size:12px;color:var(--muted);margin-left:8px;">R$ ${formatCurrencyBR(p.valorMensal || 0)}/mês</span>
+            </div>
+            <button class="btn btn-danger btn-sm" onclick="excluirOutroGastoLeite(${i}, this)">Excluir</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function salvarOutrosGastosLeite(btn) {
+      const travou = travarBotaoAcao(btn, 'Salvando...');
+      if (travou === false) return;
+      try {
+        const novos = [];
+        for (let i = 1; i <= 3; i++) {
+          const nomeEl = document.getElementById('outro-gasto-nome-' + i);
+          const valorEl = document.getElementById('outro-gasto-valor-' + i);
+          const nome = (nomeEl?.value || '').trim();
+          const valorMensal = parseFloat(valorEl?.value) || 0;
+          if (nome || valorMensal > 0) {
+            if (!nome) { alert('Informe o nome do gasto na linha ' + i + '.'); return; }
+            if (valorMensal <= 0) { alert('Informe um valor válido para ' + nome + '.'); return; }
+            novos.push({ id: 'og_' + Date.now() + '_' + i, nome, valorMensal, criadoEm: new Date().toISOString() });
+          }
+        }
+        if (!novos.length) { alert('Preencha pelo menos um gasto com nome e valor.'); return; }
+        const lista = getOutrosGastosLeite();
+        novos.forEach(item => lista.push(item));
+        const ok = await salvarDB({ sincronizarAnimais: false });
+        if (!ok) { alert('Não foi possível salvar na nuvem. Verifique a conexão.'); return; }
+        for (let i = 1; i <= 3; i++) {
+          const nomeEl = document.getElementById('outro-gasto-nome-' + i);
+          const valorEl = document.getElementById('outro-gasto-valor-' + i);
+          if (nomeEl) nomeEl.value = '';
+          if (valorEl) valorEl.value = '';
+        }
+        const status = document.getElementById('outros-gastos-status');
+        if (status) {
+          status.textContent = '✓ Outros gastos salvos com sucesso e enviados ao resumo mensal!';
+          setTimeout(() => { if (status) status.textContent = ''; }, 5000);
+        }
+        renderListaOutrosGastosLeite();
+        try { renderRelatorioFinanceiro(); } catch(e) {}
+        alert('Outros gastos salvos com sucesso.');
+      } finally {
+        liberarBotaoAcao(btn);
+      }
+    }
+
+    async function excluirOutroGastoLeite(indice, btn) {
+      const travou = travarBotaoAcao(btn, 'Excluindo...');
+      if (travou === false) return;
+      try {
+        const lista = getOutrosGastosLeite();
+        if (indice < 0 || indice >= lista.length) return;
+        const item = lista[indice];
+        if (!confirm('Deseja excluir o gasto "' + (item.nome || 'outro gasto') + '"?')) return;
+        lista.splice(indice, 1);
+        await salvarDB({ sincronizarAnimais: false });
+        renderListaOutrosGastosLeite();
+        try { renderRelatorioFinanceiro(); } catch(e) {}
+        alert('Gasto excluído com sucesso.');
+      } finally {
+        liberarBotaoAcao(btn);
+      }
+    }
+
+
+    // =====================================================================
+    // RELATÓRIO FINANCEIRO MENSAL
+    // =====================================================================
+
+    function abrirRelatorioFinanceiro() {
+      const modal = document.getElementById('modal-relatorio-financeiro');
+      if (!modal) return;
+      modal.classList.add('open');
+      renderRelatorioFinanceiro();
+    }
+
+    function renderRelatorioFinanceiro() {
+      const el = document.getElementById('relatorio-financeiro-conteudo');
+      if (!el) return;
+      const area = obterAreaAtual();
+      if (area !== 'leiteiro') {
+        el.innerHTML = '<div class="empty-state"><div class="empty-icon">🐄</div>O relatório financeiro mensal está disponível apenas na área leiteira.</div>';
+        return;
+      }
+      const r = calcularResumoFinanceiroCentral();
+      const avisoPreco = !r.precoLitro ? '<div class="alert-strip" style="margin-bottom:10px;">⚠ Cadastre o <strong>Preço do Litro de Leite</strong> em "Registrar Pesagem Leite" para ativar os cálculos de faturamento.</div>' : '';
+      el.innerHTML = avisoPreco + `
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="background:#0a150a;border:1px solid #1a3a1a;border-radius:12px;padding:14px;">
+            <div style="font-size:13px;font-weight:800;color:#6dd56d;margin-bottom:10px;">📈 RECEITAS DO MÊS</div>
+            <div style="display:grid;gap:6px;font-size:13px;">
+              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Preço do litro cadastrado</span><strong>R$ ${formatCurrencyBR(r.precoLitro)}</strong></div>
+              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Produção diária atual</span><strong>${r.totalDiario.toFixed(1).replace('.', ',')} L</strong></div>
+              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Leite para bezerros descontado</span><strong>-${r.litrosBezDia.toFixed(1).replace('.', ',')} L/dia · R$ ${formatCurrencyBR(r.custoLeiteBezerrosDia)}/dia</strong></div>
+              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Leite vendável diário</span><strong>${r.litrosVendaveisDia.toFixed(1).replace('.', ',')} L</strong></div>
+              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Faturamento diário líquido</span><strong>R$ ${formatCurrencyBR(r.faturamentoDiario)}</strong></div>
+              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Faturamento mensal projetado já descontado</span><strong>R$ ${formatCurrencyBR(r.faturamentoMensalEstimado)}</strong></div>
+              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Litros registrados até agora</span><strong>${r.litrosMes.toFixed(1).replace('.', ',')} L</strong></div>
+              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Leite para bezerros projetado no mês</span><strong>-${r.litrosBezerrosProjetadoMes.toFixed(1).replace('.', ',')} L · R$ ${formatCurrencyBR(r.descontoLeiteBezerrosRealMes)}</strong></div>
+              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Litros vendáveis projetados no mês</span><strong>${r.litrosVendaveisProjetadoMes.toFixed(1).replace('.', ',')} L</strong></div>
+              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Faturamento projetado do mês já descontado</span><strong style="color:#6dd56d;">R$ ${formatCurrencyBR(r.faturamentoMensalReal)}</strong></div>
+            </div>
+          </div>
+          <div style="background:#150a0a;border:1px solid #3a1a1a;border-radius:12px;padding:14px;">
+            <div style="font-size:13px;font-weight:800;color:#ef4444;margin-bottom:10px;">📉 DESPESAS DO MÊS</div>
+            <div style="display:grid;gap:6px;font-size:13px;">
+              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Ração — ${r.consumoRacaoDia.toFixed(1).replace('.', ',')} kg/dia</span><strong>R$ ${formatCurrencyBR(r.custoRacaoMes)}/mês</strong></div>
+              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Silo / produtos</span><strong>R$ ${formatCurrencyBR(r.custoSiloMes)}/mês</strong></div>
+              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Leite p/ bezerros</span><strong>já descontado do faturamento</strong></div>
+              ${r.produtosLavagem.map(p => '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">🧴 ' + escapeHtml(p.nome) + '</span><strong>R$ ' + formatCurrencyBR(p.valorMensal) + '/mês</strong></div>').join('')}
+              ${r.produtosLavagem.length === 0 ? '<div style="color:var(--muted);font-size:11px;">Produtos de lavagem: nenhum cadastrado ainda</div>' : ''}
+              ${r.outrosGastosLeite.map(p => '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">🧾 ' + escapeHtml(p.nome) + '</span><strong>R$ ' + formatCurrencyBR(p.valorMensal) + '/mês</strong></div>').join('')}
+              ${r.outrosGastosLeite.length === 0 ? '<div style="color:var(--muted);font-size:11px;">Outros gastos: nenhum cadastrado ainda</div>' : ''}
+              <div style="border-top:1px solid #3a1a1a;padding-top:8px;margin-top:4px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span><strong>TOTAL DESPESAS/MÊS</strong></span><strong style="color:#ef4444;">R$ ${formatCurrencyBR(r.totalDespesasMes)}</strong></div>
+            </div>
+          </div>
+          <div style="background:#0f0f0f;border:1px solid var(--border);border-radius:12px;padding:14px;">
+            <div style="font-size:13px;font-weight:800;color:#ffffff;margin-bottom:10px;">🎯 RESULTADO</div>
+            <div style="display:grid;gap:8px;font-size:14px;">
+              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Faturamento bruto projetado do mês</span><strong style="color:#6dd56d;">R$ ${formatCurrencyBR(r.lucroBruto)}</strong></div>
+              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Lucro líquido projetado do mês</span><strong style="color:${r.lucroLiquido >= 0 ? '#6dd56d' : '#ef4444'};">R$ ${formatCurrencyBR(r.lucroLiquido)}</strong></div>
+              <div style="font-size:11px;color:var(--muted);line-height:1.5;">Compra de silo/produto entra como estoque. O relatório desconta apenas o consumo mensal projetado, não o valor total da compra de uma vez.</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // ============================================================
+    // FUNÇÕES NOVAS - CONFINAMENTO / CORTE
+    // ============================================================
+
+    // --- HELPERS ---
+    function formatBRL(v) { return (parseFloat(v)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+    function gerarIdCorte() { return Date.now() + '_' + Math.random().toString(36).slice(2,7); }
+
+    function getLotesCorte() {
+      if (!Array.isArray(DB.lotesCorte)) DB.lotesCorte = [];
+      // Compatibilidade: se algum lote antigo veio sem ID, criar um ID seguro sem quebrar o registro.
+      DB.lotesCorte.forEach((l, idx) => {
+        if (!l) return;
+        if (!l.id) l.id = 'lote_' + idx + '_' + String(l.nome || 'sem_nome').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
+      });
+      return DB.lotesCorte;
+    }
+
+    /**
+     * Resolve loteId e loteNome a partir de um animal de confinamento.
+     * Compatível com registros antigos onde animal.loteCorte pode ser nome ou ID.
+     * @param {object} animal
+     * @returns {{ loteId: string, loteNome: string }}
+     */
+    function resolverLoteDoAnimal(animal) {
+      if (!animal) return { loteId: '', loteNome: '' };
+      const lotes = getLotesCorte();
+      const valorLoteCorte = animal.loteCorte || animal.nomeLote || animal.loteId || '';
+
+      if (!valorLoteCorte) return { loteId: '', loteNome: '' };
+
+      // Tentar encontrar pelo ID direto
+      const porId = lotes.find(l => l.id === valorLoteCorte);
+      if (porId) return { loteId: porId.id, loteNome: porId.nome || valorLoteCorte };
+
+      // Tentar encontrar pelo nome
+      const porNome = lotes.find(l => (l.nome || '').toLowerCase() === valorLoteCorte.toLowerCase());
+      if (porNome) return { loteId: porNome.id, loteNome: porNome.nome };
+
+      // Não encontrado: preservar como loteNome apenas
+      return { loteId: '', loteNome: valorLoteCorte };
+    }
+    function getPesagensCorte() { return Array.isArray(DB.pesagensCorte) ? DB.pesagensCorte : []; }
+    function getSanitarioCorteHistorico() { return Array.isArray(DB.sanitarioCorteHistorico) ? DB.sanitarioCorteHistorico : []; }
+    function getFinanceiroCorte() { return Array.isArray(DB.financeiroCorte) ? DB.financeiroCorte : []; }
+
+    function getAnimaisArquivadosCorteIdsNomes() {
+      const ids = new Set();
+      const nomes = new Set();
+      (DB.arquivados || []).forEach(a => {
+        if (a && a.area === 'corte' && ['vendido','morreu','morte'].includes(a.motivoArquivo)) {
+          if (a.id) ids.add(String(a.id));
+          if (a.nome) nomes.add(String(a.nome).trim().toLowerCase());
+        }
+      });
+      return { ids, nomes };
+    }
+
+    function lancamentoFinanceiroCorteEhCustoDeAnimalArquivado(lancamento) {
+      if (!lancamento || lancamento.tipo !== 'despesa') return false;
+      const { ids, nomes } = getAnimaisArquivadosCorteIdsNomes();
+      const animalId = String(lancamento.animalId || '').trim();
+      const animalNome = String(lancamento.animalNome || '').trim().toLowerCase();
+      if (animalId && ids.has(animalId)) return true;
+      if (animalNome && nomes.has(animalNome)) return true;
+      return false;
+    }
+
+    function getFinanceiroCorteAtivo() {
+      // O lançamento continua salvo para histórico e detalhes de venda/morte,
+      // mas custos diretamente ligados a animal vendido/morto deixam o financeiro ativo.
+      return getFinanceiroCorte().filter(f => !lancamentoFinanceiroCorteEhCustoDeAnimalArquivado(f));
+    }
+
+    function getTratosCorte() { if (!Array.isArray(DB.tratosCorte)) DB.tratosCorte = []; return DB.tratosCorte; }
+
+    function registroSanitarioPertenceAoAnimal(registro, animal) {
+      if (!registro || !animal) return false;
+      const animalId = String(animal.id || '').trim();
+      const animalNome = String(animal.nome || '').trim().toLowerCase();
+      const animalBrinco = String(animal.brinco || '').trim().toLowerCase();
+      const regAnimalId = String(registro.animalId || '').trim();
+      const regAnimalNome = String(registro.animalNome || '').trim().toLowerCase();
+
+      if (regAnimalId && animalId && regAnimalId === animalId) return true;
+      if (regAnimalNome && animalNome && regAnimalNome === animalNome) return true;
+      if (regAnimalNome && animalBrinco && regAnimalNome === animalBrinco) return true;
+
+      // Aplicações por lote devem aparecer no prontuário de todos os animais daquele lote.
+      const loteAnimal = resolverLoteDoAnimal(animal);
+      const regLoteId = String(registro.loteId || '').trim();
+      const regLoteNome = String(registro.loteNome || '').trim().toLowerCase();
+      const animalLoteId = String(loteAnimal.loteId || '').trim();
+      const animalLoteNome = String(loteAnimal.loteNome || '').trim().toLowerCase();
+
+      if (regLoteId && animalLoteId && regLoteId === animalLoteId) return true;
+      if (regLoteNome && animalLoteNome && regLoteNome === animalLoteNome) return true;
+      return false;
+    }
+
+    function calcularUltimoSanitarioAnimal(animalId) {
+      if (!animalId) return null;
+      const animal = [...(DB.animais || []), ...(DB.arquivados || [])].find(a => String(a.id || '') === String(animalId || ''));
+      const registros = getSanitarioCorteHistorico()
+        .filter(s => registroSanitarioPertenceAoAnimal(s, animal || { id: animalId }))
+        .sort((a, b) => String(b.data || '').localeCompare(String(a.data || '')) || String(b.dataCriacao || '').localeCompare(String(a.dataCriacao || '')));
+      return registros.length ? registros[0] : null;
+    }
+
+    function getMovimentacoesCorte() { return Array.isArray(DB.movimentacoesCorte) ? DB.movimentacoesCorte : []; }
+
+    function popularSelectLotes(selectId) {
+      const sel = document.getElementById(selectId);
+      if (!sel) return;
+      const atual = sel.value;
+      const lotes = getLotesCorte();
+      sel.innerHTML = `<option value="">— Sem lote —</option>` + lotes.map(l => `<option value="${escapeAttr(l.id)}" ${l.id === atual ? 'selected' : ''}>${escapeHtml(l.nome)}</option>`).join('');
+    }
+
+    function popularDatalistAnimaisCorte(datalistId) {
+      const dl = document.getElementById(datalistId);
+      if (!dl) return;
+      const animais = getAnimaisDaArea('corte');
+      dl.innerHTML = animais.map(a => `<option value="${escapeHtml(a.nome)}${a.brinco ? ' ('+a.brinco+')' : ''}">`).join('');
+    }
+
+    // --- LOTES ---
+    function abrirFormLoteCorte(id) {
+      const form = document.getElementById('form-lote-corte');
+      if (!form) return;
+      document.getElementById('lc-id').value = id || '';
+      if (id) {
+        const lote = getLotesCorte().find(l => l.id === id);
+        if (lote) {
+          document.getElementById('lc-nome').value = lote.nome || '';
+          document.getElementById('lc-data-entrada').value = lote.dataEntrada || '';
+          document.getElementById('lc-qtd').value = lote.qtdAnimais || '';
+          document.getElementById('lc-peso-medio-inicial').value = lote.pesoMedioInicial || '';
+          document.getElementById('lc-status').value = lote.status || 'ativo';
+          document.getElementById('lc-obs').value = lote.obs || '';
+        }
+      } else {
+        document.getElementById('lc-nome').value = '';
+        document.getElementById('lc-data-entrada').value = new Date().toISOString().slice(0,10);
+        document.getElementById('lc-qtd').value = '';
+        document.getElementById('lc-peso-medio-inicial').value = '';
+        document.getElementById('lc-status').value = 'ativo';
+        document.getElementById('lc-obs').value = '';
+      }
+      form.classList.remove('hidden');
+      document.getElementById('lc-nome').focus();
+    }
+
+    async function salvarLoteCorte(btn) {
+      const nome = (document.getElementById('lc-nome')?.value || '').trim();
+      if (!nome) { alert('Informe o nome do lote.'); return; }
+      const id = document.getElementById('lc-id')?.value || '';
+      const lote = {
+        id: id || gerarIdCorte(),
+        nome,
+        dataEntrada: document.getElementById('lc-data-entrada')?.value || '',
+        qtdAnimais: parseInt(document.getElementById('lc-qtd')?.value) || 0,
+        pesoMedioInicial: parseFloat(document.getElementById('lc-peso-medio-inicial')?.value) || 0,
+        status: document.getElementById('lc-status')?.value || 'ativo',
+        obs: (document.getElementById('lc-obs')?.value || '').trim(),
+        dataCriacao: id ? (getLotesCorte().find(l=>l.id===id)?.dataCriacao || new Date().toISOString()) : new Date().toISOString()
+      };
+      const idx = DB.lotesCorte.findIndex(l => l.id === lote.id);
+      if (idx >= 0) DB.lotesCorte[idx] = lote;
+      else DB.lotesCorte.push(lote);
+      try {
+        if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+        await salvarDB();
+        document.getElementById('form-lote-corte').classList.add('hidden');
+        document.getElementById('lc-id').value = '';
+        renderLotesCorte();
+        mostrarMensagemCorte('Lote salvo com sucesso! ✓');
+      } catch(e) { alert('Erro ao salvar lote: ' + e.message); }
+      finally { if (btn) { btn.disabled = false; btn.textContent = '✓ Salvar Lote'; } }
+    }
+
+    function editarLoteCorte(id) { abrirFormLoteCorte(id); }
+
+    async function excluirLoteCorte(id, btn) {
+      if (!confirm('Excluir este lote? Os animais vinculados não serão excluídos.')) return;
+      DB.lotesCorte = DB.lotesCorte.filter(l => l.id !== id);
+      try {
+        if (btn) { btn.disabled = true; btn.textContent = 'Excluindo...'; }
+        await salvarDB();
+        renderLotesCorte();
+        mostrarMensagemCorte('Lote excluído. ✓');
+      } catch(e) { alert('Erro ao excluir: ' + e.message); }
+      finally { if (btn) { btn.disabled = false; btn.textContent = 'Excluir'; } }
+    }
+
+    function normalizarChaveLoteDOM(loteId) {
+      return String(loteId || '').replace(/[^a-zA-Z0-9_-]/g, '_');
+    }
+
+    function getAnimaisDoLoteCorte(loteId) {
+      const lote = getLotesCorte().find(l => String(l.id) === String(loteId));
+      const loteNomeRef = lote?.nome || loteId;
+      return getAnimaisDaArea('corte').filter(a => {
+        const loteResolvido = resolverLoteDoAnimal(a);
+        return String(a.loteCorte || '') === String(loteId) ||
+          String(a.loteId || '') === String(loteId) ||
+          String(a.nomeLote || '') === String(loteId) ||
+          String(a.loteCorte || '') === String(loteNomeRef) ||
+          String(a.nomeLote || '') === String(loteNomeRef) ||
+          String(loteResolvido.loteId || '') === String(loteId) ||
+          String(loteResolvido.loteNome || '') === String(loteNomeRef);
+      });
+    }
+
+    function alternarDetalhesLoteCorte(loteId, btn, modo = 'toggle') {
+      const chave = normalizarChaveLoteDOM(loteId);
+      let box = document.getElementById('detalhes-lote-corte-' + chave);
+      if (!box) {
+        const card = btn ? btn.closest('.cut-card') : null;
+        if (card) {
+          box = card.querySelector('[data-detalhes-lote-corte="' + chave + '"]');
+        }
+      }
+      if (!box) {
+        console.warn('Área de detalhes do lote não encontrada:', loteId);
+        return;
+      }
+
+      const abrir = modo === 'abrir' ? true : modo === 'fechar' ? false : box.classList.contains('hidden');
+      if (btn) {
+        btn.disabled = true;
+        setTimeout(() => { btn.disabled = false; }, 300);
+      }
+
+      box.classList.toggle('hidden', !abrir);
+      if (abrir) renderDetalhesLoteCorte(loteId, false);
+
+      const botaoVer = document.getElementById('btn-ver-lote-corte-' + chave) || btn;
+      if (botaoVer) botaoVer.textContent = abrir ? 'Ocultar lote' : 'Ver lote';
+    }
+
+    function renderDetalhesLoteCorte(loteId, mostrarTodos = false) {
+      const chave = normalizarChaveLoteDOM(loteId);
+      let box = document.getElementById('detalhes-lote-corte-' + chave);
+      if (!box) {
+        box = document.querySelector('[data-detalhes-lote-corte="' + chave + '"]');
+      }
+      if (!box) return;
+
+      const animais = getAnimaisDoLoteCorte(loteId);
+      if (!animais.length) {
+        box.innerHTML = `<div class="empty-state" style="margin-top:10px;padding:12px;">Nenhum animal vinculado a este lote ainda.</div>`;
+        box.classList.remove('hidden');
+        return;
+      }
+      const limite = 5;
+      const visiveis = mostrarTodos ? animais : animais.slice(0, limite);
+      box.innerHTML = `
+        <div class="info-box" style="margin-top:10px;padding:12px;">
+          <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+            <strong>Animais deste lote (${animais.length})</strong>
+            <button type="button" class="btn btn-outline btn-sm" onclick="alternarDetalhesLoteCorte('${escapeAttr(loteId)}', this, 'fechar')">Mostrar menos</button>
+          </div>
+          <div style="display:grid;gap:8px;">
+            ${visiveis.map(a => {
+              const ult = calcularUltimaPesagemAnimal(a.id);
+              const san = calcularUltimoSanitarioAnimal(a.id);
+              return `<div class="cut-card" style="margin:0;padding:10px;">
+                <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+                  <div>
+                    <strong>${escapeHtml(a.nome || 'Animal sem nome')}</strong>
+                    ${a.brinco ? `<span style="color:var(--muted);font-size:12px;"> · Brinco: ${escapeHtml(a.brinco)}</span>` : ''}
+                    <div style="font-size:12px;color:var(--muted);margin-top:3px;">
+                      ${a.categoria ? `Categoria: ${escapeHtml(a.categoria)} · ` : ''}Status: ${escapeHtml(a.status || 'ativo')}
+                          ${(()=>{const c=obterCustosDiariosAnimal(a);return c.totalKgDia>0?`<br>Trato: <strong style="color:var(--text);">${c.totalKgDia.toFixed(1)} kg/dia</strong> · R$ ${formatBRL(c.totalReaisDia)}/dia`:'';})()}
+                    </div>
+                  </div>
+                  <div style="font-size:12px;color:var(--muted);text-align:right;">
+                    ${ult ? `Último peso: <strong style="color:var(--text);">${Number(ult.peso||0).toFixed(1)} kg</strong><br>Data: ${ult.data ? new Date(ult.data+'T12:00:00').toLocaleDateString('pt-BR') : '—'}` : 'Sem pesagem'}
+                    ${san ? `<br>Última sanidade: ${escapeHtml(san.nomeProduto || san.tipo || '')}` : ''}
+                  </div>
+                </div>
+              </div>`;
+            }).join('')}
+          </div>
+          ${animais.length > limite && !mostrarTodos ? `<button type="button" class="btn btn-secondary btn-sm" style="margin-top:10px;" onclick="renderDetalhesLoteCorte('${escapeAttr(loteId)}', true)">Mostrar mais</button>` : ''}
+        </div>`;
+      box.classList.remove('hidden');
+    }
+
+    window.alternarDetalhesLoteCorte = alternarDetalhesLoteCorte;
+    window.renderDetalhesLoteCorte = renderDetalhesLoteCorte;
+
+    // Clique robusto para o botão "Ver lote".
+    // Usa delegação em fase de captura para funcionar mesmo após re-renderização da lista.
+    if (!window.__iaRuralVerLoteDelegado) {
+      window.__iaRuralVerLoteDelegado = true;
+      document.addEventListener('click', function(event) {
+        const btn = event.target.closest('[data-ver-lote-corte="1"]');
+        if (!btn) return;
+        event.preventDefault();
+        event.stopPropagation();
+        if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
+        const loteId = btn.getAttribute('data-lote-id') || '';
+        if (typeof window.alternarDetalhesLoteCorte === 'function') {
+          window.alternarDetalhesLoteCorte(loteId, btn);
+        } else {
+          console.warn('Função alternarDetalhesLoteCorte indisponível.');
+        }
+      }, true);
+    }
+
+    function calcularResumoLote(loteId) {
+      const lote = getLotesCorte().find(l => l.id === loteId);
+      const loteNomeRef = lote?.nome || loteId;
+      const animais = getAnimaisDoLoteCorte(loteId);
+      const arquivados = (DB.arquivados||[]).filter(a => a.area==='corte' && (a.loteCorte === loteId || a.loteId === loteId || a.nomeLote === loteId || a.loteCorte === loteNomeRef || a.nomeLote === loteNomeRef));
+      const mortos = arquivados.filter(a => a.motivoArquivo === 'morreu' || a.motivoArquivo === 'morte');
+      const vendidos = arquivados.filter(a => a.motivoArquivo === 'vendido');
+      const pesagens = getPesagensCorte().filter(p => p.loteId === loteId || p.loteNome === loteNomeRef);
+      const animalIdsDoLote = animais.map(a => String(a.id || '')).filter(Boolean);
+      const sanitario = getSanitarioCorteHistorico().filter(s =>
+        s.loteId === loteId ||
+        s.loteNome === loteNomeRef ||
+        (s.aplicacaoPor === 'animal' && animalIdsDoLote.includes(String(s.animalId || '')))
+      );
+      const financeiro = getFinanceiroCorte().filter(f =>
+        f.loteId === loteId ||
+        f.loteNome === loteNomeRef ||
+        (f.animalId && animalIdsDoLote.includes(String(f.animalId || '')))
+      );
+      const custoSanitario = sanitario.reduce((s, x) => s + (parseFloat(x.valorTotal)||0), 0);
+      const custoAlimentar = financeiro.filter(f => ['racao','silo','milho','nucleo','sal_mineral','trato'].includes(f.categoria) && f.tipo==='despesa').reduce((s,x)=>s+(parseFloat(x.valor)||0),0);
+      const despesasNaoSanitarias = financeiro.filter(f => f.tipo === 'despesa' && f.origem !== 'sanitario').reduce((s,x)=>s+(parseFloat(x.valor)||0),0);
+      const custoTotal = despesasNaoSanitarias + custoSanitario;
+      const qtdAtivos = animais.length;
+      let pesoAtualTotal = 0, pesoAtualCount = 0;
+      animais.forEach(a => {
+        const ult = calcularUltimaPesagemAnimal(a.id);
+        if (ult && ult.peso) { pesoAtualTotal += ult.peso; pesoAtualCount++; }
+        else if (a.pesoEstimado) { pesoAtualTotal += a.pesoEstimado; pesoAtualCount++; }
+      });
+      const pesoMedioAtual = pesoAtualCount ? (pesoAtualTotal / pesoAtualCount) : 0;
+      const tratoKgDia = animais.reduce((sum, a) => sum + obterCustosDiariosAnimal(a).totalKgDia, 0);
+      const tratoReaisDia = animais.reduce((sum, a) => sum + obterCustosDiariosAnimal(a).totalReaisDia, 0);
+      return { qtdAtivos, mortos: mortos.length, vendidos: vendidos.length, custoSanitario, custoAlimentar, custoTotal, pesoMedioAtual, custoMedioAnimal: (qtdAtivos+mortos.length) > 0 ? custoTotal/(qtdAtivos+mortos.length) : 0, tratoKgDia, tratoReaisDia };
+    }
+
+    function renderLotesCorte() {
+      const lista = document.getElementById('lista-lotes-corte');
+      if (!lista) return;
+      const lotes = getLotesCorte();
+      if (!lotes.length) {
+        lista.innerHTML = `<div class="empty-state"><div class="empty-icon">📦</div>Nenhum lote cadastrado ainda. Clique em <strong>+ Novo Lote</strong> para começar.</div>`;
+        return;
+      }
+      lista.innerHTML = lotes.map(l => {
+        const loteId = l.id || '';
+        const loteKey = normalizarChaveLoteDOM(loteId);
+        const r = calcularResumoLote(loteId);
+        return `
+        <div class="cut-card">
+          <div class="cut-card-header">
+            <div>
+              <div class="cut-card-title">${escapeHtml(l.nome)}</div>
+              <div class="cut-helper">${l.dataEntrada ? 'Entrada: '+new Date(l.dataEntrada+'T12:00:00').toLocaleDateString('pt-BR') : ''} · Status: ${l.status==='ativo'?'✅ Ativo':'⛔ Encerrado'}</div>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button type="button" id="btn-ver-lote-corte-${escapeAttr(loteKey)}" class="btn btn-secondary btn-sm" data-ver-lote-corte="1" data-lote-id="${escapeAttr(loteId)}">Ver lote</button>
+              <button class="btn btn-outline btn-sm" onclick="editarLoteCorte('${escapeAttr(l.id)}')">Editar</button>
+              <button class="btn btn-danger btn-sm" onclick="excluirLoteCorte('${escapeAttr(l.id)}', this)">Excluir</button>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-top:8px;">
+            <div class="info-box" style="padding:10px;"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:3px;">Animais ativos</div><strong>${r.qtdAtivos}</strong></div>
+            <div class="info-box" style="padding:10px;"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:3px;">Peso médio atual</div><strong>${r.pesoMedioAtual ? r.pesoMedioAtual.toFixed(1)+' kg' : '—'}</strong></div>
+            <div class="info-box" style="padding:10px;"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:3px;">Custo sanitário</div><strong>R$ ${formatBRL(r.custoSanitario)}</strong></div>
+            <div class="info-box" style="padding:10px;"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:3px;">Custo alimentar</div><strong>R$ ${formatBRL(r.custoAlimentar)}</strong></div>
+            <div class="info-box" style="padding:10px;"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:3px;">Custo total</div><strong>R$ ${formatBRL(r.custoTotal)}</strong></div>
+            <div class="info-box" style="padding:10px;"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:3px;">Custo/animal</div><strong>${r.custoMedioAnimal>0?'R$ '+formatBRL(r.custoMedioAnimal):'—'}</strong></div>
+            <div class="info-box" style="padding:10px;"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:3px;">Trato/dia lote</div><strong>${r.tratoKgDia>0?r.tratoKgDia.toFixed(1)+' kg':'—'}</strong></div>
+            <div class="info-box" style="padding:10px;"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:3px;">Custo trato/dia</div><strong>${r.tratoReaisDia>0?'R$ '+formatBRL(r.tratoReaisDia):'—'}</strong></div>
+            <div class="info-box" style="padding:10px;"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:3px;">Mortos</div><strong>${r.mortos}</strong></div>
+            <div class="info-box" style="padding:10px;"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:3px;">Vendidos</div><strong>${r.vendidos}</strong></div>
+          </div>
+          ${l.obs ? `<div style="margin-top:8px;font-size:12px;color:var(--muted);">${escapeHtml(l.obs)}</div>` : ''}
+          <div id="detalhes-lote-corte-${escapeAttr(loteKey)}" data-detalhes-lote-corte="${escapeAttr(loteKey)}" class="hidden"></div>
+        </div>`;
+      }).join('');
+    }
+
+    // --- PESAGENS ---
+    function calcularUltimaPesagemAnimal(animalId) {
+      if (!animalId) return null;
+      const pesagens = getPesagensCorte().filter(p => p.animalId === animalId);
+      if (!pesagens.length) return null;
+      return pesagens.sort((a,b) => (b.data||'').localeCompare(a.data||''))[0];
+    }
+
+    function calcularGanhoPesoAnimal(animalId) {
+      const pesagens = getPesagensCorte().filter(p => p.animalId === animalId).sort((a,b) => (a.data||'').localeCompare(b.data||''));
+      if (pesagens.length < 2) return null;
+      const primeira = pesagens[0];
+      const ultima = pesagens[pesagens.length-1];
+      const ganhoPeso = (ultima.peso||0) - (primeira.peso||0);
+      const dias = Math.max(1, Math.round((new Date(ultima.data) - new Date(primeira.data))/(1000*60*60*24)));
+      const gmd = dias > 0 ? ganhoPeso/dias : 0;
+      return { ganhoPeso, dias, gmd, pesoInicial: primeira.peso, pesoFinal: ultima.peso };
+    }
+
+    function abrirFormPesagemCorte() {
+      const form = document.getElementById('form-pesagem-corte');
+      if (!form) return;
+      document.getElementById('pc-data').value = new Date().toISOString().slice(0,10);
+      document.getElementById('pc-peso').value = '';
+      document.getElementById('pc-animal').value = '';
+      document.getElementById('pc-obs').value = '';
+      popularSelectLotes('pc-lote');
+      popularDatalistAnimaisCorte('pc-animal-list');
+      form.classList.remove('hidden');
+      document.getElementById('pc-animal').focus();
+    }
+
+    async function salvarPesagemCorte(btn) {
+      const data = document.getElementById('pc-data')?.value;
+      const pesoStr = document.getElementById('pc-peso')?.value;
+      if (!data) { alert('Informe a data da pesagem.'); return; }
+      if (!pesoStr) { alert('Informe o peso.'); return; }
+      const peso = parseFloat(pesoStr);
+      if (isNaN(peso) || peso <= 0) { alert('Peso inválido.'); return; }
+      const animalNome = (document.getElementById('pc-animal')?.value || '').trim();
+      const loteId = document.getElementById('pc-lote')?.value || '';
+      const obs = (document.getElementById('pc-obs')?.value || '').trim();
+      // Tentar encontrar animal pelo nome/brinco
+      const animais = getAnimaisDaArea('corte');
+      const animalEncontrado = animais.find(a => a.nome === animalNome || a.brinco === animalNome || (a.nome + ' (' + a.brinco + ')') === animalNome);
+      const pesagem = {
+        id: gerarIdCorte(),
+        animalId: animalEncontrado?.id || '',
+        animalNome: animalNome || (animalEncontrado?.nome || ''),
+        loteId,
+        loteNome: loteId ? (getLotesCorte().find(l=>l.id===loteId)?.nome || '') : '',
+        data,
+        peso,
+        obs,
+        dataCriacao: new Date().toISOString()
+      };
+      DB.pesagensCorte.push(pesagem);
+
+      // Se o usuário selecionar um lote na pesagem, vincula o animal a esse lote também.
+      // Assim o animal passa a aparecer no resumo/lista do lote escolhido.
+      if (animalEncontrado && loteId) {
+        const loteSelecionado = getLotesCorte().find(l => l.id === loteId);
+        animalEncontrado.loteCorte = loteId;
+        animalEncontrado.loteId = loteId;
+        animalEncontrado.nomeLote = loteSelecionado?.nome || animalEncontrado.nomeLote || '';
+        animalEncontrado.atualizadoEm = new Date().toISOString();
+      }
+
+      try {
+        if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+        await salvarDB();
+        document.getElementById('form-pesagem-corte').classList.add('hidden');
+        renderPesagensCorte();
+        renderRebanho();
+        mostrarMensagemCorte('Pesagem registrada com sucesso! ✓');
+      } catch(e) { alert('Erro ao salvar: ' + e.message); }
+      finally { if (btn) { btn.disabled = false; btn.textContent = '✓ Registrar Pesagem'; } }
+    }
+
+    async function excluirPesagemCorte(id, btn) {
+      if (!confirm('Excluir esta pesagem?')) return;
+      DB.pesagensCorte = DB.pesagensCorte.filter(p => p.id !== id);
+      try {
+        if (btn) { btn.disabled = true; }
+        await salvarDB();
+        renderPesagensCorte();
+        mostrarMensagemCorte('Pesagem excluída. ✓');
+      } catch(e) { alert('Erro: ' + e.message); }
+      finally { if (btn) { btn.disabled = false; } }
+    }
+
+    function renderPesagensCorte() {
+      const lista = document.getElementById('lista-pesagens-corte');
+      if (!lista) return;
+      popularSelectLotes('pc-filtro-lote');
+      const filtroLote = document.getElementById('pc-filtro-lote')?.value || '';
+      let pesagens = getPesagensCorte().slice().sort((a,b)=>(b.data||'').localeCompare(a.data||''));
+      if (filtroLote) {
+        const loteRef = getLotesCorte().find(l => l.id === filtroLote);
+        const loteNomeRef = loteRef?.nome || '';
+        pesagens = pesagens.filter(p => p.loteId === filtroLote || (loteNomeRef && p.loteNome === loteNomeRef));
+      }
+      if (!pesagens.length) {
+        lista.innerHTML = `<div class="empty-state"><div class="empty-icon">⚖️</div>Nenhuma pesagem registrada ainda.</div>`;
+        return;
+      }
+      lista.innerHTML = pesagens.map(p => {
+        const animal = DB.animais.find(a => a.id === p.animalId);
+        const ganho = p.animalId ? calcularGanhoPesoAnimal(p.animalId) : null;
+        return `
+        <div class="cut-card">
+          <div class="cut-card-header">
+            <div>
+              <div class="cut-card-title">⚖️ ${p.peso} kg — ${escapeHtml(p.animalNome || '—')}</div>
+              <div class="cut-helper">${p.data ? new Date(p.data+'T12:00:00').toLocaleDateString('pt-BR') : '—'} ${p.loteNome ? '· Lote: '+escapeHtml(p.loteNome) : ''}</div>
+            </div>
+            <button class="btn btn-danger btn-sm" onclick="excluirPesagemCorte('${p.id}', this)">Excluir</button>
+          </div>
+          ${ganho ? `<div class="info-box" style="font-size:12px;">Ganho total: <strong>${ganho.ganhoPeso>=0?'+':''}${ganho.ganhoPeso.toFixed(1)} kg</strong> em <strong>${ganho.dias} dias</strong> · GMD: <strong>${ganho.gmd.toFixed(3)} kg/dia</strong></div>` : ''}
+          ${p.obs ? `<div style="margin-top:6px;font-size:12px;color:var(--muted);">${escapeHtml(p.obs)}</div>` : ''}
+        </div>`;
+      }).join('');
+    }
+
+    // --- VACINAS / MEDICAMENTOS ---
+    function toggleCamposAplicacaoSanitario() {
+      const por = document.getElementById('sh-aplicacao-por')?.value || 'lote';
+      document.getElementById('sh-lote-grupo')?.classList.toggle('hidden', por === 'animal');
+      document.getElementById('sh-animal-grupo')?.classList.toggle('hidden', por !== 'animal');
+      sincronizarQtdSanitarioPorLote();
+      calcularCustoSanitario();
+    }
+
+    function sincronizarQtdSanitarioPorLote() {
+      const por = document.getElementById('sh-aplicacao-por')?.value || 'lote';
+      const inputQtd = document.getElementById('sh-qtd-animais');
+      if (!inputQtd) return 0;
+      if (por === 'lote') {
+        const loteId = document.getElementById('sh-lote')?.value || '';
+        const qtdDoLote = loteId ? getAnimaisDoLoteCorte(loteId).length : 0;
+        inputQtd.readOnly = qtdDoLote > 0;
+        inputQtd.title = qtdDoLote > 0 ? 'Quantidade calculada automaticamente pelos animais vinculados a este lote.' : '';
+        if (qtdDoLote > 0) inputQtd.value = qtdDoLote;
+        return qtdDoLote;
+      }
+      inputQtd.readOnly = false;
+      inputQtd.title = '';
+      return parseInt(inputQtd.value, 10) || 0;
+    }
+
+    function calcularCustoSanitario() {
+      const qtdAuto = sincronizarQtdSanitarioPorLote();
+      const qtd = qtdAuto || parseFloat(document.getElementById('sh-qtd-animais')?.value) || 0;
+      const total = parseFloat(document.getElementById('sh-valor-total')?.value) || 0;
+      const info = document.getElementById('sh-custo-por-animal-info');
+      if (info) info.textContent = qtd > 0 && total > 0 ? `Custo por animal: R$ ${formatBRL(total/qtd)} (${qtd} animal${qtd === 1 ? '' : 'is'})` : 'Custo por animal: —';
+    }
+
+    function abrirFormSanitarioHistorico() {
+      const form = document.getElementById('form-sanitario-historico');
+      if (!form) return;
+      document.getElementById('sh-data').value = new Date().toISOString().slice(0,10);
+      document.getElementById('sh-proxima').value = '';
+      document.getElementById('sh-produto').value = '';
+      document.getElementById('sh-qtd-animais').value = '';
+      document.getElementById('sh-valor-total').value = '';
+      document.getElementById('sh-obs').value = '';
+      document.getElementById('sh-animal').value = '';
+      document.getElementById('sh-aplicacao-por').value = 'lote';
+      popularSelectLotes('sh-lote');
+      popularDatalistAnimaisCorte('sh-animal-list');
+      toggleCamposAplicacaoSanitario();
+      calcularCustoSanitario();
+      form.classList.remove('hidden');
+      document.getElementById('sh-produto').focus();
+    }
+
+    async function salvarSanitarioCorteHistorico(btn) {
+      const produto = (document.getElementById('sh-produto')?.value || '').trim();
+      if (!produto) { alert('Informe o nome do produto.'); return; }
+      const data = document.getElementById('sh-data')?.value;
+      if (!data) { alert('Informe a data da aplicação.'); return; }
+      const tipo = document.getElementById('sh-tipo')?.value || 'vacina';
+      const por = document.getElementById('sh-aplicacao-por')?.value || 'lote';
+      const loteId = document.getElementById('sh-lote')?.value || '';
+      const animalNome = (document.getElementById('sh-animal')?.value || '').trim();
+      const animal = DB.animais.find(a => a.nome === animalNome || a.brinco === animalNome || `${a.nome || ''} (${a.brinco || ''})` === animalNome);
+      const loteSelecionado = getLotesCorte().find(l => l.id === loteId);
+      const loteAnimal = por === 'animal' ? resolverLoteDoAnimal(animal) : { loteId: loteSelecionado?.id || loteId, loteNome: loteSelecionado?.nome || '' };
+      const qtdDoLote = por === 'lote' && loteId ? getAnimaisDoLoteCorte(loteId).length : 0;
+      let qtdAnimais = por === 'lote' && qtdDoLote > 0 ? qtdDoLote : (parseInt(document.getElementById('sh-qtd-animais')?.value) || 0);
+      if (por === 'animal') qtdAnimais = 1;
+      if (por === 'lote' && loteId && qtdDoLote <= 0 && qtdAnimais <= 0) { alert('Este lote ainda não possui animais vinculados. Vincule animais ao lote ou informe a quantidade.'); return; }
+      const valorTotal = parseFloat(document.getElementById('sh-valor-total')?.value) || 0;
+      const custoPorAnimal = qtdAnimais > 0 && valorTotal > 0 ? valorTotal / qtdAnimais : 0;
+      const registro = {
+        id: gerarIdCorte(),
+        tipo,
+        produto,
+        data,
+        proximaDose: document.getElementById('sh-proxima')?.value || '',
+        aplicacaoPor: por,
+        loteId: por === 'lote' ? (loteSelecionado?.id || loteId) : (loteAnimal.loteId || ''),
+        loteNome: por === 'lote' ? (loteSelecionado?.nome || '') : (loteAnimal.loteNome || ''),
+        animalId: por === 'animal' ? (animal?.id || '') : '',
+        animalNome: por === 'animal' ? animalNome : '',
+        qtdAnimais,
+        valorTotal,
+        custoPorAnimal,
+        obs: (document.getElementById('sh-obs')?.value || '').trim(),
+        dataCriacao: new Date().toISOString()
+      };
+      DB.sanitarioCorteHistorico.push(registro);
+      // Alimentar financeiro como custo sanitário se tiver valor
+      if (valorTotal > 0) {
+        DB.financeiroCorte.push({
+          id: gerarIdCorte(),
+          tipo: 'despesa',
+          categoria: tipo === 'vacina' ? 'vacina' : 'medicamento',
+          data,
+          valor: valorTotal,
+          loteId: registro.loteId,
+          loteNome: registro.loteNome,
+          animalId: registro.animalId,
+          animalNome: registro.animalNome,
+          qtdAnimais,
+          descricao: `${tipo}: ${produto}`,
+          obs: registro.obs,
+          dataCriacao: new Date().toISOString(),
+          origem: 'sanitario',
+          sanitarioId: registro.id
+        });
+      }
+      try {
+        if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+        await salvarDB();
+        document.getElementById('form-sanitario-historico').classList.add('hidden');
+        renderVacinasMedicamentosCorte();
+        renderFinanceiroCorte();
+        mostrarMensagemCorte(tipo === 'vacina' ? 'Vacina registrada com sucesso! ✓' : 'Medicamento registrado com sucesso! ✓');
+      } catch(e) { alert('Erro ao salvar: ' + e.message); }
+      finally { if (btn) { btn.disabled = false; btn.textContent = '✓ Registrar Aplicação'; } }
+    }
+
+    async function excluirSanitarioCorte(id, btn) {
+      if (!confirm('Excluir este registro? O lançamento financeiro vinculado também será removido.')) return;
+      // Remover do histórico sanitário
+      DB.sanitarioCorteHistorico = DB.sanitarioCorteHistorico.filter(s => s.id !== id);
+      // Remover lançamento financeiro vinculado (criado com origem 'sanitario' e descricão vinculada)
+      // O vínculo é pelo campo 'descricao' que contém tipo:produto, ou pelo registro que tem origem 'sanitario'
+      // Para garantir, removemos todos os lançamentos de origem 'sanitario' criados no mesmo momento (±5s)
+      // Melhor: guardar registroSanitarioId no lançamento financeiro — mas como não temos, filtramos por coincidência
+      // SOLUÇÃO SEGURA: ao criar lançamento sanitário, usar o mesmo ID do registro sanitário como referência
+      // Aqui fazemos limpeza de lançamentos financeiros que referenciam esse ID via campo 'sanitarioId'
+      if (Array.isArray(DB.financeiroCorte)) {
+        DB.financeiroCorte = DB.financeiroCorte.filter(f => {
+          if (f.origem !== 'sanitario') return true;
+          if (f.sanitarioId === id) return false;
+          return true;
+        });
+      }
+      try {
+        if (btn) { btn.disabled = true; }
+        await salvarDB();
+        renderVacinasMedicamentosCorte();
+        renderFinanceiroCorte();
+        mostrarMensagemCorte('Registro excluído. ✓');
+      } catch(e) { alert('Erro: '+e.message); }
+      finally { if (btn) { btn.disabled = false; } }
+    }
+
+    function renderVacinasMedicamentosCorte() {
+      const lista = document.getElementById('lista-vacinas-medicamentos-corte');
+      if (!lista) return;
+      const filtroTipo = document.getElementById('sh-filtro-tipo')?.value || '';
+      let registros = getSanitarioCorteHistorico().slice().sort((a,b)=>(b.data||'').localeCompare(a.data||''));
+      if (filtroTipo) registros = registros.filter(s => s.tipo === filtroTipo);
+      if (!registros.length) {
+        lista.innerHTML = `<div class="empty-state"><div class="empty-icon">💉</div>Nenhuma aplicação registrada ainda.</div>`;
+        return;
+      }
+      const tipoEmoji = {vacina:'💉',vermifugo:'🪱',antibiotico:'💊',vitamina:'🌿',outro:'🔬'};
+      lista.innerHTML = registros.map(s => `
+        <div class="cut-card">
+          <div class="cut-card-header">
+            <div>
+              <div class="cut-card-title">${tipoEmoji[s.tipo]||'💉'} ${escapeHtml(s.produto)}</div>
+              <div class="cut-helper">${s.data ? new Date(s.data+'T12:00:00').toLocaleDateString('pt-BR') : '—'} · ${escapeHtml(s.tipo)} ${s.aplicacaoPor==='lote' && s.loteNome ? '· Lote: '+escapeHtml(s.loteNome) : ''} ${s.aplicacaoPor==='animal' && s.animalNome ? '· Animal: '+escapeHtml(s.animalNome) : ''}</div>
+            </div>
+            <button class="btn btn-danger btn-sm" onclick="excluirSanitarioCorte('${s.id}', this)">Excluir</button>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:6px;">
+            <div class="info-box" style="padding:8px;font-size:12px;"><span style="color:var(--muted);">Animais</span><br/><strong>${s.qtdAnimais||'—'}</strong></div>
+            <div class="info-box" style="padding:8px;font-size:12px;"><span style="color:var(--muted);">Total</span><br/><strong>${s.valorTotal>0?'R$ '+formatBRL(s.valorTotal):'—'}</strong></div>
+            <div class="info-box" style="padding:8px;font-size:12px;"><span style="color:var(--muted);">Por animal</span><br/><strong>${s.custoPorAnimal>0?'R$ '+formatBRL(s.custoPorAnimal):'—'}</strong></div>
+          </div>
+          ${s.proximaDose ? `<div style="margin-top:6px;font-size:12px;color:var(--muted);">Próxima dose: <strong style="color:#fff;">${new Date(s.proximaDose+'T12:00:00').toLocaleDateString('pt-BR')}</strong></div>` : ''}
+          ${s.obs ? `<div style="margin-top:4px;font-size:12px;color:var(--muted);">${escapeHtml(s.obs)}</div>` : ''}
+        </div>`).join('');
+    }
+
+
+    // --- TRATO POR ANIMAL / CORTE ---
+    function obterAnimalCortePorEntrada(valor) {
+      const v = String(valor || '').trim();
+      if (!v) return null;
+      return getAnimaisDaArea('corte').find(a =>
+        String(a.id || '') === v ||
+        String(a.nome || '') === v ||
+        String(a.brinco || '') === v ||
+        (String(a.nome || '') + (a.brinco ? ' (' + a.brinco + ')' : '')) === v
+      ) || null;
+    }
+
+    function limparFormTratoCorte() {
+      ['tc-animal','tc-obs','tc-milho','tc-silagem','tc-racao'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+      const data = document.getElementById('tc-data');
+      if (data) data.value = new Date().toISOString().slice(0,10);
+      const lote = document.getElementById('tc-lote');
+      if (lote) lote.value = '';
+      atualizarInfoTratoCorte();
+    }
+
+    function abrirTratoCorte() {
+      showPage('trato-corte');
+      setTimeout(() => {
+        popularDatalistAnimaisCorte('tc-animal-list');
+        popularSelectLotes('tc-lote');
+        const data = document.getElementById('tc-data');
+        if (data && !data.value) data.value = new Date().toISOString().slice(0,10);
+        atualizarInfoTratoCorte();
+      }, 0);
+    }
+
+    function atualizarInfoTratoCorte() {
+      const info = document.getElementById('tc-resumo');
+      if (!info) return;
+      const animal = obterAnimalCortePorEntrada(document.getElementById('tc-animal')?.value || '');
+      if (animal) {
+        const loteResolvido = resolverLoteDoAnimal(animal);
+        const sel = document.getElementById('tc-lote');
+        if (sel && !sel.value && loteResolvido.loteId) sel.value = loteResolvido.loteId;
+      }
+      const milho = parseFloat(document.getElementById('tc-milho')?.value) || 0;
+      const silagem = parseFloat(document.getElementById('tc-silagem')?.value) || 0;
+      const racao = parseFloat(document.getElementById('tc-racao')?.value) || 0;
+      const cMilho = getCustoMedioProdutoKg('milho');
+      const cSilagem = getCustoMedioProdutoKg('silagem');
+      const cRacao = getCustoMedioProdutoKg('racao');
+      const totalKg = milho + silagem + racao;
+      const totalReais = (milho*cMilho) + (silagem*cSilagem) + (racao*cRacao);
+      info.innerHTML = `
+        <strong>Resumo automático</strong><br/>
+        Animal: <strong>${animal ? escapeHtml(animal.nome || 'Animal') : '—'}</strong><br/>
+        Milho: ${milho.toFixed(2).replace('.', ',')} kg × R$ ${formatBRL(cMilho)}/kg ·
+        Silo: ${silagem.toFixed(2).replace('.', ',')} kg × R$ ${formatBRL(cSilagem)}/kg ·
+        Ração: ${racao.toFixed(2).replace('.', ',')} kg × R$ ${formatBRL(cRacao)}/kg<br/>
+        Total: <strong>${totalKg.toFixed(2).replace('.', ',')} kg/dia</strong> · <strong>R$ ${formatBRL(totalReais)}/animal/dia</strong><br/>
+        <span style="color:var(--muted);font-size:12px;">Estoque atual — Milho: ${getTotalKgProduto('milho').toFixed(1).replace('.', ',')} kg · Silo: ${getTotalKgProduto('silagem').toFixed(1).replace('.', ',')} kg · Ração: ${getTotalKgProduto('racao').toFixed(1).replace('.', ',')} kg</span>
+      `;
+    }
+
+    async function salvarTratoCorte(btn) {
+      const animal = obterAnimalCortePorEntrada(document.getElementById('tc-animal')?.value || '');
+      if (!animal) { alert('Selecione um animal válido do confinamento.'); return; }
+      const data = document.getElementById('tc-data')?.value || '';
+      if (!data) { alert('Informe a data do trato.'); return; }
+      const milhoKg = parseFloat(document.getElementById('tc-milho')?.value) || 0;
+      const silagemKg = parseFloat(document.getElementById('tc-silagem')?.value) || 0;
+      const racaoKg = parseFloat(document.getElementById('tc-racao')?.value) || 0;
+      if ((milhoKg + silagemKg + racaoKg) <= 0) { alert('Informe pelo menos um produto do trato em kg por dia.'); return; }
+      const loteSelecionado = document.getElementById('tc-lote')?.value || '';
+      const loteResolvidoAnimal = resolverLoteDoAnimal(animal);
+      const loteId = loteSelecionado || loteResolvidoAnimal.loteId || '';
+      const lote = getLotesCorte().find(l => String(l.id) === String(loteId));
+      const loteNome = lote?.nome || loteResolvidoAnimal.loteNome || '';
+      const custoMilhoKg = getCustoMedioProdutoKg('milho');
+      const custoSilagemKg = getCustoMedioProdutoKg('silagem');
+      const custoRacaoKg = getCustoMedioProdutoKg('racao');
+      const custoMilhoDia = milhoKg * custoMilhoKg;
+      const custoSilagemDia = silagemKg * custoSilagemKg;
+      const custoRacaoDia = racaoKg * custoRacaoKg;
+      const totalKgDia = milhoKg + silagemKg + racaoKg;
+      const totalReaisDia = custoMilhoDia + custoSilagemDia + custoRacaoDia;
+      const tratoId = gerarIdCorte();
+      const registro = {
+        id: tratoId,
+        animalId: animal.id,
+        animalNome: animal.nome || '',
+        loteId,
+        loteNome,
+        data,
+        milhoKg,
+        silagemKg,
+        racaoKg,
+        custoMilhoKg,
+        custoSilagemKg,
+        custoRacaoKg,
+        custoMilhoDia,
+        custoSilagemDia,
+        custoRacaoDia,
+        totalKgDia,
+        totalReaisDia,
+        obs: (document.getElementById('tc-obs')?.value || '').trim(),
+        dataCriacao: new Date().toISOString()
+      };
+      if (!Array.isArray(DB.tratosCorte)) DB.tratosCorte = [];
+      DB.tratosCorte.push(registro);
+      animal.consumoMilho = milhoKg;
+      animal.consumoSilagem = silagemKg;
+      animal.consumoRacao = racaoKg;
+      if (loteId) {
+        animal.loteCorte = loteId;
+        animal.loteId = loteId;
+        animal.nomeLote = loteNome;
+      }
+      if (!Array.isArray(DB.financeiroCorte)) DB.financeiroCorte = [];
+      if (totalReaisDia > 0) {
+        DB.financeiroCorte.push({
+          id: gerarIdCorte(),
+          tipo: 'despesa',
+          categoria: 'trato',
+          data,
+          valor: totalReaisDia,
+          loteId,
+          loteNome,
+          animalId: animal.id,
+          qtdAnimais: 1,
+          custoPorAnimal: totalReaisDia,
+          descricao: `Trato diário - ${animal.nome || 'Animal'}`,
+          obs: registro.obs,
+          origem: 'trato',
+          tratoId,
+          dataCriacao: new Date().toISOString()
+        });
+      }
+      try {
+        if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+        await salvarDB();
+        renderTratoCorte();
+        renderLotesCorte();
+        renderFinanceiroCorte();
+        renderDespesasCorte();
+        mostrarMensagemCorte('Trato registrado com sucesso! ✓');
+      } catch(e) { alert('Erro ao salvar trato: ' + e.message); }
+      finally { if (btn) { btn.disabled = false; btn.textContent = '✓ Registrar trato'; } }
+    }
+
+    async function excluirTratoCorte(id, btn) {
+      if (!confirm('Excluir este registro de trato? O lançamento financeiro vinculado também será removido.')) return;
+      DB.tratosCorte = getTratosCorte().filter(t => t.id !== id);
+      if (Array.isArray(DB.financeiroCorte)) DB.financeiroCorte = DB.financeiroCorte.filter(f => !(f.origem === 'trato' && f.tratoId === id));
+      try {
+        if (btn) { btn.disabled = true; btn.textContent = 'Excluindo...'; }
+        await salvarDB();
+        renderTratoCorte();
+        renderLotesCorte();
+        renderFinanceiroCorte();
+        mostrarMensagemCorte('Trato excluído. ✓');
+      } catch(e) { alert('Erro ao excluir trato: ' + e.message); }
+      finally { if (btn) { btn.disabled = false; btn.textContent = 'Excluir'; } }
+    }
+
+    function renderTratoCorte() {
+      popularDatalistAnimaisCorte('tc-animal-list');
+      popularSelectLotes('tc-lote');
+      const data = document.getElementById('tc-data');
+      if (data && !data.value) data.value = new Date().toISOString().slice(0,10);
+      atualizarInfoTratoCorte();
+      const lista = document.getElementById('lista-tratos-corte');
+      if (!lista) return;
+      const tratos = getTratosCorte().slice().sort((a,b)=>(b.data||'').localeCompare(a.data||'') || (b.dataCriacao||'').localeCompare(a.dataCriacao||''));
+      if (!tratos.length) {
+        lista.innerHTML = `<div class="empty-state"><div class="empty-icon">🥣</div>Nenhum trato registrado ainda.</div>`;
+        return;
+      }
+      lista.innerHTML = tratos.map(t => `
+        <div class="cut-card">
+          <div class="cut-card-header">
+            <div>
+              <div class="cut-card-title">🥣 ${escapeHtml(t.animalNome || 'Animal')}</div>
+              <div class="cut-helper">${t.data ? new Date(t.data+'T12:00:00').toLocaleDateString('pt-BR') : '—'}${t.loteNome ? ' · Lote: '+escapeHtml(t.loteNome) : ''}</div>
+            </div>
+            <button class="btn btn-danger btn-sm" onclick="excluirTratoCorte('${escapeAttr(t.id)}', this)">Excluir</button>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-top:8px;">
+            <div class="info-box" style="padding:8px;"><span style="color:var(--muted);font-size:11px;">Milho</span><br/><strong>${(parseFloat(t.milhoKg)||0).toFixed(2).replace('.', ',')} kg/dia</strong></div>
+            <div class="info-box" style="padding:8px;"><span style="color:var(--muted);font-size:11px;">Silo</span><br/><strong>${(parseFloat(t.silagemKg)||0).toFixed(2).replace('.', ',')} kg/dia</strong></div>
+            <div class="info-box" style="padding:8px;"><span style="color:var(--muted);font-size:11px;">Ração</span><br/><strong>${(parseFloat(t.racaoKg)||0).toFixed(2).replace('.', ',')} kg/dia</strong></div>
+            <div class="info-box" style="padding:8px;"><span style="color:var(--muted);font-size:11px;">Custo diário</span><br/><strong>R$ ${formatBRL(t.totalReaisDia)}</strong></div>
+          </div>
+          ${t.obs ? `<div style="font-size:12px;color:var(--muted);margin-top:6px;">${escapeHtml(t.obs)}</div>` : ''}
+        </div>`).join('');
+    }
+
+    // --- FINANCEIRO CORTE ---
+    function toggleCategoriasFinanceiro() {
+      const tipo = document.getElementById('fc-tipo')?.value || 'despesa';
+      const sel = document.getElementById('fc-categoria');
+      if (!sel) return;
+      if (tipo === 'receita') {
+        sel.innerHTML = `<option value="venda_animal">Venda de animal</option><option value="venda_lote">Venda de lote</option><option value="outros_receita">Outros</option>`;
+      } else {
+        sel.innerHTML = `<option value="compra_animais">Compra de animais</option><option value="racao">Ração</option><option value="silo">Silo/Silagem</option><option value="milho">Milho</option><option value="nucleo">Núcleo</option><option value="sal_mineral">Sal mineral</option><option value="trato">Trato diário</option><option value="medicamento">Medicamento</option><option value="vacina">Vacina</option><option value="mao_de_obra">Mão de obra</option><option value="frete">Frete</option><option value="veterinario">Veterinário</option><option value="manutencao">Manutenção</option><option value="outros_despesa">Outros</option>`;
+      }
+    }
+
+    function calcularCustoFinanceiroCorte() {
+      const qtd = parseFloat(document.getElementById('fc-qtd-animais')?.value) || 0;
+      const total = parseFloat(document.getElementById('fc-valor')?.value) || 0;
+      const info = document.getElementById('fc-custo-por-animal-info');
+      if (info) info.textContent = qtd > 0 && total > 0 ? `Custo por animal: R$ ${formatBRL(total/qtd)}` : 'Custo por animal: —';
+    }
+
+    function abrirFormFinanceiroCorte(id) {
+      const form = document.getElementById('form-financeiro-corte');
+      if (!form) return;
+      document.getElementById('fc-id').value = id || '';
+      if (id) {
+        const lanc = getFinanceiroCorte().find(f => f.id === id);
+        if (lanc) {
+          document.getElementById('fc-tipo').value = lanc.tipo || 'despesa';
+          toggleCategoriasFinanceiro();
+          document.getElementById('fc-categoria').value = lanc.categoria || '';
+          document.getElementById('fc-data').value = lanc.data || '';
+          document.getElementById('fc-valor').value = lanc.valor || '';
+          document.getElementById('fc-descricao').value = lanc.descricao || '';
+          document.getElementById('fc-animal').value = lanc.animalId || '';
+          document.getElementById('fc-qtd-animais').value = lanc.qtdAnimais || '';
+          document.getElementById('fc-obs').value = lanc.obs || '';
+        }
+      } else {
+        document.getElementById('fc-tipo').value = 'despesa';
+        toggleCategoriasFinanceiro();
+        document.getElementById('fc-data').value = new Date().toISOString().slice(0,10);
+        document.getElementById('fc-valor').value = '';
+        document.getElementById('fc-descricao').value = '';
+        document.getElementById('fc-animal').value = '';
+        document.getElementById('fc-qtd-animais').value = '';
+        document.getElementById('fc-obs').value = '';
+      }
+      popularSelectLotes('fc-lote');
+      popularDatalistAnimaisCorte('fc-animal-list');
+      calcularCustoFinanceiroCorte();
+      form.classList.remove('hidden');
+      document.getElementById('fc-data').focus();
+    }
+
+    function fecharFormFinanceiroCorte() {
+      document.getElementById('form-financeiro-corte')?.classList.add('hidden');
+      document.getElementById('fc-id').value = '';
+    }
+
+    async function salvarLancamentoFinanceiroCorte(btn) {
+      const data = document.getElementById('fc-data')?.value;
+      const valorStr = document.getElementById('fc-valor')?.value;
+      if (!data) { alert('Informe a data.'); return; }
+      if (!valorStr) { alert('Informe o valor.'); return; }
+      const valor = parseFloat(valorStr);
+      if (isNaN(valor) || valor <= 0) { alert('Valor inválido.'); return; }
+      const id = document.getElementById('fc-id')?.value || '';
+      const qtdAnimais = parseInt(document.getElementById('fc-qtd-animais')?.value) || 0;
+      const lanc = {
+        id: id || gerarIdCorte(),
+        tipo: document.getElementById('fc-tipo')?.value || 'despesa',
+        categoria: document.getElementById('fc-categoria')?.value || '',
+        data,
+        valor,
+        loteId: document.getElementById('fc-lote')?.value || '',
+        loteNome: '',
+        animalId: (document.getElementById('fc-animal')?.value || '').trim(),
+        qtdAnimais,
+        custoPorAnimal: qtdAnimais > 0 ? valor / qtdAnimais : 0,
+        descricao: (document.getElementById('fc-descricao')?.value || '').trim(),
+        obs: (document.getElementById('fc-obs')?.value || '').trim(),
+        dataCriacao: id ? (getFinanceiroCorte().find(f=>f.id===id)?.dataCriacao || new Date().toISOString()) : new Date().toISOString()
+      };
+      lanc.loteNome = lanc.loteId ? (getLotesCorte().find(l=>l.id===lanc.loteId)?.nome||'') : '';
+      const idx = DB.financeiroCorte.findIndex(f => f.id === lanc.id);
+      if (idx >= 0) DB.financeiroCorte[idx] = lanc;
+      else DB.financeiroCorte.push(lanc);
+      try {
+        if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+        await salvarDB();
+        fecharFormFinanceiroCorte();
+        renderFinanceiroCorte();
+        mostrarMensagemCorte(lanc.tipo==='receita' ? 'Receita registrada! ✓' : 'Despesa registrada! ✓');
+      } catch(e) { alert('Erro: '+e.message); }
+      finally { if (btn) { btn.disabled = false; btn.textContent = '✓ Salvar Lançamento'; } }
+    }
+
+    async function excluirLancamentoFinanceiroCorte(id, btn) {
+      if (!confirm('Excluir este lançamento?')) return;
+      DB.financeiroCorte = DB.financeiroCorte.filter(f => f.id !== id);
+      try {
+        if (btn) { btn.disabled = true; }
+        await salvarDB();
+        renderFinanceiroCorte();
+        mostrarMensagemCorte('Lançamento excluído. ✓');
+      } catch(e) { alert('Erro: '+e.message); }
+      finally { if (btn) { btn.disabled = false; } }
+    }
+
+    function calcularResumoFinanceiroCorte() {
+      const financeiro = getFinanceiroCorteAtivo();
+      const totalDespesas = financeiro.filter(f=>f.tipo==='despesa').reduce((s,f)=>s+(parseFloat(f.valor)||0),0);
+      const totalReceitas = financeiro.filter(f=>f.tipo==='receita').reduce((s,f)=>s+(parseFloat(f.valor)||0),0);
+      const saldo = totalReceitas - totalDespesas;
+      const catAlim = ['racao','silo','milho','nucleo','sal_mineral'];
+      const catSan = ['vacina','medicamento','veterinario'];
+      const custoAlimentar = financeiro.filter(f=>f.tipo==='despesa'&&catAlim.includes(f.categoria)).reduce((s,f)=>s+(parseFloat(f.valor)||0),0);
+      const custoSanitario = financeiro.filter(f=>f.tipo==='despesa'&&catSan.includes(f.categoria)).reduce((s,f)=>s+(parseFloat(f.valor)||0),0);
+      const qtdAtivos = getAnimaisDaArea('corte').length;
+      return { totalDespesas, totalReceitas, saldo, custoAlimentar, custoSanitario, qtdAtivos };
+    }
+
+    function renderFinanceiroCorte() {
+      const lista = document.getElementById('lista-financeiro-corte');
+      const resumoEl = document.getElementById('resumo-financeiro-corte');
+      if (!lista) return;
+      popularSelectLotes('fc-filtro-lote');
+      popularSelectLotes('fc-lote');
+
+      const r = calcularResumoFinanceiroCorte();
+      if (resumoEl) {
+        const corSaldo = r.saldo >= 0 ? '#6dd56d' : '#ef4444';
+        resumoEl.innerHTML = `
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px;">
+            <div class="info-box" style="padding:12px;"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Total despesas</div><strong style="color:#ef4444;">R$ ${formatBRL(r.totalDespesas)}</strong></div>
+            <div class="info-box" style="padding:12px;"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Total receitas</div><strong style="color:#6dd56d;">R$ ${formatBRL(r.totalReceitas)}</strong></div>
+            <div class="info-box" style="padding:12px;"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Saldo</div><strong style="color:${corSaldo};">R$ ${formatBRL(r.saldo)}</strong></div>
+            <div class="info-box" style="padding:12px;"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Custo alimentar</div><strong>R$ ${formatBRL(r.custoAlimentar)}</strong></div>
+            <div class="info-box" style="padding:12px;"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Custo sanitário</div><strong>R$ ${formatBRL(r.custoSanitario)}</strong></div>
+            <div class="info-box" style="padding:12px;"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Animais ativos</div><strong>${r.qtdAtivos}</strong></div>
+          </div>`;
+      }
+
+      const filtroLote = document.getElementById('fc-filtro-lote')?.value || '';
+      const filtroTipo = document.getElementById('fc-filtro-tipo')?.value || '';
+      let lancamentos = getFinanceiroCorteAtivo().slice().sort((a,b)=>(b.data||'').localeCompare(a.data||''));
+      if (filtroLote) {
+        const loteRef = getLotesCorte().find(l => l.id === filtroLote);
+        const loteNomeRef = loteRef?.nome || '';
+        lancamentos = lancamentos.filter(f => f.loteId === filtroLote || (loteNomeRef && f.loteNome === loteNomeRef));
+      }
+      if (filtroTipo) lancamentos = lancamentos.filter(f => f.tipo === filtroTipo);
+      if (!lancamentos.length) {
+        lista.innerHTML = `<div class="empty-state"><div class="empty-icon">💹</div>Nenhum lançamento registrado ainda.</div>`;
+        return;
+      }
+      const catLabel = {compra_animais:'Compra de animais',racao:'Ração',silo:'Silo/Silagem',milho:'Milho',nucleo:'Núcleo',sal_mineral:'Sal mineral',medicamento:'Medicamento',vacina:'Vacina',mao_de_obra:'Mão de obra',frete:'Frete',veterinario:'Veterinário',manutencao:'Manutenção',outros_despesa:'Outros',venda_animal:'Venda de animal',venda_lote:'Venda de lote',outros_receita:'Outros'};
+      lista.innerHTML = lancamentos.map(f => `
+        <div class="cut-card">
+          <div class="cut-card-header">
+            <div>
+              <div class="cut-card-title" style="color:${f.tipo==='receita'?'#6dd56d':'#ef4444'};">${f.tipo==='receita'?'↑ Receita':'↓ Despesa'} · R$ ${formatBRL(f.valor)}</div>
+              <div class="cut-helper">${f.data?new Date(f.data+'T12:00:00').toLocaleDateString('pt-BR'):'—'} · ${catLabel[f.categoria]||f.categoria||'—'} ${f.loteNome?'· '+escapeHtml(f.loteNome):''}</div>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-outline btn-sm" onclick="editarLancamentoFinanceiroCorte('${f.id}')">Editar</button>
+              <button class="btn btn-danger btn-sm" onclick="excluirLancamentoFinanceiroCorte('${f.id}', this)">Excluir</button>
+            </div>
+          </div>
+          ${f.descricao ? `<div style="font-size:12px;color:#fff;margin-top:4px;">${escapeHtml(f.descricao)}</div>` : ''}
+          ${f.qtdAnimais>0&&f.custoPorAnimal>0?`<div style="font-size:12px;color:var(--muted);margin-top:4px;">${f.qtdAnimais} animais · R$ ${formatBRL(f.custoPorAnimal)} por animal</div>`:''}
+          ${f.obs ? `<div style="font-size:11px;color:var(--muted);margin-top:4px;">${escapeHtml(f.obs)}</div>` : ''}
+        </div>`).join('');
+    }
+
+    function editarLancamentoFinanceiroCorte(id) { abrirFormFinanceiroCorte(id); }
+
+    // --- MORTES / VENDAS ---
+    function renderMovimentacoesCorte() {
+      const lista = document.getElementById('lista-mortes-vendas-corte');
+      if (!lista) return;
+      const arquivadosCorte = (DB.arquivados || []).filter(a => a.area === 'corte');
+      if (!arquivadosCorte.length) {
+        lista.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div>Nenhuma saída registrada ainda.<br/>Para registrar uma venda ou morte, vá em <strong>Meu Rebanho</strong> e clique em <strong>Excluir</strong> no animal.</div>`;
+        return;
+      }
+      const sorted = arquivadosCorte.slice().sort((a,b)=>(b.dataArquivo||'').localeCompare(a.dataArquivo||''));
+      lista.innerHTML = sorted.map(a => {
+        const motivo = a.motivoArquivo || 'arquivado';
+        const isMorte = motivo === 'morreu' || motivo === 'morte';
+        const isVenda = motivo === 'vendido';
+        const emoji = isMorte ? '☠️' : isVenda ? '💰' : '📁';
+        const cor = isMorte ? '#ef4444' : isVenda ? '#6dd56d' : '#aaa';
+        const dataFmt = a.dataArquivo ? new Date(a.dataArquivo).toLocaleDateString('pt-BR') : '—';
+        return `
+        <div class="cut-card">
+          <div class="cut-card-header">
+            <div>
+              <div class="cut-card-title">${emoji} ${escapeHtml(a.nome||'Animal')} <span style="font-weight:400;font-size:12px;color:${cor};">${isVenda?'Vendido':isMorte?'Morte':'Arquivado'}</span></div>
+              <div class="cut-helper">${dataFmt} ${a.brinco?'· Brinco: '+escapeHtml(a.brinco):''} ${a.categoria?'· '+escapeHtml(a.categoria):''}</div>
+            </div>
+          </div>
+          ${isVenda && a.precoVenda ? `<div style="font-size:13px;color:#6dd56d;margin-top:6px;font-weight:700;">Valor da venda: R$ ${formatBRL(a.precoVenda)}</div>` : ''}
+          ${isMorte && a.motivoMorte ? `<div style="font-size:12px;color:var(--muted);margin-top:6px;">Motivo: ${escapeHtml(a.motivoMorte)}</div>` : ''}
+          ${a.obsVenda ? `<div style="font-size:12px;color:var(--muted);margin-top:4px;">${escapeHtml(a.obsVenda)}</div>` : ''}
+          ${a.obsMorte ? `<div style="font-size:12px;color:var(--muted);margin-top:4px;">${escapeHtml(a.obsMorte)}</div>` : ''}
+          <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-primary btn-sm" onclick="abrirDetalhesMovimentacaoCorte('${a.id}', this)">📊 Detalhes</button>
+            <button class="btn btn-outline btn-sm" onclick="abrirHistoricoAnimal('${a.id}')">📋 Prontuário</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+
+    // --- DETALHES DE MORTE / VENDA NO CONFINAMENTO ---
+    function obterPesagensAnimalOrdenadas(animalId) {
+      return getPesagensCorte().filter(p => p.animalId === animalId).sort((a,b)=>(a.data||'').localeCompare(b.data||''));
+    }
+
+    function obterPesoInicialCorte(animal) {
+      const pesagens = obterPesagensAnimalOrdenadas(animal.id);
+      const pesoCadastro = parseFloat(animal.pesoInicial) || 0;
+      if (pesoCadastro > 0) return { peso: pesoCadastro, origem: 'cadastro' };
+      if (pesagens.length && parseFloat(pesagens[0].peso) > 0) return { peso: parseFloat(pesagens[0].peso), origem: 'primeira pesagem' };
+      return { peso: 0, origem: 'não informado' };
+    }
+
+    function obterPesoSaidaCorte(animal, dataSaida) {
+      const pesagens = obterPesagensAnimalOrdenadas(animal.id).filter(p => !dataSaida || !p.data || p.data <= dataSaida);
+      const pesoEstimado = parseFloat(animal.pesoEstimado) || 0;
+      if (pesagens.length && parseFloat(pesagens[pesagens.length - 1].peso) > 0) return { peso: parseFloat(pesagens[pesagens.length - 1].peso), origem: 'última pesagem' };
+      if (pesoEstimado > 0) return { peso: pesoEstimado, origem: 'cadastro/estimado' };
+      if (parseFloat(animal.pesoMorte) > 0) return { peso: parseFloat(animal.pesoMorte), origem: 'registro de morte' };
+      return { peso: 0, origem: 'não informado' };
+    }
+
+    function calcularConsumoPeriodoAnimalCorte(animal, dataInicio, dataFim) {
+      const inicio = (dataInicio || '').slice(0,10);
+      const fim = (dataFim || '').slice(0,10) || new Date().toISOString().slice(0,10);
+      const diasPeriodo = Math.max(0, diasEntreDatas(inicio, fim));
+      const todosTratos = getTratosCorte()
+        .filter(t => t.animalId === animal.id || t.animalNome === animal.nome)
+        .filter(t => !t.data || t.data <= fim)
+        .sort((a,b)=>(a.data||'').localeCompare(b.data||''));
+
+      let milhoKg = 0, silagemKg = 0, racaoKg = 0;
+      let custoMilho = 0, custoSilagem = 0, custoRacao = 0;
+      const usados = [];
+
+      if (todosTratos.length) {
+        const tratosAntesOuNoInicio = todosTratos.filter(t => (t.data || '') <= inicio);
+        const tratosNoPeriodo = todosTratos.filter(t => (t.data || '') > inicio && (t.data || '') <= fim);
+        const linhaTempo = [];
+        if (tratosAntesOuNoInicio.length) linhaTempo.push(tratosAntesOuNoInicio[tratosAntesOuNoInicio.length - 1]);
+        tratosNoPeriodo.forEach(t => linhaTempo.push(t));
+
+        linhaTempo.forEach((t, idx) => {
+          const segInicio = idx === 0 ? inicio : (t.data || inicio);
+          const proximo = linhaTempo[idx + 1];
+          const segFim = proximo ? (proximo.data || fim) : fim;
+          const dias = Math.max(0, diasEntreDatas(segInicio, segFim));
+          if (dias <= 0) return;
+          const m = parseFloat(t.milhoKg) || 0;
+          const s = parseFloat(t.silagemKg) || 0;
+          const r = parseFloat(t.racaoKg) || 0;
+          const cm = parseFloat(t.custoMilhoKg) || getCustoMedioProdutoKg('milho');
+          const cs = parseFloat(t.custoSilagemKg) || getCustoMedioProdutoKg('silagem');
+          const cr = parseFloat(t.custoRacaoKg) || getCustoMedioProdutoKg('racao');
+          milhoKg += m * dias;
+          silagemKg += s * dias;
+          racaoKg += r * dias;
+          custoMilho += m * dias * cm;
+          custoSilagem += s * dias * cs;
+          custoRacao += r * dias * cr;
+          usados.push({ data: t.data || segInicio, dias, milhoKg: m, silagemKg: s, racaoKg: r, custoDia: (m*cm)+(s*cs)+(r*cr), obs: t.obs || '' });
+        });
+      }
+
+      if (!usados.length && diasPeriodo > 0) {
+        const c = obterCustosDiariosAnimal(animal);
+        milhoKg = c.milhoKg * diasPeriodo;
+        silagemKg = c.silagemKg * diasPeriodo;
+        racaoKg = c.racaoKg * diasPeriodo;
+        custoMilho = c.custoMilhoDia * diasPeriodo;
+        custoSilagem = c.custoSilagemDia * diasPeriodo;
+        custoRacao = c.custoRacaoDia * diasPeriodo;
+        if (c.totalKgDia > 0) usados.push({ data: inicio, dias: diasPeriodo, milhoKg: c.milhoKg, silagemKg: c.silagemKg, racaoKg: c.racaoKg, custoDia: c.totalReaisDia, obs: 'Consumo atual do animal' });
+      }
+
+      return {
+        diasPeriodo,
+        milhoKg,
+        silagemKg,
+        racaoKg,
+        totalKg: milhoKg + silagemKg + racaoKg,
+        custoMilho,
+        custoSilagem,
+        custoRacao,
+        custoAlimentar: custoMilho + custoSilagem + custoRacao,
+        usados
+      };
+    }
+
+    function calcularDetalhesSaidaCorte(animal) {
+      const isVenda = animal.motivoArquivo === 'vendido';
+      const isMorte = animal.motivoArquivo === 'morreu' || animal.motivoArquivo === 'morte';
+      const dataSaida = (isVenda ? animal.dataVenda : animal.dataMorte) || (animal.dataArquivo || '').slice(0,10) || new Date().toISOString().slice(0,10);
+      const dataEntrada = animal.dataEntradaConfinamento || animal.dataCadastro || (obterPesagensAnimalOrdenadas(animal.id)[0]?.data) || dataSaida;
+      const dias = diasEntreDatas(dataEntrada, dataSaida);
+      const pesoInicialInfo = obterPesoInicialCorte(animal);
+      const pesoSaidaInfo = obterPesoSaidaCorte(animal, dataSaida);
+      const ganhoKg = (pesoInicialInfo.peso > 0 && pesoSaidaInfo.peso > 0) ? (pesoSaidaInfo.peso - pesoInicialInfo.peso) : 0;
+      const consumo = calcularConsumoPeriodoAnimalCorte(animal, dataEntrada, dataSaida);
+      const despesasExtras = getFinanceiroCorte().filter(f => {
+        if (f.tipo !== 'despesa') return false;
+        if (!(f.animalId === animal.id || f.animalId === animal.nome)) return false;
+        if (f.origem === 'trato' || f.categoria === 'trato') return false;
+        if (f.data && (f.data < dataEntrada || f.data > dataSaida)) return false;
+        return true;
+      });
+      const custoExtras = despesasExtras.reduce((s,f)=>s+(parseFloat(f.valor)||0),0);
+      const receitaVenda = isVenda ? (parseFloat(animal.precoVenda) || 0) : 0;
+      const prejuizoMorte = isMorte ? (parseFloat(animal.prejuizoMorte) || 0) : 0;
+      const gastoTotal = consumo.custoAlimentar + custoExtras + prejuizoMorte;
+      const resultado = receitaVenda - gastoTotal;
+      return { isVenda, isMorte, dataEntrada, dataSaida, dias, pesoInicialInfo, pesoSaidaInfo, ganhoKg, consumo, despesasExtras, custoExtras, receitaVenda, prejuizoMorte, gastoTotal, resultado };
+    }
+
+    function abrirDetalhesMovimentacaoCorte(animalId, btn) {
+      if (btn && btn.disabled) return;
+      const original = btn ? btn.textContent : '';
+      try {
+        if (btn) { btn.disabled = true; btn.textContent = 'Abrindo...'; }
+        const animal = (DB.arquivados || []).find(a => a.id === animalId && a.area === 'corte') || [...DB.animais, ...(DB.arquivados || [])].find(a => a.id === animalId);
+        if (!animal) { alert('Animal não encontrado.'); return; }
+        const d = calcularDetalhesSaidaCorte(animal);
+        const titulo = d.isVenda ? '💰 Detalhes da venda' : d.isMorte ? '☠️ Detalhes da morte' : '📁 Detalhes da saída';
+        const fmtKg = v => (parseFloat(v)||0).toFixed(1).replace('.', ',') + ' kg';
+        const fmtData = v => v ? new Date(v + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
+        const tratosHtml = d.consumo.usados.length ? d.consumo.usados.map(t => `
+          <div style="border:1px solid var(--border);border-radius:10px;padding:9px;margin-top:6px;font-size:12px;">
+            <strong>${fmtData(t.data)}</strong> por ${t.dias} dia(s)<br/>
+            Milho: ${fmtKg(t.milhoKg)}/dia · Silo: ${fmtKg(t.silagemKg)}/dia · Ração: ${fmtKg(t.racaoKg)}/dia<br/>
+            Custo diário: R$ ${formatBRL(t.custoDia)}${t.obs ? '<br/>Obs.: '+escapeHtml(t.obs) : ''}
+          </div>`).join('') : '<div style="font-size:12px;color:var(--muted);">Nenhum trato específico registrado no período. O cálculo usou o consumo atual do animal, quando informado.</div>';
+        const extrasHtml = d.despesasExtras.length ? d.despesasExtras.map(f => `
+          <div style="border:1px solid var(--border);border-radius:10px;padding:9px;margin-top:6px;font-size:12px;">
+            ${f.data ? fmtData(f.data) + ' · ' : ''}${escapeHtml(f.descricao || f.categoria || 'Despesa')} — <strong>R$ ${formatBRL(f.valor)}</strong>
+          </div>`).join('') : '<div style="font-size:12px;color:var(--muted);">Sem despesas extras individuais no período.</div>';
+        const conteudo = `
+          <div style="max-height:82vh;overflow-y:auto;padding:4px;">
+            <h3 style="margin-bottom:8px;">${titulo}: ${escapeHtml(animal.nome || 'Animal')}</h3>
+            <div class="rec-grid" style="margin-top:10px;">
+              <div class="rec-box"><h5>Entrada</h5><p>${fmtData(d.dataEntrada)}</p></div>
+              <div class="rec-box"><h5>Saída</h5><p>${fmtData(d.dataSaida)}</p></div>
+              <div class="rec-box"><h5>Tempo no lote/sistema</h5><p>${d.dias} dia(s)</p></div>
+              <div class="rec-box"><h5>Peso inicial</h5><p>${d.pesoInicialInfo.peso ? fmtKg(d.pesoInicialInfo.peso) : '—'} <small>(${escapeHtml(d.pesoInicialInfo.origem)})</small></p></div>
+              <div class="rec-box"><h5>Peso de saída</h5><p>${d.pesoSaidaInfo.peso ? fmtKg(d.pesoSaidaInfo.peso) : '—'} <small>(${escapeHtml(d.pesoSaidaInfo.origem)})</small></p></div>
+              <div class="rec-box"><h5>Ganho de peso</h5><p>${d.ganhoKg ? (d.ganhoKg >= 0 ? '+' : '') + fmtKg(d.ganhoKg) : '—'}</p></div>
+              <div class="rec-box"><h5>Venda</h5><p>R$ ${formatBRL(d.receitaVenda)}</p></div>
+              <div class="rec-box"><h5>Gasto total estimado</h5><p>R$ ${formatBRL(d.gastoTotal)}</p></div>
+              <div class="rec-box"><h5>Resultado estimado</h5><p>R$ ${formatBRL(d.resultado)}</p></div>
+            </div>
+            <div class="info-box" style="margin-top:12px;">
+              <strong>🥣 Consumo estimado no período</strong><br/>
+              Milho: <strong>${fmtKg(d.consumo.milhoKg)}</strong> · R$ ${formatBRL(d.consumo.custoMilho)}<br/>
+              Silo/Silagem: <strong>${fmtKg(d.consumo.silagemKg)}</strong> · R$ ${formatBRL(d.consumo.custoSilagem)}<br/>
+              Ração: <strong>${fmtKg(d.consumo.racaoKg)}</strong> · R$ ${formatBRL(d.consumo.custoRacao)}<br/>
+              Total consumido: <strong>${fmtKg(d.consumo.totalKg)}</strong><br/>
+              Custo alimentar: <strong>R$ ${formatBRL(d.consumo.custoAlimentar)}</strong>
+            </div>
+            <div style="margin-top:12px;"><strong>Tratos usados no cálculo</strong>${tratosHtml}</div>
+            <div style="margin-top:12px;"><strong>Outros custos individuais</strong>${extrasHtml}</div>
+            ${d.isMorte ? `<div class="info-box" style="margin-top:12px;border-color:#ef4444;"><strong style="color:#ef4444;">Registro de morte</strong><br/>Motivo: ${escapeHtml(animal.motivoMorte || '—')}<br/>Prejuízo informado: R$ ${formatBRL(d.prejuizoMorte)}${animal.obsMorte ? '<br/>Obs.: '+escapeHtml(animal.obsMorte) : ''}</div>` : ''}
+            ${animal.obsVenda ? `<div class="info-box" style="margin-top:12px;"><strong>Observação da venda</strong><br/>${escapeHtml(animal.obsVenda)}</div>` : ''}
+            <button class="btn btn-outline" onclick="fecharModal('modal-detalhes-saida-corte')" style="width:100%;margin-top:12px;">Fechar</button>
+          </div>`;
+        let modal = document.getElementById('modal-detalhes-saida-corte');
+        if (!modal) {
+          modal = document.createElement('div');
+          modal.className = 'modal-bg';
+          modal.id = 'modal-detalhes-saida-corte';
+          modal.innerHTML = `<div class="modal-box" style="max-width:720px;" id="modal-detalhes-saida-corte-box"></div>`;
+          document.body.appendChild(modal);
+          modal.addEventListener('click', e => { if (e.target === modal) fecharModal('modal-detalhes-saida-corte'); });
+        }
+        document.getElementById('modal-detalhes-saida-corte-box').innerHTML = conteudo;
+        modal.classList.add('open');
+      } catch(e) {
+        alert('Erro ao abrir detalhes: ' + (e.message || e));
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = original || '📊 Detalhes'; }
+      }
+    }
+
+    // --- PRONTUÁRIO / HISTÓRICO ANIMAL ---
+    function abrirHistoricoAnimal(animalId) {
+      const animal = [...DB.animais, ...(DB.arquivados||[])].find(a => a.id === animalId);
+      if (!animal) { alert('Animal não encontrado.'); return; }
+      const pesagens = getPesagensCorte().filter(p => p.animalId === animalId).sort((a,b)=>(b.data||'').localeCompare(a.data||''));
+      const sanitario = getSanitarioCorteHistorico().filter(s => registroSanitarioPertenceAoAnimal(s, animal)).sort((a,b)=>(b.data||'').localeCompare(a.data||''));
+      const financeiro = getFinanceiroCorte().filter(f => f.animalId === animalId || f.animalId === animal.nome);
+      const ganho = calcularGanhoPesoAnimal(animalId);
+      const ultimaPesagem = calcularUltimaPesagemAnimal(animalId);
+      const status = DB.animais.find(a=>a.id===animalId) ? 'Ativo' : (animal.motivoArquivo === 'vendido' ? 'Vendido' : animal.motivoArquivo === 'morreu' || animal.motivoArquivo === 'morte' ? 'Morto' : 'Arquivado');
+      const blocoMorte = (animal.motivoArquivo === 'morreu' || animal.motivoArquivo === 'morte') ? `
+        <div class="info-box" style="margin-bottom:10px;border-color:#ef4444;">
+          <strong style="color:#ef4444;">☠️ Registro de morte</strong><br/>
+          ${animal.dataMorte?`<strong>Data:</strong> ${new Date(animal.dataMorte+'T12:00:00').toLocaleDateString('pt-BR')}<br/>`:''}
+          ${animal.motivoMorte?`<strong>Motivo:</strong> ${escapeHtml(animal.motivoMorte)}<br/>`:''}
+          ${animal.pesoMorte?`<strong>Peso aprox.:</strong> ${animal.pesoMorte} kg<br/>`:''}
+          ${animal.prejuizoMorte?`<strong>Prejuízo estimado:</strong> R$ ${formatBRL(animal.prejuizoMorte)}<br/>`:''}
+          ${animal.obsMorte?`<strong>Obs.:</strong> ${escapeHtml(animal.obsMorte)}`:''}
+        </div>` : '';
+
+      const conteudo = `
+        <div style="max-height:80vh;overflow-y:auto;padding:4px;">
+          <h3 style="margin-bottom:8px;">📋 ${escapeHtml(animal.nome||'Animal')}</h3>
+          <div class="info-box" style="margin-bottom:12px;">
+            <strong>Status:</strong> ${status}<br/>
+            ${animal.categoria?`<strong>Categoria:</strong> ${escapeHtml(animal.categoria)}<br/>`:''}
+            ${animal.brinco?`<strong>Brinco:</strong> ${escapeHtml(animal.brinco)}<br/>`:''}
+          ${(()=>{const lr=resolverLoteDoAnimal(animal);const ln=lr.loteNome||lr.loteId||animal.loteCorte||'';return ln?`<strong>Lote:</strong> ${escapeHtml(ln)}<br/>`:'';})()}            ${animal.dataNascimento?`<strong>Nasc.:</strong> ${new Date(animal.dataNascimento+'T12:00:00').toLocaleDateString('pt-BR')}<br/>`:''}
+            ${ultimaPesagem?`<strong>Último peso:</strong> ${ultimaPesagem.peso} kg em ${new Date(ultimaPesagem.data+'T12:00:00').toLocaleDateString('pt-BR')}<br/>`:''}
+            ${ganho?`<strong>Ganho total:</strong> ${ganho.ganhoPeso>=0?'+':''}${ganho.ganhoPeso.toFixed(1)} kg · GMD: ${ganho.gmd.toFixed(3)} kg/dia<br/>`:''}
+          </div>
+          ${blocoMorte}
+          ${pesagens.length ? `<div style="margin-bottom:12px;"><div style="font-weight:700;margin-bottom:6px;font-size:13px;">⚖️ Pesagens (${pesagens.length})</div>${pesagens.map(p=>`<div style="border:1px solid var(--border);border-radius:8px;padding:8px;margin-bottom:6px;font-size:12px;"><strong>${p.peso} kg</strong> — ${new Date(p.data+'T12:00:00').toLocaleDateString('pt-BR')}${p.obs?' — '+escapeHtml(p.obs):''}</div>`).join('')}</div>` : '<div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Sem pesagens registradas.</div>'}
+          ${sanitario.length ? `<div style="margin-bottom:12px;"><div style="font-weight:700;margin-bottom:6px;font-size:13px;">💉 Sanidade (${sanitario.length})</div>${sanitario.map(s=>`<div style="border:1px solid var(--border);border-radius:8px;padding:8px;margin-bottom:6px;font-size:12px;"><strong>${escapeHtml(s.produto)}</strong> (${s.tipo}) — ${s.data?new Date(s.data+'T12:00:00').toLocaleDateString('pt-BR'):'—'}</div>`).join('')}</div>` : '<div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Sem histórico sanitário.</div>'}
+          ${financeiro.length ? `<div style="margin-bottom:12px;"><div style="font-weight:700;margin-bottom:6px;font-size:13px;">💹 Movimentações financeiras (${financeiro.length})</div>${financeiro.map(f=>`<div style="border:1px solid var(--border);border-radius:8px;padding:8px;margin-bottom:6px;font-size:12px;">${f.tipo==='receita'?'↑':'↓'} R$ ${formatBRL(f.valor)} — ${f.data?new Date(f.data+'T12:00:00').toLocaleDateString('pt-BR'):'—'}${f.descricao?' — '+escapeHtml(f.descricao):''}</div>`).join('')}</div>` : '<div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Sem movimentações financeiras.</div>'}
+          <button class="btn btn-outline" onclick="fecharModal('modal-historico-animal')" style="width:100%;margin-top:4px;">Fechar</button>
+        </div>`;
+
+      let modal = document.getElementById('modal-historico-animal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.className = 'modal-bg';
+        modal.id = 'modal-historico-animal';
+        modal.innerHTML = `<div class="modal-box" style="max-width:520px;" id="modal-historico-animal-box"></div>`;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', e => { if (e.target === modal) fecharModal('modal-historico-animal'); });
+      }
+      document.getElementById('modal-historico-animal-box').innerHTML = conteudo;
+      modal.classList.add('open');
+    }
+
+    // --- MENSAGEM TOAST ---
+    function mostrarMensagemCorte(msg) {
+      let toast = document.getElementById('toast-corte');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toast-corte';
+        toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#16a34a;color:#fff;padding:10px 20px;border-radius:999px;font-size:13px;font-weight:700;z-index:9999;transition:opacity .3s;';
+        document.body.appendChild(toast);
+      }
+      toast.textContent = msg;
+      toast.style.opacity = '1';
+      clearTimeout(toast._t);
+      toast._t = setTimeout(() => { toast.style.opacity = '0'; }, 2500);
+    }
+
+    // --- INSTALAR APP PWA ---
+    function configurarInstalacaoPWA() {
+      // Já implementado abaixo no bloco PWA nativo
+    }
+    function mostrarBotaoInstalarApp() {
+      const btn = document.getElementById('btn-instalar-app');
+      if (btn) btn.style.display = 'inline-flex';
+    }
+    function instalarAppPWA() {
+      if (typeof deferredInstallPrompt !== 'undefined' && deferredInstallPrompt) {
+        deferredInstallPrompt.prompt();
+        deferredInstallPrompt.userChoice.then(() => {
+          deferredInstallPrompt = null;
+          const btn = document.getElementById('btn-instalar-app');
+          if (btn) btn.style.display = 'none';
+        });
+      } else {
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        if (isIOS) {
+          alert('No iPhone/iPad:\n\n1. Toque no botão de Compartilhar (□↑)\n2. Role e toque em "Adicionar à Tela de Início"\n3. Confirme tocando em "Adicionar"');
+        } else if (typeof instalarPWA === 'function') {
+          instalarPWA();
+        } else {
+          alert('Se o aviso de instalação não aparecer automaticamente, use o menu do navegador e toque em “Instalar app” ou “Adicionar à tela inicial”.');
+        }
+      }
+    }
+
+    // ============================================================
+    // FIM FUNÇÕES NOVAS - CONFINAMENTO / CORTE
+    // ============================================================
+
+    // Carregar preço do litro ao abrir produção — integrado via showPage hook abaixo
+
+    aplicarAreaNaInterface();
+    renderTudo();
+    carregarConfigWhatsApp();
+  
