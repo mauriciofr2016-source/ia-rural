@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IA Rural — Painel do Administrador</title>
+<title>IA Rural â€” Painel do Administrador</title>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -67,6 +67,9 @@ body{font-family:'DM Sans',sans-serif;background:#000;min-height:100vh;color:#11
 .stat-card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;text-align:center}
 .stat-num{font-size:28px;font-weight:700;color:#111827}
 .stat-label{font-size:12px;color:#6b7280;margin-top:2px}
+.admin-manual-card{display:none}
+.whatsapp-link{background:#25D366!important;color:#001b08!important;border-color:#25D366!important}
+.user-extra{display:grid;gap:4px;margin-top:6px}
 
 .money-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 .money-card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px}
@@ -105,17 +108,17 @@ body{font-family:'DM Sans',sans-serif;background:#000;min-height:100vh;color:#11
     <div class="login-sub">Painel do Administrador</div>
 
     <div class="field">
-      <label>Usuário admin</label>
+      <label>UsuÃ¡rio admin</label>
       <input type="text" id="adm-user" placeholder="admin@iarural.app" onkeydown="if(event.key==='Enter')loginAdmin()">
     </div>
 
     <div class="field">
       <label>Senha admin</label>
-      <input type="password" id="adm-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')loginAdmin()">
+      <input type="password" id="adm-pass" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" onkeydown="if(event.key==='Enter')loginAdmin()">
     </div>
 
     <button class="btn-full" onclick="loginAdmin()">Entrar no painel</button>
-    <div class="error-msg" id="adm-erro">Usuário ou senha incorretos.</div>
+    <div class="error-msg" id="adm-erro">UsuÃ¡rio ou senha incorretos.</div>
     <p style="font-size:11px;color:#9ca3af;margin-top:16px;text-align:center">Acesso restrito ao administrador do IA Rural</p>
   </div>
 </div>
@@ -131,23 +134,26 @@ body{font-family:'DM Sans',sans-serif;background:#000;min-height:100vh;color:#11
 
   <div class="main">
     <div class="stats-grid">
-      <div class="stat-card"><div class="stat-num" id="stat-total">0</div><div class="stat-label">Usuários</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-total">0</div><div class="stat-label">UsuÃ¡rios</div></div>
       <div class="stat-card"><div class="stat-num" id="stat-ativos">0</div><div class="stat-label">Ativos</div></div>
-      <div class="stat-card"><div class="stat-num" id="stat-inativos">0</div><div class="stat-label">Inativos</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-teste">0</div><div class="stat-label">Em teste</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-tolerancia">0</div><div class="stat-label">TolerÃ¢ncia</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-bloqueados">0</div><div class="stat-label">Bloqueados</div></div>
       <div class="stat-card"><div class="stat-num" id="stat-vencidos">0</div><div class="stat-label">Vencidos</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-pagos-mes">0</div><div class="stat-label">Pagos no mÃªs</div></div>
     </div>
 
-    <div class="card">
-      <div class="card-title">➕ Criar novo usuário</div>
+    <div class="card admin-manual-card">
+      <div class="card-title">âž• Criar novo usuÃ¡rio</div>
 
       <div class="form-row">
         <div class="field">
           <label>Nome / Fazenda</label>
-          <input type="text" id="n-nome" placeholder="Ex: João Silva / Fazenda Boa Vista">
+          <input type="text" id="n-nome" placeholder="Ex: JoÃ£o Silva / Fazenda Boa Vista">
         </div>
         <div class="field">
-          <label>Usuário (login)</label>
-          <input type="text" id="n-usuario" placeholder="Ex: joaosilva (sem espaços)" oninput="this.value=this.value.toLowerCase().replace(/\s/g,'')">
+          <label>UsuÃ¡rio (login)</label>
+          <input type="text" id="n-usuario" placeholder="Ex: joaosilva (sem espaÃ§os)" oninput="this.value=this.value.toLowerCase().replace(/\s/g,'')">
         </div>
       </div>
 
@@ -169,25 +175,25 @@ body{font-family:'DM Sans',sans-serif;background:#000;min-height:100vh;color:#11
 
       <div class="form-row">
         <div class="field">
-          <label>Área do usuário</label>
+          <label>Ãrea do usuÃ¡rio</label>
           <select id="n-area">
-            <option value="leiteira">Área Leiteira</option>
+            <option value="leiteira">Ãrea Leiteira</option>
             <option value="confinamento">Confinamento</option>
           </select>
         </div>
         <div class="field">
-          <label>Teste grátis</label>
+          <label>Teste grÃ¡tis</label>
           <select id="n-teste-gratis">
-            <option value="0">Sem teste grátis</option>
-            <option value="10">Teste grátis de 10 dias</option>
-            <option value="20">Teste grátis de 20 dias</option>
+            <option value="0">Sem teste grÃ¡tis</option>
+            <option value="10">Teste grÃ¡tis de 10 dias</option>
+            <option value="20">Teste grÃ¡tis de 20 dias</option>
           </select>
           <div class="senha-hint">Ao vencer, o acesso bloqueia automaticamente no login com aviso ao cliente.</div>
         </div>
       </div>
 
       <div class="field">
-        <label>Observação (opcional)</label>
+        <label>ObservaÃ§Ã£o (opcional)</label>
         <input type="text" id="n-obs" placeholder="Ex: pagamento via pix">
       </div>
 
@@ -213,31 +219,31 @@ body{font-family:'DM Sans',sans-serif;background:#000;min-height:100vh;color:#11
           <select id="n-forma">
             <option value="pix">Pix</option>
             <option value="dinheiro">Dinheiro</option>
-            <option value="transferencia">Transferência</option>
+            <option value="transferencia">TransferÃªncia</option>
             <option value="boleto">Boleto</option>
-            <option value="cartao">Cartão</option>
+            <option value="cartao">CartÃ£o</option>
           </select>
         </div>
       </div>
 
-      <button class="btn btn-green" onclick="criarUsuario()">✓ Criar usuário</button>
-      <div class="success-msg" id="sucesso-criar">Usuário criado com sucesso!</div>
+      <button class="btn btn-green" onclick="criarUsuario()">âœ“ Criar usuÃ¡rio</button>
+      <div class="success-msg" id="sucesso-criar">UsuÃ¡rio criado com sucesso!</div>
     </div>
 
     <div class="card">
       <div class="card-title" style="justify-content:space-between">
-        <span>👥 Usuários cadastrados</span>
-        <button class="btn btn-outline btn-sm" onclick="exportarUsuarios()">⬇ Exportar lista</button>
+        <span>ðŸ‘¥ UsuÃ¡rios cadastrados</span>
+        <button class="btn btn-outline btn-sm" onclick="exportarUsuarios()">â¬‡ Exportar lista</button>
       </div>
-      <div class="muted" style="margin-bottom:10px">Lista com login, senha, observação e financeiro de cada cliente.</div>
+      <div class="muted" style="margin-bottom:10px">Lista com login, senha, observaÃ§Ã£o e financeiro de cada cliente.</div>
       <div id="lista-usuarios"></div>
     </div>
 
     <div class="card">
-      <div class="card-title">💰 Painel financeiro</div>
+      <div class="card-title">ðŸ’° Painel financeiro</div>
       <div class="money-grid">
         <div class="money-card">
-          <div class="money-label">Recebido no mês</div>
+          <div class="money-label">Recebido no mÃªs</div>
           <div class="money-value" id="fin-recebido">R$ 0,00</div>
         </div>
         <div class="money-card">
@@ -249,35 +255,35 @@ body{font-family:'DM Sans',sans-serif;background:#000;min-height:100vh;color:#11
           <div class="money-value" id="fin-vencidos">0</div>
         </div>
         <div class="money-card">
-          <div class="money-label">Próx. vencimento</div>
-          <div class="money-value" id="fin-proximo" style="font-size:18px">—</div>
+          <div class="money-label">PrÃ³x. vencimento</div>
+          <div class="money-value" id="fin-proximo" style="font-size:18px">â€”</div>
         </div>
       </div>
     </div>
 
     <div class="card">
-      <div class="card-title">📅 Próximos vencimentos</div>
+      <div class="card-title">ðŸ“… PrÃ³ximos vencimentos</div>
       <div id="lista-vencimentos"></div>
     </div>
 
     <div class="card">
-      <div class="card-title">📜 Histórico de pagamentos</div>
+      <div class="card-title">ðŸ“œ HistÃ³rico de pagamentos</div>
       <div id="lista-historico"></div>
     </div>
 
 
     <div class="card">
-      <div class="card-title">💬 WhatsApp de suporte</div>
-      <div class="muted" style="margin-bottom:12px">Configure aqui o número e a mensagem padrão do botão de WhatsApp exibido para os usuários no site.</div>
+      <div class="card-title">ðŸ’¬ WhatsApp de suporte</div>
+      <div class="muted" style="margin-bottom:12px">Configure aqui o nÃºmero e a mensagem padrÃ£o do botÃ£o de WhatsApp exibido para os usuÃ¡rios no site.</div>
 
       <div class="form-row">
         <div class="field">
-          <label>Número do WhatsApp</label>
+          <label>NÃºmero do WhatsApp</label>
           <input type="text" id="cfg-wpp-numero" placeholder="Ex: 5592999999999">
         </div>
         <div class="field">
-          <label>Mensagem padrão</label>
-          <input type="text" id="cfg-wpp-msg" placeholder="Ex: Olá! Preciso de ajuda com o IA Rural.">
+          <label>Mensagem padrÃ£o</label>
+          <input type="text" id="cfg-wpp-msg" placeholder="Ex: OlÃ¡! Preciso de ajuda com o IA Rural.">
         </div>
       </div>
 
@@ -286,10 +292,10 @@ body{font-family:'DM Sans',sans-serif;background:#000;min-height:100vh;color:#11
     </div>
 
     <div class="card" style="background:#fafafa">
-      <div class="card-title">⚙️ Configurações do administrador</div>
+      <div class="card-title">âš™ï¸ ConfiguraÃ§Ãµes do administrador</div>
       <div class="form-row">
         <div class="field">
-          <label>Novo usuário admin</label>
+          <label>Novo usuÃ¡rio admin</label>
           <input type="text" id="cfg-usuario" placeholder="admin@iarural.app">
         </div>
         <div class="field">
@@ -297,15 +303,15 @@ body{font-family:'DM Sans',sans-serif;background:#000;min-height:100vh;color:#11
           <input type="text" id="cfg-senha" placeholder="Nova senha">
         </div>
       </div>
-      <button class="btn btn-outline" onclick="salvarConfigAdmin()">Salvar configurações</button>
-      <div class="success-msg" id="sucesso-cfg">Configurações salvas!</div>
+      <button class="btn btn-outline" onclick="salvarConfigAdmin()">Salvar configuraÃ§Ãµes</button>
+      <div class="success-msg" id="sucesso-cfg">ConfiguraÃ§Ãµes salvas!</div>
     </div>
   </div>
 </div>
 
 <div id="modal-editar" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;padding:20px">
   <div style="background:#fff;border-radius:16px;padding:24px;width:100%;max-width:520px">
-    <h3 style="font-size:16px;font-weight:600;margin-bottom:16px">Editar usuário</h3>
+    <h3 style="font-size:16px;font-weight:600;margin-bottom:16px">Editar usuÃ¡rio</h3>
 
     <input type="hidden" id="edit-id">
 
@@ -315,7 +321,7 @@ body{font-family:'DM Sans',sans-serif;background:#000;min-height:100vh;color:#11
         <input type="text" id="edit-nome">
       </div>
       <div class="field">
-        <label>Usuário (login)</label>
+        <label>UsuÃ¡rio (login)</label>
         <input type="text" id="edit-usuario" oninput="this.value=this.value.toLowerCase().replace(/\s/g,'')">
       </div>
     </div>
@@ -337,26 +343,37 @@ body{font-family:'DM Sans',sans-serif;background:#000;min-height:100vh;color:#11
 
     <div class="form-row">
       <div class="field">
-        <label>Área do usuário</label>
+        <label>Ãrea do usuÃ¡rio</label>
         <select id="edit-area">
-          <option value="leiteira">Área Leiteira</option>
+          <option value="leiteira">Ãrea Leiteira</option>
           <option value="confinamento">Confinamento</option>
         </select>
       </div>
       <div class="field">
-        <label>Teste grátis</label>
+        <label>Teste grÃ¡tis</label>
         <select id="edit-teste-gratis">
-          <option value="0">Sem teste grátis</option>
-          <option value="10">Teste grátis de 10 dias</option>
-          <option value="20">Teste grátis de 20 dias</option>
+          <option value="0">Sem teste grÃ¡tis</option>
+          <option value="10">Teste grÃ¡tis de 10 dias</option>
+          <option value="20">Teste grÃ¡tis de 20 dias</option>
         </select>
-        <div class="senha-hint" id="edit-teste-hint">Se alterar aqui, o prazo será recalculado a partir de hoje.</div>
+        <div class="senha-hint" id="edit-teste-hint">Se alterar aqui, o prazo serÃ¡ recalculado a partir de hoje.</div>
       </div>
     </div>
 
     <div class="field">
-      <label>Observação</label>
+      <label>ObservaÃ§Ã£o</label>
       <input type="text" id="edit-obs">
+    </div>
+
+    <div class="form-row">
+      <div class="field">
+        <label>WhatsApp</label>
+        <input type="text" id="edit-whatsapp">
+      </div>
+      <div class="field">
+        <label>Tolerância (dias)</label>
+        <input type="number" id="edit-tolerancia" min="0" placeholder="Ex: 5">
+      </div>
     </div>
 
     <div class="form-row-4">
@@ -381,9 +398,9 @@ body{font-family:'DM Sans',sans-serif;background:#000;min-height:100vh;color:#11
         <select id="edit-forma">
           <option value="pix">Pix</option>
           <option value="dinheiro">Dinheiro</option>
-          <option value="transferencia">Transferência</option>
+          <option value="transferencia">TransferÃªncia</option>
           <option value="boleto">Boleto</option>
-          <option value="cartao">Cartão</option>
+          <option value="cartao">CartÃ£o</option>
         </select>
       </div>
     </div>
@@ -415,7 +432,7 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch((e) => {
-  console.error('Erro ao definir persistência:', e);
+  console.error('Erro ao definir persistÃªncia:', e);
 });
 
 function normalizarUsuario(usuario) {
@@ -427,16 +444,16 @@ function usuarioParaEmail(usuario) {
 }
 
 function formatData(iso) {
-  if (!iso) return '—';
+  if (!iso) return 'â€”';
   const d = new Date(iso);
-  if (isNaN(d.getTime())) return '—';
+  if (isNaN(d.getTime())) return 'â€”';
   return d.toLocaleDateString('pt-BR');
 }
 
 function formatDateTime(iso) {
-  if (!iso) return '—';
+  if (!iso) return 'â€”';
   const d = new Date(iso);
-  if (isNaN(d.getTime())) return '—';
+  if (isNaN(d.getTime())) return 'â€”';
   return d.toLocaleString('pt-BR');
 }
 
@@ -448,7 +465,7 @@ function formatMoney(value) {
 function toggleSenha(id, senha) {
   const el = document.getElementById('senha-' + id);
   if (!el) return;
-  el.textContent = el.textContent === '••••••' ? senha : '••••••';
+  el.textContent = el.textContent === 'â€¢â€¢â€¢â€¢â€¢â€¢' ? senha : 'â€¢â€¢â€¢â€¢â€¢â€¢';
 }
 
 function copiarSenha(senha) {
@@ -490,7 +507,7 @@ function isPaidThisMonth(iso) {
 }
 
 function getStatusPagamento(user) {
-  // Verifica pagamento deste mês primeiro, independente de valor/vencimento
+  // Verifica pagamento deste mÃªs primeiro, independente de valor/vencimento
   if (isPaidThisMonth(user.ultimoPagamento)) return 'pago';
   const valor = Number(user.valorMensal || 0);
   const vencimento = Number(user.diaVencimento || 0);
@@ -520,7 +537,7 @@ function normalizarAreaConta(valor) {
 }
 
 function nomeAreaConta(valor) {
-  return normalizarAreaConta(valor) === 'confinamento' ? 'Confinamento' : 'Área Leiteira';
+  return normalizarAreaConta(valor) === 'confinamento' ? 'Confinamento' : 'Ãrea Leiteira';
 }
 
 
@@ -533,14 +550,42 @@ function somarDiasISO(dias) {
 
 function getTesteGratisStatus(user) {
   const dias = Number(user.testeGratisDias || 0);
-  if (!dias || !user.testeGratisFim) return 'Sem teste grátis';
+  if (!dias || !user.testeGratisFim) return 'Sem teste grÃ¡tis';
   const fim = new Date(user.testeGratisFim);
-  if (isNaN(fim.getTime())) return `Teste grátis: ${dias} dias`;
+  if (isNaN(fim.getTime())) return `Teste grÃ¡tis: ${dias} dias`;
   const hoje = new Date();
   const diff = Math.ceil((fim.getTime() - hoje.getTime()) / 86400000);
-  if (diff < 0) return `Teste grátis vencido em ${formatData(user.testeGratisFim)}`;
-  if (diff === 0) return `Teste grátis vence hoje (${formatData(user.testeGratisFim)})`;
-  return `Teste grátis: ${diff} dia(s) restante(s) — vence em ${formatData(user.testeGratisFim)}`;
+  if (diff < 0) return `Teste grÃ¡tis vencido em ${formatData(user.testeGratisFim)}`;
+  if (diff === 0) return `Teste grÃ¡tis vence hoje (${formatData(user.testeGratisFim)})`;
+  return `Teste grÃ¡tis: ${diff} dia(s) restante(s) â€” vence em ${formatData(user.testeGratisFim)}`;
+}
+
+function getToleranciaStatus(user) {
+  if (!user.toleranciaFim) return 'â€”';
+  const fim = new Date(user.toleranciaFim);
+  if (isNaN(fim.getTime())) return 'â€”';
+  const diff = Math.ceil((fim.getTime() - Date.now()) / 86400000);
+  if (diff < 0) return `Encerrada em ${formatData(user.toleranciaFim)}`;
+  if (diff === 0) return `Termina hoje (${formatData(user.toleranciaFim)})`;
+  return `${diff} dia(s) restante(s) â€” atÃ© ${formatData(user.toleranciaFim)}`;
+}
+
+function getFaseTeste(user) {
+  const dias = Number(user.testeGratisDias || 0);
+  if (!dias || !user.testeGratisFim || user.ultimoPagamento) return '';
+  const fim = new Date(user.testeGratisFim);
+  const tol = user.toleranciaFim ? new Date(user.toleranciaFim) : null;
+  const agora = new Date();
+  if (!isNaN(fim.getTime()) && agora <= fim) return 'teste';
+  if (tol && !isNaN(tol.getTime()) && agora <= tol) return 'tolerancia';
+  return 'vencido';
+}
+
+function abrirWhatsAppAdmin(numero, nome) {
+  const wpp = String(numero || '').replace(/\D/g, '');
+  if (!wpp) return alert('Este usuÃ¡rio nÃ£o tem WhatsApp cadastrado.');
+  const texto = encodeURIComponent(`OlÃ¡, aqui Ã© do suporte IA Rural. Identifiquei seu cadastro da fazenda ${nome || ''}. Posso te ajudar com o acesso/pagamento?`);
+  window.open(`https://wa.me/${wpp}?text=${texto}`, '_blank');
 }
 
 async function bloquearTestesGratisVencidos(lista) {
@@ -548,12 +593,12 @@ async function bloquearTestesGratisVencidos(lista) {
   const updates = [];
   for (const u of lista) {
     const dias = Number(u.testeGratisDias || 0);
-    const fim = u.testeGratisFim ? new Date(u.testeGratisFim) : null;
-    const testeVencido = dias > 0 && fim && !isNaN(fim.getTime()) && agora > fim && u.status !== 'bloqueado';
+    const fim = u.toleranciaFim ? new Date(u.toleranciaFim) : (u.testeGratisFim ? new Date(u.testeGratisFim) : null);
+    const testeVencido = dias > 0 && fim && !isNaN(fim.getTime()) && agora > fim && u.status !== 'bloqueado' && !u.ultimoPagamento;
     if (!testeVencido) continue;
 
-    const motivo = `Seu teste grátis de ${dias} dias venceu em ${formatData(u.testeGratisFim)}. Para liberar o acesso, entre em contato com o suporte.`;
-    updates.push(db.collection('admin_usuarios').doc(u.id).update({ status: 'bloqueado', bloqueioMotivo: motivo }));
+    const motivo = `Seu teste grÃ¡tis de ${dias} dias venceu em ${formatData(u.testeGratisFim)}. Para liberar o acesso, entre em contato com o suporte.`;
+    updates.push(db.collection('admin_usuarios').doc(u.id).update({ status: 'bloqueado', accountStatus: 'bloqueado', bloqueioMotivo: motivo }));
     if (u.firebaseUid) {
       updates.push(db.collection('users').doc(u.firebaseUid).set({
         accountStatus: 'bloqueado',
@@ -580,7 +625,7 @@ async function loginAdmin() {
   erroEl.style.display = 'none';
 
   if (!u || !s) {
-    mostrarErroLogin('Informe usuário e senha.');
+    mostrarErroLogin('Informe usuÃ¡rio e senha.');
     return;
   }
 
@@ -593,7 +638,7 @@ async function loginAdmin() {
 
     if (emailLogado !== ADMIN_EMAIL) {
       await auth.signOut();
-      mostrarErroLogin('Este usuário não tem permissão de administrador.');
+      mostrarErroLogin('Este usuÃ¡rio nÃ£o tem permissÃ£o de administrador.');
       return;
     }
 
@@ -604,7 +649,7 @@ async function loginAdmin() {
     await carregarTudoAdmin();
   } catch (e) {
     console.error(e);
-    mostrarErroLogin('Usuário ou senha incorretos.');
+    mostrarErroLogin('UsuÃ¡rio ou senha incorretos.');
   }
 }
 
@@ -639,7 +684,7 @@ async function criarUsuario() {
   const bloqueioMotivo = '';
 
   if (!nome) { alert('Informe o nome ou fazenda.'); return; }
-  if (!usuario) { alert('Informe o nome de usuário.'); return; }
+  if (!usuario) { alert('Informe o nome de usuÃ¡rio.'); return; }
   if (!senha) { alert('Defina uma senha.'); return; }
   if (senha.length < 6) { alert('A senha precisa ter pelo menos 6 caracteres.'); return; }
   if (!diaVencimento || diaVencimento < 1 || diaVencimento > 31) { alert('Informe um dia de vencimento entre 1 e 31.'); return; }
@@ -651,7 +696,7 @@ async function criarUsuario() {
       .get();
 
     if (!jaExiste.empty) {
-      alert('Esse nome de usuário já existe. Escolha outro.');
+      alert('Esse nome de usuÃ¡rio jÃ¡ existe. Escolha outro.');
       return;
     }
 
@@ -669,10 +714,10 @@ async function criarUsuario() {
 
     if (!resposta.ok) {
       if (dados?.error?.message === 'EMAIL_EXISTS') {
-        alert('Esse nome de usuário já existe no Firebase. Escolha outro.');
+        alert('Esse nome de usuÃ¡rio jÃ¡ existe no Firebase. Escolha outro.');
         return;
       }
-      throw new Error(dados?.error?.message || 'Falha ao criar usuário no Firebase.');
+      throw new Error(dados?.error?.message || 'Falha ao criar usuÃ¡rio no Firebase.');
     }
 
     const uid = dados.localId || Date.now().toString();
@@ -739,14 +784,14 @@ async function criarUsuario() {
     document.getElementById('n-teste-gratis').value = '0';
 
     const msg = document.getElementById('sucesso-criar');
-    msg.textContent = 'Usuário criado com sucesso!';
+    msg.textContent = 'UsuÃ¡rio criado com sucesso!';
     msg.style.display = 'block';
     setTimeout(() => { msg.style.display = 'none'; }, 3000);
 
     await carregarTudoAdmin();
   } catch (erro) {
     console.error(erro);
-    alert('Erro ao criar usuário: ' + erro.message);
+    alert('Erro ao criar usuÃ¡rio: ' + erro.message);
   }
 }
 
@@ -754,17 +799,18 @@ async function marcarPago(id) {
   try {
     const ref = db.collection('admin_usuarios').doc(id);
     const doc = await ref.get();
-    if (!doc.exists) return alert('Usuário não encontrado.');
+    if (!doc.exists) return alert('UsuÃ¡rio nÃ£o encontrado.');
 
     const u = doc.data();
-    const valor = Number(u.valorMensal || 0);
+    const valor = Number(u.valorMensal || 30);
     const agora = new Date().toISOString();
-    const novoStatus = u.status === 'bloqueado' ? 'ativo' : u.status;
+    const novoStatus = 'ativo';
 
     await ref.update({
       ultimoPagamento: agora,
       ultimoValorPago: valor,
       status: novoStatus,
+      accountStatus: 'ativo',
       bloqueioMotivo: ''
     });
 
@@ -803,7 +849,7 @@ async function bloquearUsuario(id) {
   try {
     const ref = db.collection('admin_usuarios').doc(id);
     const doc = await ref.get();
-    if (!doc.exists) return alert('Usuário não encontrado.');
+    if (!doc.exists) return alert('UsuÃ¡rio nÃ£o encontrado.');
 
     const u = doc.data();
 
@@ -818,7 +864,7 @@ async function bloquearUsuario(id) {
     await carregarTudoAdmin();
   } catch (erro) {
     console.error(erro);
-    alert('Erro ao bloquear usuário: ' + erro.message);
+    alert('Erro ao bloquear usuÃ¡rio: ' + erro.message);
   }
 }
 
@@ -826,7 +872,7 @@ async function desbloquearUsuario(id) {
   try {
     const ref = db.collection('admin_usuarios').doc(id);
     const doc = await ref.get();
-    if (!doc.exists) return alert('Usuário não encontrado.');
+    if (!doc.exists) return alert('UsuÃ¡rio nÃ£o encontrado.');
 
     const u = doc.data();
 
@@ -840,7 +886,7 @@ async function desbloquearUsuario(id) {
     await carregarTudoAdmin();
   } catch (erro) {
     console.error(erro);
-    alert('Erro ao desbloquear usuário: ' + erro.message);
+    alert('Erro ao desbloquear usuÃ¡rio: ' + erro.message);
   }
 }
 
@@ -850,27 +896,34 @@ async function carregarUsuarios() {
   try {
     const snapshot = await db.collection('admin_usuarios').get();
     let lista = snapshot.docs
-      .map(doc => doc.data())
+      .map(doc => ({ id: doc.id, ...(doc.data() || {}) }))
       .sort((a, b) => new Date(b.dataCriacao || 0) - new Date(a.dataCriacao || 0));
 
     if (await bloquearTestesGratisVencidos(lista)) {
       const novoSnapshot = await db.collection('admin_usuarios').get();
       lista = novoSnapshot.docs
-        .map(doc => doc.data())
+        .map(doc => ({ id: doc.id, ...(doc.data() || {}) }))
         .sort((a, b) => new Date(b.dataCriacao || 0) - new Date(a.dataCriacao || 0));
     }
 
     const ativos = lista.filter(u => u.status === 'ativo').length;
-    const inativos = lista.filter(u => u.status === 'inativo').length;
+    const bloqueados = lista.filter(u => u.status === 'bloqueado').length;
+    const emTeste = lista.filter(u => getFaseTeste(u) === 'teste').length;
+    const emTolerancia = lista.filter(u => getFaseTeste(u) === 'tolerancia').length;
     const vencidos = lista.filter(u => getStatusPagamento(u) === 'vencido').length;
+    const mesAtual = new Date().toISOString().slice(0,7);
+    const pagosMes = lista.filter(u => String(u.ultimoPagamento || '').slice(0,7) === mesAtual).length;
 
     document.getElementById('stat-total').textContent = lista.length;
     document.getElementById('stat-ativos').textContent = ativos;
-    document.getElementById('stat-inativos').textContent = inativos;
+    document.getElementById('stat-teste').textContent = emTeste;
+    document.getElementById('stat-tolerancia').textContent = emTolerancia;
+    document.getElementById('stat-bloqueados').textContent = bloqueados;
     document.getElementById('stat-vencidos').textContent = vencidos;
+    document.getElementById('stat-pagos-mes').textContent = pagosMes;
 
     if (!lista.length) {
-      el.innerHTML = '<div class="empty-users">Nenhum usuário cadastrado ainda.<br>Crie o primeiro usuário acima.</div>';
+      el.innerHTML = '<div class="empty-users">Nenhum usuÃ¡rio cadastrado ainda.<br>Crie o primeiro usuÃ¡rio acima.</div>';
       return [];
     }
 
@@ -882,30 +935,34 @@ async function carregarUsuarios() {
           <div class="user-info">
             <div class="user-name">${u.nome} <span class="badge ${getContaBadgeClass(u.status)}">${u.status}</span></div>
             <div class="user-meta">
-              Login: <strong>${u.usuario}</strong> &nbsp;·&nbsp; Área: <strong>${nomeAreaConta(u.areaSistema || u.area)}</strong> &nbsp;·&nbsp;
-              Senha: <span id="senha-${u.id}" style="font-family:monospace">••••••</span>
+              Login: <strong>${u.usuario}</strong> &nbsp;Â·&nbsp; Ãrea: <strong>${nomeAreaConta(u.areaSistema || u.area)}</strong> &nbsp;Â·&nbsp;
+              Senha: <span id="senha-${u.id}" style="font-family:monospace">â€¢â€¢â€¢â€¢â€¢â€¢</span>
               <button class="copy-btn" onclick="toggleSenha('${u.id}','${u.senha}')">ver</button>
               <button class="copy-btn" onclick="copiarSenha('${u.senha}')">copiar</button>
-              ${u.obs ? '&nbsp;·&nbsp; ' + u.obs : ''}
+              ${u.obs ? '&nbsp;Â·&nbsp; ' + u.obs : ''}
             </div>
             <div class="user-meta section-space">
-              Plano: <strong>${u.plano || 'mensal'}</strong> &nbsp;·&nbsp;
-              Valor: <strong>${formatMoney(u.valorMensal || 0)}</strong> &nbsp;·&nbsp;
-              Vencimento: <strong>dia ${u.diaVencimento || '—'}</strong> &nbsp;·&nbsp;
-              Situação: <span class="badge ${getStatusBadgeClass(statusPg)}">${statusPg}</span>
+              Plano: <strong>${u.plano || 'mensal'}</strong> &nbsp;Â·&nbsp;
+              Valor: <strong>${formatMoney(u.valorMensal || 30)}</strong> &nbsp;Â·&nbsp;
+              Vencimento: <strong>dia ${u.diaVencimento || 'â€”'}</strong> &nbsp;Â·&nbsp;
+              SituaÃ§Ã£o: <span class="badge ${getStatusBadgeClass(statusPg)}">${statusPg}</span>
+            </div>
+            <div class="user-meta user-extra">
+              <div>WhatsApp: <strong>${u.whatsapp || '—'}</strong> ${u.whatsapp ? `<button class="copy-btn whatsapp-link" onclick="abrirWhatsAppAdmin('${u.whatsapp}','${(u.nome || '').replace(/'/g, "\\'")}')">chamar</button>` : ''}</div>
+              <div>Origem: <strong>${u.origem === 'auto_cadastro_site' ? 'auto cadastro' : 'manual/antigo'}</strong> &nbsp;Â·&nbsp; Tolerância: <strong>${getToleranciaStatus(u)}</strong></div>
             </div>
             <div class="user-meta">
-              Último pagamento: <strong>${u.ultimoPagamento ? formatData(u.ultimoPagamento) : '—'}</strong> &nbsp;·&nbsp;
-              Forma: <strong>${u.formaPagamento || '—'}</strong>
+              Ãšltimo pagamento: <strong>${u.ultimoPagamento ? formatData(u.ultimoPagamento) : 'â€”'}</strong> &nbsp;Â·&nbsp;
+              Forma: <strong>${u.formaPagamento || 'â€”'}</strong>
             </div>
             <div class="user-meta">
-              Teste grátis: <strong>${getTesteGratisStatus(u)}</strong>${u.bloqueioMotivo ? '&nbsp;·&nbsp; Motivo: <strong>' + u.bloqueioMotivo + '</strong>' : ''}
+              Teste grÃ¡tis: <strong>${getTesteGratisStatus(u)}</strong>${u.bloqueioMotivo ? '&nbsp;Â·&nbsp; Motivo: <strong>' + u.bloqueioMotivo + '</strong>' : ''}
             </div>
             <div style="font-size:10px;color:#9ca3af;margin-top:3px">Criado em ${formatData(u.dataCriacao)}</div>
           </div>
           <div class="user-actions">
-            <select class="btn btn-outline btn-xs" onchange="alterarAreaUsuario('${u.id}', this.value)" title="Área do usuário">
-              <option value="leiteira" ${normalizarAreaConta(u.areaSistema || u.area) === 'leiteira' ? 'selected' : ''}>Área Leiteira</option>
+            <select class="btn btn-outline btn-xs" onchange="alterarAreaUsuario('${u.id}', this.value)" title="Ãrea do usuÃ¡rio">
+              <option value="leiteira" ${normalizarAreaConta(u.areaSistema || u.area) === 'leiteira' ? 'selected' : ''}>Ãrea Leiteira</option>
               <option value="confinamento" ${normalizarAreaConta(u.areaSistema || u.area) === 'confinamento' ? 'selected' : ''}>Confinamento</option>
             </select>
             <button class="btn btn-blue btn-xs" onclick="marcarPago('${u.id}')">Marcar pago</button>
@@ -914,6 +971,7 @@ async function carregarUsuarios() {
               : `<button class="btn btn-amber btn-xs" onclick="bloquearUsuario('${u.id}')">Bloquear</button>`
             }
             <button class="btn btn-outline btn-xs" onclick="abrirEditar('${u.id}')">Editar</button>
+            ${u.whatsapp ? `<button class="btn btn-outline btn-xs whatsapp-link" onclick="abrirWhatsAppAdmin('${u.whatsapp}','${(u.nome || '').replace(/'/g, "\\'")}')">Chamar WhatsApp</button>` : ''}
             <button class="btn btn-red btn-xs" onclick="excluirUsuario('${u.id}','${(u.nome || '').replace(/'/g, "\\'")}')">Excluir</button>
           </div>
         </div>
@@ -923,7 +981,7 @@ async function carregarUsuarios() {
     return lista;
   } catch (erro) {
     console.error(erro);
-    el.innerHTML = '<div class="empty-users">Erro ao carregar usuários da nuvem.</div>';
+    el.innerHTML = '<div class="empty-users">Erro ao carregar usuÃ¡rios da nuvem.</div>';
     return [];
   }
 }
@@ -935,14 +993,14 @@ async function alterarAreaUsuario(id, areaSistema) {
   try {
     const ref = db.collection('admin_usuarios').doc(id);
     const doc = await ref.get();
-    if (!doc.exists) return alert('Usuário não encontrado.');
+    if (!doc.exists) return alert('UsuÃ¡rio nÃ£o encontrado.');
     const u = doc.data();
     await ref.update({ area: areaSistema, areaSistema });
     if (u.firebaseUid) await db.collection('users').doc(u.firebaseUid).set({ area: areaSistema, areaSistema }, { merge: true });
     await carregarTudoAdmin();
   } catch (erro) {
     console.error(erro);
-    alert('Erro ao alterar área do usuário: ' + erro.message);
+    alert('Erro ao alterar Ã¡rea do usuÃ¡rio: ' + erro.message);
   }
 }
 
@@ -978,7 +1036,7 @@ async function carregarFinanceiro(listaUsuarios) {
   vencidosEl.textContent = String(vencidos);
 
   const proximo = proximos.find(item => item.statusPagamentoCalc !== 'pago');
-  proximoEl.textContent = proximo ? formatData(proximo.dueDate.toISOString()) : '—';
+  proximoEl.textContent = proximo ? formatData(proximo.dueDate.toISOString()) : 'â€”';
 
   if (!proximos.length) {
     listaVencimentosEl.innerHTML = '<div class="empty-users">Nenhum vencimento cadastrado ainda.</div>';
@@ -989,7 +1047,7 @@ async function carregarFinanceiro(listaUsuarios) {
     <div class="list-row">
       <div>
         <div class="list-main">${u.nome}</div>
-        <div class="list-sub">${formatMoney(u.valorMensal || 0)} · vence em ${formatData(u.dueDate.toISOString())}</div>
+        <div class="list-sub">${formatMoney(u.valorMensal || 0)} Â· vence em ${formatData(u.dueDate.toISOString())}</div>
       </div>
       <div><span class="badge ${getStatusBadgeClass(u.statusPagamentoCalc)}">${u.statusPagamentoCalc}</span></div>
     </div>
@@ -1024,9 +1082,9 @@ async function carregarHistorico() {
           ${lista.map(item => `
             <tr>
               <td>${formatDateTime(item.dataPagamento)}</td>
-              <td>${item.nome || '—'}</td>
+              <td>${item.nome || 'â€”'}</td>
               <td>${formatMoney(item.valor || 0)}</td>
-              <td>${item.formaPagamento || '—'}</td>
+              <td>${item.formaPagamento || 'â€”'}</td>
             </tr>
           `).join('')}
         </tbody>
@@ -1034,7 +1092,7 @@ async function carregarHistorico() {
     `;
   } catch (erro) {
     console.error(erro);
-    el.innerHTML = '<div class="empty-users">Erro ao carregar histórico de pagamentos.</div>';
+    el.innerHTML = '<div class="empty-users">Erro ao carregar histÃ³rico de pagamentos.</div>';
   }
 }
 
@@ -1046,14 +1104,14 @@ async function carregarTudoAdmin() {
 }
 
 async function excluirUsuario(id, nome) {
-  if (!confirm('Excluir o usuário "' + nome + '" da lista do painel?')) return;
+  if (!confirm('Excluir o usuÃ¡rio "' + nome + '" da lista do painel?')) return;
 
   try {
     await db.collection('admin_usuarios').doc(id).delete();
     await carregarTudoAdmin();
   } catch (erro) {
     console.error(erro);
-    alert('Erro ao excluir usuário: ' + erro.message);
+    alert('Erro ao excluir usuÃ¡rio: ' + erro.message);
   }
 }
 
@@ -1069,17 +1127,19 @@ async function abrirEditar(id) {
     document.getElementById('edit-senha').value = u.senha || '';
     document.getElementById('edit-status').value = u.status || 'ativo';
     document.getElementById('edit-obs').value = u.obs || '';
+    document.getElementById('edit-whatsapp').value = u.whatsapp || '';
+    document.getElementById('edit-tolerancia').value = Number(u.toleranciaDias || 0) || '';
     document.getElementById('edit-plano').value = u.plano || 'mensal';
     document.getElementById('edit-valor').value = Number(u.valorMensal || 0);
     document.getElementById('edit-vencimento').value = Number(u.diaVencimento || 0) || '';
     document.getElementById('edit-forma').value = u.formaPagamento || 'pix';
     document.getElementById('edit-area').value = normalizarAreaConta(u.areaSistema || u.area);
     document.getElementById('edit-teste-gratis').value = String(Number(u.testeGratisDias || 0));
-    document.getElementById('edit-teste-hint').textContent = u.testeGratisFim ? getTesteGratisStatus(u) + '. Se alterar, o prazo será recalculado a partir de hoje.' : 'Se escolher 10 ou 20 dias, o prazo começa hoje.';
+    document.getElementById('edit-teste-hint').textContent = u.testeGratisFim ? getTesteGratisStatus(u) + '. Se alterar, o prazo serÃ¡ recalculado a partir de hoje.' : 'Se escolher 10 ou 20 dias, o prazo comeÃ§a hoje.';
     document.getElementById('modal-editar').style.display = 'flex';
   } catch (erro) {
     console.error(erro);
-    alert('Erro ao abrir edição: ' + erro.message);
+    alert('Erro ao abrir ediÃ§Ã£o: ' + erro.message);
   }
 }
 
@@ -1094,6 +1154,8 @@ async function salvarEdicao() {
   const senha = document.getElementById('edit-senha').value.trim();
   const status = document.getElementById('edit-status').value;
   const obs = document.getElementById('edit-obs').value.trim();
+  const whatsapp = document.getElementById('edit-whatsapp').value.replace(/\D/g, '');
+  const toleranciaDias = Number(document.getElementById('edit-tolerancia').value || 0);
   const plano = document.getElementById('edit-plano').value;
   const valorMensal = Number(document.getElementById('edit-valor').value || 0);
   const diaVencimento = Number(document.getElementById('edit-vencimento').value || 0);
@@ -1102,11 +1164,11 @@ async function salvarEdicao() {
   const testeGratisDias = Number(document.getElementById('edit-teste-gratis').value || 0);
 
   if (!nome || !usuario || !senha) {
-    alert('Preencha todos os campos obrigatórios.');
+    alert('Preencha todos os campos obrigatÃ³rios.');
     return;
   }
-  if (!diaVencimento || diaVencimento < 1 || diaVencimento > 31) {
-    alert('Informe um dia de vencimento entre 1 e 31.');
+  if (diaVencimento && (diaVencimento < 1 || diaVencimento > 31)) {
+    alert('Informe um dia de vencimento entre 1 e 31, ou deixe em branco.');
     return;
   }
 
@@ -1117,6 +1179,7 @@ async function salvarEdicao() {
     const mudouTeste = Number(atual.testeGratisDias || 0) !== testeGratisDias;
     const testeGratisInicio = testeGratisDias > 0 ? (mudouTeste ? new Date().toISOString() : (atual.testeGratisInicio || new Date().toISOString())) : '';
     const testeGratisFim = testeGratisDias > 0 ? (mudouTeste ? somarDiasISO(testeGratisDias) : (atual.testeGratisFim || somarDiasISO(testeGratisDias))) : '';
+    const toleranciaFim = testeGratisDias > 0 && toleranciaDias > 0 ? (mudouTeste ? somarDiasISO(testeGratisDias + toleranciaDias) : (atual.toleranciaFim || somarDiasISO(testeGratisDias + toleranciaDias))) : '';
     const bloqueioMotivo = testeGratisDias > 0 ? (atual.bloqueioMotivo || '') : '';
 
     await ref.update({
@@ -1125,6 +1188,7 @@ async function salvarEdicao() {
       senha,
       status,
       obs,
+      whatsapp,
       plano,
       valorMensal,
       diaVencimento,
@@ -1134,6 +1198,8 @@ async function salvarEdicao() {
       testeGratisDias,
       testeGratisInicio,
       testeGratisFim,
+      toleranciaDias,
+      toleranciaFim,
       bloqueioMotivo
     });
 
@@ -1142,6 +1208,7 @@ async function salvarEdicao() {
         accountStatus: status,
         area: areaSistema,
         areaSistema,
+        whatsapp,
         bloqueioMotivo,
         trial: {
           enabled: testeGratisDias > 0,
@@ -1157,7 +1224,7 @@ async function salvarEdicao() {
     await carregarTudoAdmin();
   } catch (erro) {
     console.error(erro);
-    alert('Erro ao salvar edição: ' + erro.message);
+    alert('Erro ao salvar ediÃ§Ã£o: ' + erro.message);
   }
 }
 
@@ -1167,7 +1234,7 @@ async function carregarConfigWhatsAppAdmin() {
     const doc = await db.collection('config_publica').doc('whatsapp').get();
     const dados = doc.exists ? (doc.data() || {}) : {};
     document.getElementById('cfg-wpp-numero').value = String(dados.numero || '');
-    document.getElementById('cfg-wpp-msg').value = String(dados.mensagemPadrao || 'Olá! Preciso de ajuda com o IA Rural.');
+    document.getElementById('cfg-wpp-msg').value = String(dados.mensagemPadrao || 'OlÃ¡! Preciso de ajuda com o IA Rural.');
   } catch (erro) {
     console.error('Erro ao carregar WhatsApp:', erro);
   }
@@ -1176,10 +1243,10 @@ async function carregarConfigWhatsAppAdmin() {
 async function salvarConfigWhatsApp() {
   const numeroRaw = document.getElementById('cfg-wpp-numero').value.trim();
   const numero = numeroRaw.replace(/\D/g, '');
-  const mensagemPadrao = document.getElementById('cfg-wpp-msg').value.trim() || 'Olá! Preciso de ajuda com o IA Rural.';
+  const mensagemPadrao = document.getElementById('cfg-wpp-msg').value.trim() || 'OlÃ¡! Preciso de ajuda com o IA Rural.';
 
   if (!numero) {
-    alert('Informe o número do WhatsApp.');
+    alert('Informe o nÃºmero do WhatsApp.');
     return;
   }
 
@@ -1204,16 +1271,16 @@ function salvarConfigAdmin() {
   const senha = document.getElementById('cfg-senha').value.trim();
 
   if (!usuario || !senha) {
-    alert('Preencha usuário e senha.');
+    alert('Preencha usuÃ¡rio e senha.');
     return;
   }
 
   const msg = document.getElementById('sucesso-cfg');
-  msg.textContent = 'O login admin é controlado no Firebase Authentication. Para trocar, altere o admin no Firebase.';
+  msg.textContent = 'O login admin Ã© controlado no Firebase Authentication. Para trocar, altere o admin no Firebase.';
   msg.style.display = 'block';
   setTimeout(() => {
     msg.style.display = 'none';
-    msg.textContent = 'Configurações salvas!';
+    msg.textContent = 'ConfiguraÃ§Ãµes salvas!';
   }, 4000);
 }
 
@@ -1223,11 +1290,11 @@ async function exportarUsuarios() {
     const lista = snapshot.docs.map(doc => doc.data());
 
     if (!lista.length) {
-      alert('Nenhum usuário para exportar.');
+      alert('Nenhum usuÃ¡rio para exportar.');
       return;
     }
 
-    let csv = 'Nome,Usuário,Senha,Status,Observação,Plano,Valor Mensal,Dia Vencimento,Forma Pagamento,Área,Último Pagamento\n';
+    let csv = 'Nome,UsuÃ¡rio,Senha,Status,ObservaÃ§Ã£o,Plano,Valor Mensal,Dia Vencimento,Forma Pagamento,Ãrea,Ãšltimo Pagamento\n';
     lista.forEach(u => {
       csv += `"${u.nome || ''}","${u.usuario || ''}","${u.senha || ''}","${u.status || ''}","${u.obs || ''}","${u.plano || ''}","${u.valorMensal || 0}","${u.diaVencimento || ''}","${u.formaPagamento || ''}","${nomeAreaConta(u.areaSistema || u.area)}","${u.testeGratisDias || 0}","${u.testeGratisFim ? formatData(u.testeGratisFim) : ''}","${u.ultimoPagamento ? formatData(u.ultimoPagamento) : ''}"\n`;
     });
@@ -1239,7 +1306,7 @@ async function exportarUsuarios() {
     a.click();
   } catch (erro) {
     console.error(erro);
-    alert('Erro ao exportar usuários: ' + erro.message);
+    alert('Erro ao exportar usuÃ¡rios: ' + erro.message);
   }
 }
 
@@ -1260,3 +1327,4 @@ auth.onAuthStateChanged(async (user) => {
 </script>
 </body>
 </html>
+
