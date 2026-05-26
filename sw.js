@@ -1,4 +1,4 @@
-const CACHE_NAME = 'agromilk-cache-v2-icons';
+const CACHE_NAME = 'agromilk-cache-v4-ui';
 const APP_ASSETS = [
   './',
   './index.html',
@@ -7,7 +7,8 @@ const APP_ASSETS = [
   './icon-192.png',
   './icon-512.png',
   './favicon.png',
-  './apple-touch-icon.png'
+  './apple-touch-icon.png',
+  './logo_agromilk.png'
 ];
 
 const isFirebaseOrGoogleApi = url =>
