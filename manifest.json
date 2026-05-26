@@ -1,13 +1,13 @@
 {
-  "name": "IA Rural",
-  "short_name": "IA Rural",
-  "description": "Gestão inteligente do campo",
+  "name": "AgroMilk",
+  "short_name": "AgroMilk",
+  "description": "Gestão leiteira inteligente",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#000000",
-  "theme_color": "#000000",
+  "background_color": "#0B5CAD",
+  "theme_color": "#0B5CAD",
   "categories": ["business", "productivity"],
   "icons": [
     {

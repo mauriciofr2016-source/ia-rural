@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ia-rural-v19-onboarding-pwa-auto-cadastro';
+const CACHE_NAME = 'agromilk-cache-v2-icons';
 const APP_ASSETS = [
   './',
   './index.html',

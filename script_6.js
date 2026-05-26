@@ -56,7 +56,7 @@
 
     let vetFilter = 'todos';
     let whatsappNumeroSuporte = '';
-    let whatsappMensagemSuporte = 'Olá! Preciso de ajuda com o IA Rural.';
+    let whatsappMensagemSuporte = 'Olá! Preciso de ajuda com o AgroMilk.';
     let areaLoginSelecionada = '';
     let usuarioAreaPermitida = '';
     let salvandoProtocoloVaca = false;
