@@ -182,7 +182,7 @@ body{font-family:'DM Sans',sans-serif;background:#F5F7FA;min-height:100vh;color:
           <label>Área do usuário</label>
           <select id="n-area">
             <option value="leiteira">Área Leiteira</option>
-            <option value="confinamento">?rea legada</option>
+            <option value="confinamento">Área legada</option>
           </select>
         </div>
         <div class="field">
@@ -239,7 +239,7 @@ body{font-family:'DM Sans',sans-serif;background:#F5F7FA;min-height:100vh;color:
         <span>¥ Usuários cadastrados</span>
         <button class="btn btn-outline btn-sm" onclick="exportarUsuarios()"> Exportar lista</button>
       </div>
-      <div class="muted" style="margin-bottom:10px">Lista com login, senha, observação e financeiro de cada cliente.</div>
+      <div class="muted" style="margin-bottom:10px">Lista com login, observação e financeiro de cada cliente. Senhas não são exibidas por segurança.</div>
       <div id="lista-usuarios"></div>
     </div>
 
@@ -293,6 +293,20 @@ body{font-family:'DM Sans',sans-serif;background:#F5F7FA;min-height:100vh;color:
 
       <button class="btn btn-green" onclick="salvarConfigWhatsApp()">Salvar WhatsApp</button>
       <div class="success-msg" id="sucesso-wpp">WhatsApp salvo com sucesso!</div>
+    </div>
+
+    <div class="card" style="background:#fafafa">
+      <div class="card-title">Rádio AgroMilk</div>
+      <div class="muted" style="margin-bottom:12px">Configure uma URL pública de streaming para exibir o mini player no app dos usuários. Não use arquivos protegidos nem chaves privadas.</div>
+      <div class="form-row">
+        <div class="field">
+          <label>URL da rádio AgroMilk</label>
+          <input type="url" id="cfg-radio-url" placeholder="https://exemplo.com/stream">
+        </div>
+      </div>
+      <button class="btn btn-green" id="btn-salvar-radio" onclick="salvarConfigRadio(this)">Salvar rádio</button>
+      <button class="btn btn-outline" id="btn-remover-radio" onclick="removerConfigRadio(this)">Remover rádio</button>
+      <div class="success-msg" id="sucesso-radio">Rádio salva com sucesso!</div>
     </div>
 
     <div class="card" style="background:#fafafa">
@@ -350,7 +364,7 @@ body{font-family:'DM Sans',sans-serif;background:#F5F7FA;min-height:100vh;color:
         <label>Área do usuário</label>
         <select id="edit-area">
           <option value="leiteira">Área Leiteira</option>
-          <option value="confinamento">?rea legada</option>
+          <option value="confinamento">Área legada</option>
         </select>
       </div>
       <div class="field">
@@ -466,24 +480,12 @@ function formatMoney(value) {
   return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-function toggleSenha(id, senha) {
-  const el = document.getElementById('senha-' + id);
-  if (!el) return;
-  el.textContent = el.textContent === '••••••' ? senha : '••••••';
+function toggleSenha() {
+  alert('Por segurança, o AgroMilk não exibe senha original salva.');
 }
 
-function copiarSenha(senha) {
-  navigator.clipboard.writeText(senha).then(() => {
-    alert('Senha copiada!');
-  }).catch(() => {
-    const t = document.createElement('textarea');
-    t.value = senha;
-    document.body.appendChild(t);
-    t.select();
-    document.execCommand('copy');
-    document.body.removeChild(t);
-    alert('Senha copiada!');
-  });
+function copiarSenha() {
+  alert('Por segurança, a senha não fica disponível para cópia. Redefina uma nova senha quando necessário.');
 }
 
 function mostrarErroLogin(msg) {
@@ -541,7 +543,7 @@ function normalizarAreaConta(valor) {
 }
 
 function nomeAreaConta(valor) {
-  return normalizarAreaConta(valor) === 'confinamento' ? '?rea legada' : '?rea Leiteira';
+  return normalizarAreaConta(valor) === 'confinamento' ? 'Área legada' : 'Área Leiteira';
 }
 
 
@@ -589,7 +591,7 @@ function abrirWhatsAppAdmin(numero, nome) {
   const wpp = String(numero || '').replace(/\D/g, '');
   if (!wpp) return alert('Este usuário não tem WhatsApp cadastrado.');
   const texto = encodeURIComponent(`Olá, aqui é do suporte AgroMilk. Identifiquei seu cadastro da fazenda ${nome || ''}. Posso te ajudar com o acesso/pagamento`);
-  window.open(`https://wa.me/${wpp}text=${texto}`, '_blank');
+  window.open(`https://wa.me/${wpp}?text=${texto}`, '_blank');
 }
 
 async function bloquearTestesGratisVencidos(lista) {
@@ -730,7 +732,7 @@ async function criarUsuario() {
       id: uid,
       nome,
       usuario,
-      senha,
+      senhaDefinidaEm: new Date().toISOString(),
       status,
       obs,
       firebaseUid: uid,
@@ -940,9 +942,7 @@ async function carregarUsuarios() {
             <div class="user-name">${u.nome} <span class="badge ${getContaBadgeClass(u.status)}">${u.status}</span></div>
             <div class="user-meta">
               Login: <strong>${u.usuario}</strong> &nbsp;·&nbsp; Área: <strong>${nomeAreaConta(u.areaSistema || u.area)}</strong> &nbsp;·&nbsp;
-              Senha: <span id="senha-${u.id}" style="font-family:monospace">••••••</span>
-              <button class="copy-btn" onclick="toggleSenha('${u.id}','${u.senha}')">ver</button>
-              <button class="copy-btn" onclick="copiarSenha('${u.senha}')">copiar</button>
+              Senha: <span id="senha-${u.id}" style="font-family:monospace">não exibida</span>
               ${u.obs ? '&nbsp;·&nbsp; ' + u.obs : ''}
             </div>
             <div class="user-meta section-space">
@@ -967,7 +967,7 @@ async function carregarUsuarios() {
           <div class="user-actions">
             <select class="btn btn-outline btn-xs" onchange="alterarAreaUsuario('${u.id}', this.value)" title="Área do usuário">
               <option value="leiteira" ${normalizarAreaConta(u.areaSistema || u.area) === 'leiteira' ? 'selected' : ''}>Área Leiteira</option>
-              <option value="confinamento" ${normalizarAreaConta(u.areaSistema || u.area) === 'confinamento' ? 'selected' : ''}>?rea legada</option>
+              <option value="confinamento" ${normalizarAreaConta(u.areaSistema || u.area) === 'confinamento' ? 'selected' : ''}>Área legada</option>
             </select>
             <button class="btn btn-blue btn-xs" onclick="marcarPago('${u.id}')">Marcar pago</button>
             ${u.status === 'bloqueado' ?
@@ -1105,6 +1105,7 @@ async function carregarTudoAdmin() {
   await carregarFinanceiro(lista);
   await carregarHistorico();
   await carregarConfigWhatsAppAdmin();
+  await carregarConfigRadioAdmin();
 }
 
 async function excluirUsuario(id, nome) {
@@ -1128,7 +1129,7 @@ async function abrirEditar(id) {
     document.getElementById('edit-id').value = u.id;
     document.getElementById('edit-nome').value = u.nome || '';
     document.getElementById('edit-usuario').value = u.usuario || '';
-    document.getElementById('edit-senha').value = u.senha || '';
+    document.getElementById('edit-senha').value = '';
     document.getElementById('edit-status').value = u.status || 'ativo';
     document.getElementById('edit-obs').value = u.obs || '';
     document.getElementById('edit-whatsapp').value = u.whatsapp || '';
@@ -1167,7 +1168,7 @@ async function salvarEdicao() {
   const areaSistema = normalizarAreaConta(document.getElementById('edit-area').value);
   const testeGratisDias = Number(document.getElementById('edit-teste-gratis').value || 0);
 
-  if (!nome || !usuario || !senha) {
+  if (!nome || !usuario) {
     alert('Preencha todos os campos obrigatórios.');
     return;
   }
@@ -1189,7 +1190,8 @@ async function salvarEdicao() {
     await ref.update({
       nome,
       usuario,
-      senha,
+      senha: firebase.firestore.FieldValue.delete(),
+      ...(senha ? { senhaDefinidaEm: new Date().toISOString() } : {}),
       status,
       obs,
       whatsapp,
@@ -1270,6 +1272,62 @@ async function salvarConfigWhatsApp() {
   }
 }
 
+async function carregarConfigRadioAdmin() {
+  try {
+    const doc = await db.collection('config_publica').doc('radio').get();
+    const dados = doc.exists ? (doc.data() || {}) : {};
+    const input = document.getElementById('cfg-radio-url');
+    if (input) input.value = String(dados.url || '');
+  } catch (erro) {
+    console.error('Erro ao carregar rádio:', erro);
+  }
+}
+
+async function salvarConfigRadio(btn) {
+  if (btn && btn.dataset.processando === '1') return;
+  const input = document.getElementById('cfg-radio-url');
+  const url = (input?.value || '').trim();
+  const msg = document.getElementById('sucesso-radio');
+  if (!url) return alert('Informe a URL da rádio AgroMilk.');
+  if (!/^https?:\/\//i.test(url)) return alert('Informe uma URL válida começando com http:// ou https://.');
+  const textoOriginal = btn ? btn.textContent : '';
+  if (btn) { btn.dataset.processando = '1'; btn.disabled = true; btn.textContent = 'Salvando...'; }
+  try {
+    await db.collection('config_publica').doc('radio').set({
+      url,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    if (msg) { msg.textContent = 'Rádio salva com sucesso!'; msg.style.display = 'block'; setTimeout(() => { msg.style.display = 'none'; }, 3000); }
+  } catch (erro) {
+    console.error('Erro ao salvar rádio:', erro);
+    alert('Erro ao salvar rádio: ' + (erro.message || erro));
+  } finally {
+    if (btn) { btn.dataset.processando = '0'; btn.disabled = false; btn.textContent = textoOriginal || 'Salvar rádio'; }
+  }
+}
+
+async function removerConfigRadio(btn) {
+  if (btn && btn.dataset.processando === '1') return;
+  if (!confirm('Remover a URL da rádio AgroMilk? O player deixará de aparecer para os usuários.')) return;
+  const msg = document.getElementById('sucesso-radio');
+  const textoOriginal = btn ? btn.textContent : '';
+  if (btn) { btn.dataset.processando = '1'; btn.disabled = true; btn.textContent = 'Removendo...'; }
+  try {
+    await db.collection('config_publica').doc('radio').set({
+      url: '',
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    const input = document.getElementById('cfg-radio-url');
+    if (input) input.value = '';
+    if (msg) { msg.textContent = 'Rádio removida com sucesso!'; msg.style.display = 'block'; setTimeout(() => { msg.style.display = 'none'; }, 3000); }
+  } catch (erro) {
+    console.error('Erro ao remover rádio:', erro);
+    alert('Erro ao remover rádio: ' + (erro.message || erro));
+  } finally {
+    if (btn) { btn.dataset.processando = '0'; btn.disabled = false; btn.textContent = textoOriginal || 'Remover rádio'; }
+  }
+}
+
 function salvarConfigAdmin() {
   const usuario = document.getElementById('cfg-usuario').value.trim();
   const senha = document.getElementById('cfg-senha').value.trim();
@@ -1298,9 +1356,9 @@ async function exportarUsuarios() {
       return;
     }
 
-    let csv = 'Nome,Usuário,Senha,Status,Observação,Plano,Valor Mensal,Dia Vencimento,Forma Pagamento,Área,Último Pagamento\n';
+    let csv = 'Nome,Usuário,Status,Observação,Plano,Valor Mensal,Dia Vencimento,Forma Pagamento,Área,Último Pagamento\n';
     lista.forEach(u => {
-      csv += `"${u.nome || ''}","${u.usuario || ''}","${u.senha || ''}","${u.status || ''}","${u.obs || ''}","${u.plano || ''}","${u.valorMensal || 0}","${u.diaVencimento || ''}","${u.formaPagamento || ''}","${nomeAreaConta(u.areaSistema || u.area)}","${u.testeGratisDias || 0}","${u.testeGratisFim ? formatData(u.testeGratisFim) : ''}","${u.ultimoPagamento ? formatData(u.ultimoPagamento) : ''}"\n`;
+      csv += `"${u.nome || ''}","${u.usuario || ''}","${u.status || ''}","${u.obs || ''}","${u.plano || ''}","${u.valorMensal || 0}","${u.diaVencimento || ''}","${u.formaPagamento || ''}","${nomeAreaConta(u.areaSistema || u.area)}","${u.testeGratisDias || 0}","${u.testeGratisFim ? formatData(u.testeGratisFim) : ''}","${u.ultimoPagamento ? formatData(u.ultimoPagamento) : ''}"\n`;
     });
 
     const blob = new Blob([csv], { type: 'text/csv' });

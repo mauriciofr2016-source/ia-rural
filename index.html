@@ -1209,6 +1209,36 @@
       margin-top: 2px;
     }
 
+    .radio-mini-player {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      margin-left: auto;
+      padding: 5px 7px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: #fff;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .radio-mini-player.active { display: inline-flex; }
+    .radio-mini-player button {
+      border: 0;
+      border-radius: 999px;
+      background: var(--blue);
+      color: #fff;
+      padding: 5px 9px;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .radio-mini-player button.pause { background: #64748B; }
+    .radio-status { color: var(--muted); font-weight: 700; font-size: 11px; }
+
     @media (max-width: 760px) {
       .form-row,
       .form-row-3,
@@ -1232,6 +1262,11 @@
         left: 14px;
         bottom: 14px;
         justify-content: center;
+      }
+      .radio-mini-player {
+        width: 100%;
+        justify-content: center;
+        margin-left: 0;
       }
 
     @media (max-width: 520px) {
@@ -1389,6 +1424,8 @@
 <div class="nav-user" id="nav-usuario">Usuário</div>
 <button class="nav-btn" onclick="openBackupModal()">Backup</button>
 <button class="nav-btn" id="btn-instalar-app" style="display:inline-flex;" onclick="instalarAppPWA()">Instalar App</button>
+<button class="nav-btn" id="btn-whatsapp" style="display:none;" onclick="abrirWhatsAppSuporte()" type="button">Fale conosco</button>
+<button class="nav-btn" id="btn-tutorial-nav" onclick="iniciarTutorial(true)" type="button">Tutorial</button>
 <button class="nav-btn" onclick="fazerLogout()">Sair</button>
 </div>
 </div>
@@ -1399,6 +1436,13 @@
 <div class="nav-tab" data-page="medicacoes" onclick="showPage('medicacoes')">Medicações</div>
 <div class="nav-tab" data-page="despesas" onclick="showPage('despesas')">Financeiro</div>
 <div class="nav-tab" data-page="mais" onclick="showPage('mais')">Mais</div>
+<div class="radio-mini-player" id="radio-mini-player">
+  <span>Rádio</span>
+  <button type="button" id="radio-play" onclick="tocarRadioAgroMilk()">Play</button>
+  <button type="button" class="pause" id="radio-pause" onclick="pausarRadioAgroMilk()">Pause</button>
+  <span class="radio-status" id="radio-status">pausado</span>
+  <audio id="radio-audio" preload="none"></audio>
+</div>
 </div>
 </nav>
 <div class="page" id="page-mais">
@@ -1856,7 +1900,7 @@
 <div class="vet-grid" id="vet-lista"></div>
 </div>
 </div>
-<div class="page" id="page-protocolar-vaca"><div class="card" data-area="leiteiro"><div class="section-title">Protocolar Vaca</div><p class="muted" style="margin-bottom:14px;">Cadastre o protocolo reprodutivo. A data do protocolo e a data do toque entram automaticamente no calendário inteligente.</p><div class="form-row"><div class="form-group"><label>Nome ou brinco</label><input id="pv-animal" type="text" placeholder="Ex: Mimosa ou 025" /></div><div class="form-group"><label>Data do protocolo</label><input id="pv-data-protocolo" type="tel" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" class="data-br-input" /></div></div><div class="form-row"><div class="form-group"><label>Nome do boi</label><input id="pv-boi" type="text" placeholder="Ex: Touro Imperial" /></div><div class="form-group"><label>Data do toque (exame)</label><input id="pv-data-toque" type="tel" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" class="data-br-input" /></div></div><button class="btn btn-success" id="btn-salvar-protocolo" onclick="salvarProtocoloVaca()"> Salvar protocolo</button><div class="info-box hidden" id="pv-msg" style="margin-top:12px;"></div></div></div><div class="page" id="page-vacas-protocoladas"><div class="card" data-area="leiteiro"><div class="section-title">Vacas Protocoladas</div><p class="muted" style="margin-bottom:14px;">Acompanhe protocolos, confirme prenhez, marque não confirmada ou crie um novo protocolo inteligente.</p><div id="lista-vacas-protocoladas"></div></div></div>
+<div class="page" id="page-protocolar-vaca"><div class="card" data-area="leiteiro"><div class="section-title">Protocolar Vaca</div><p class="muted" style="margin-bottom:14px;">Cadastre o protocolo reprodutivo. A inseminação é usada como início real da prenhez para calcular parto, pré-parto e secagem quando aplicável.</p><div class="form-row"><div class="form-group"><label>Nome ou brinco</label><input id="pv-animal" type="text" placeholder="Ex: Mimosa ou 025" /></div><div class="form-group"><label>Data do protocolo</label><input id="pv-data-protocolo" type="tel" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" class="data-br-input" /></div></div><div class="form-row"><div class="form-group"><label>Data da inseminação</label><input id="pv-data-inseminacao" type="tel" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" class="data-br-input" /></div><div class="form-group"><label>Data do toque (exame)</label><input id="pv-data-toque" type="tel" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" class="data-br-input" /></div></div><div class="form-row"><div class="form-group"><label>Nome do boi</label><input id="pv-boi" type="text" placeholder="Ex: Touro Imperial" /></div><div class="form-group"><label>Raça do boi</label><input id="pv-raca-boi" type="text" placeholder="Ex: Gir Leiteiro" /></div></div><button class="btn btn-success" id="btn-salvar-protocolo" onclick="salvarProtocoloVaca(this)">Salvar protocolo</button><div class="info-box hidden" id="pv-msg" style="margin-top:12px;"></div></div></div><div class="page" id="page-vacas-protocoladas"><div class="card" data-area="leiteiro"><div class="section-title">Vacas Protocoladas</div><p class="muted" style="margin-bottom:14px;">Acompanhe protocolos ativos e mantenha o histórico sem duplicar animais na lista principal.</p><div id="lista-vacas-protocoladas"></div></div></div>
 <div class="page" id="page-calendario">
 <div class="area-gate hidden" id="gate-calendario">
 <h3>Área exclusiva do leite</h3>
@@ -1986,17 +2030,6 @@
 </div>
 <datalist id="produtos-corte-lista"></datalist>
 
-<button class="whatsapp-float" id="btn-whatsapp" onclick="abrirWhatsAppSuporte()" type="button">
-  <div class="whatsapp-icon-wrap">
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M20.52 3.48A11.86 11.86 0 0 0 12.06 0C5.55 0 .23 5.28.23 11.78c0 2.08.54 4.11 1.57 5.91L0 24l6.49-1.7a11.83 11.83 0 0 0 5.57 1.42h.01c6.51 0 11.83-5.28 11.83-11.78 0-3.15-1.24-6.11-3.38-8.46zm-8.45 18.27h-.01a9.8 9.8 0 0 1-4.99-1.37l-.36-.21-3.85 1.01 1.03-3.74-.24-.38a9.73 9.73 0 0 1-1.49-5.18c0-5.39 4.44-9.78 9.9-9.78 2.64 0 5.11 1.02 6.97 2.88a9.67 9.67 0 0 1 2.89 6.91c0 5.4-4.45 9.86-9.85 9.86zm5.41-7.38c-.3-.15-1.78-.87-2.06-.97-.28-.1-.48-.15-.69.15-.2.3-.79.97-.97 1.16-.18.2-.36.22-.66.07-.3-.15-1.28-.47-2.43-1.49-.89-.79-1.5-1.77-1.68-2.07-.18-.3-.02-.46.13-.61.14-.14.3-.36.45-.54.15-.18.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.69-1.64-.95-2.25-.25-.59-.5-.51-.69-.52h-.59c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.22 3.08c.15.2 2.1 3.33 5.19 4.54.73.32 1.31.5 1.76.64.74.24 1.42.21 1.96.13.6-.09 1.78-.73 2.03-1.44.25-.71.25-1.31.18-1.44-.07-.12-.27-.2-.57-.35z"/>
-    </svg>
-  </div>
-  <div class="whatsapp-label">
-    <strong>Problemas</strong>
-    <span>Fale com a gente</span>
-  </div>
-</button>
 
 <script>
 
@@ -2060,12 +2093,15 @@
     let vetFilter = 'todos';
     let whatsappNumeroSuporte = '';
     let whatsappMensagemSuporte = 'Olá! Preciso de ajuda com o AgroMilk.';
+    let radioAgroMilkUrl = '';
     let areaLoginSelecionada = '';
     let usuarioAreaPermitida = '';
     let salvandoProtocoloVaca = false;
     let restaurandoSessaoFirebase = false;
     let loginManualEmAndamento = false;
     const calendarioExpandido = {};
+    const rebanhoExpandido = {};
+    let historicoProtocolosAberto = false;
 
     let animalEmEdicao = null;
     const AREAS_DISPONIVEIS = ['leiteiro', 'corte'];
@@ -2340,6 +2376,7 @@ if (auth) {
       }
 
       atualizarBotaoWhatsApp();
+      try { carregarConfigRadio(); } catch(e) {}
     }
 
     function atualizarBotaoWhatsApp() {
@@ -2359,6 +2396,67 @@ if (auth) {
       const texto = encodeURIComponent(whatsappMensagemSuporte || 'Olá! Preciso de ajuda com o AgroMilk.');
       const url = `https://wa.me/${whatsappNumeroSuporte}?text=${texto}`;
       window.open(url, '_blank');
+    }
+
+    async function carregarConfigRadio() {
+      try {
+        const doc = await db.collection('config_publica').doc('radio').get();
+        const dados = doc.exists ? (doc.data() || {}) : {};
+        radioAgroMilkUrl = String(dados.url || '').trim();
+      } catch (e) {
+        console.warn('Erro ao carregar rádio:', e);
+        radioAgroMilkUrl = '';
+      }
+      atualizarMiniPlayerRadio();
+    }
+
+    function atualizarMiniPlayerRadio() {
+      const player = document.getElementById('radio-mini-player');
+      const audio = document.getElementById('radio-audio');
+      const status = document.getElementById('radio-status');
+      if (!player || !audio) return;
+      if (!radioAgroMilkUrl) {
+        try { audio.pause(); } catch (_) {}
+        audio.removeAttribute('src');
+        player.classList.remove('active');
+        if (status) status.textContent = 'pausado';
+        return;
+      }
+      if (audio.getAttribute('src') !== radioAgroMilkUrl) {
+        try { audio.pause(); } catch (_) {}
+        audio.src = radioAgroMilkUrl;
+        if (status) status.textContent = 'pausado';
+      }
+      player.classList.add('active');
+      audio.onerror = () => {
+        if (status) status.textContent = 'erro';
+        alert('Não foi possível tocar esta rádio. Verifique a URL no painel admin.');
+      };
+      audio.onplay = () => { if (status) status.textContent = 'tocando'; };
+      audio.onpause = () => { if (status) status.textContent = 'pausado'; };
+    }
+
+    async function tocarRadioAgroMilk() {
+      const audio = document.getElementById('radio-audio');
+      const status = document.getElementById('radio-status');
+      if (!radioAgroMilkUrl || !audio) return;
+      try {
+        if (audio.getAttribute('src') !== radioAgroMilkUrl) audio.src = radioAgroMilkUrl;
+        await audio.play();
+        if (status) status.textContent = 'tocando';
+      } catch (e) {
+        console.warn('Erro ao tocar rádio:', e);
+        if (status) status.textContent = 'erro';
+        alert('Não foi possível tocar esta rádio. Verifique a URL no painel admin.');
+      }
+    }
+
+    function pausarRadioAgroMilk() {
+      const audio = document.getElementById('radio-audio');
+      const status = document.getElementById('radio-status');
+      if (!audio) return;
+      audio.pause();
+      if (status) status.textContent = 'pausado';
     }
 
     function formatarDataHora(iso) {
@@ -2445,6 +2543,80 @@ if (auth) {
     function abrirLoginArea(area){areaLoginSelecionada='leiteira';document.getElementById('landing-screen').style.display='none';document.getElementById('tela-login').style.display='flex';document.getElementById('app-wrapper').style.display='none';document.getElementById('login-erro').style.display='none';document.getElementById('login-usuario').focus();}
     function voltarLanding(){areaLoginSelecionada='';document.getElementById('login-usuario').value='';document.getElementById('login-senha').value='';document.getElementById('login-erro').style.display='none';document.getElementById('tela-login').style.display='none';document.getElementById('app-wrapper').style.display='none';document.getElementById('landing-screen').style.display='flex';carregarConfigWhatsApp();}
 
+    function mostrarLoginSimples() {
+      areaLoginSelecionada = 'leiteira';
+      document.getElementById('landing-screen').style.display = 'none';
+      document.getElementById('tela-cadastro')?.classList.add('hidden');
+      document.getElementById('ajuda-instalacao')?.classList.add('hidden');
+      document.getElementById('tela-login').style.display = 'flex';
+      document.getElementById('app-wrapper').style.display = 'none';
+      const erro = document.getElementById('login-erro');
+      if (erro) erro.style.display = 'none';
+      setTimeout(() => document.getElementById('login-usuario')?.focus(), 50);
+    }
+
+    function mostrarCadastroConta() {
+      areaLoginSelecionada = 'leiteira';
+      document.getElementById('landing-screen').style.display = 'none';
+      document.getElementById('tela-login').style.display = 'none';
+      document.getElementById('app-wrapper').style.display = 'none';
+      document.getElementById('ajuda-instalacao')?.classList.add('hidden');
+      document.getElementById('tela-cadastro')?.classList.remove('hidden');
+    }
+
+    function voltarPreLogin() {
+      document.getElementById('tela-cadastro')?.classList.add('hidden');
+      document.getElementById('ajuda-instalacao')?.classList.add('hidden');
+      document.getElementById('tela-login').style.display = 'none';
+      document.getElementById('app-wrapper').style.display = 'none';
+      document.getElementById('landing-screen').style.display = 'flex';
+    }
+
+    function fecharAjudaInstalacao() {
+      document.getElementById('ajuda-instalacao')?.classList.add('hidden');
+    }
+
+    async function criarContaGratis(btn) {
+      const nome = (document.getElementById('cadastro-nome')?.value || '').trim();
+      const usuario = normalizarUsuario(document.getElementById('cadastro-usuario')?.value || '');
+      const senha = document.getElementById('cadastro-senha')?.value || '';
+      const confirma = document.getElementById('cadastro-confirma')?.value || '';
+      const erro = document.getElementById('cadastro-erro');
+      const setErro = msg => { if (erro) { erro.textContent = msg; erro.style.display = msg ? 'block' : 'none'; } else if (msg) alert(msg); };
+      setErro('');
+      if (!nome || !usuario || !senha) return setErro('Preencha nome, usuário e senha.');
+      if (senha.length < 6) return setErro('A senha precisa ter pelo menos 6 caracteres.');
+      if (senha !== confirma) return setErro('As senhas não conferem.');
+      const travado = travarBotaoAcao(btn, 'Salvando...');
+      if (travado === false) return;
+      try {
+        const cred = await auth.createUserWithEmailAndPassword(usuarioParaEmail(usuario), senha);
+        await db.collection('users').doc(cred.user.uid).set({
+          nome,
+          usuario,
+          area: 'leiteira',
+          areaSistema: 'leiteira',
+          accountStatus: 'ativo',
+          criadoEm: new Date().toISOString()
+        }, { merge: true });
+        usuarioFirebase = cred.user;
+        usuarioLogado = usuario;
+        usuarioAreaPermitida = 'leiteira';
+        DB = DB_PADRAO();
+        aplicarAreaPermitidaOuRedirecionar('leiteira');
+        abrirAppLogado(usuario);
+        await salvarDB({ sincronizarAnimais: false });
+        await carregarFirestore();
+      } catch (e) {
+        console.error('Erro ao criar conta:', e);
+        const code = e?.code || '';
+        if (code.includes('email-already-in-use')) setErro('Esse usuário já existe. Tente outro nome de usuário.');
+        else setErro('Erro ao criar conta. Verifique os dados e tente novamente.');
+      } finally {
+        liberarBotaoAcao(btn);
+      }
+    }
+
     async function fazerLogout() {
       if (!confirm('Deseja sair do sistema?')) return;
       const btnSair = document.querySelector('button[onclick="fazerLogout()"]');
@@ -2528,7 +2700,7 @@ if (auth) {
       }catch(e){console.error('Erro ao bloquear teste grátis vencido:',e);}
       return {bloqueado:true,mensagem};
     }
-    function normalizarProtocoloVaca(p={}){return {id:p.id||String(Date.now()),animal:p.animal||p.nomeAnimal||'',dataProtocolo:p.dataProtocolo||'',boi:p.boi||'',dataToque:p.dataToque||'',status:p.status||'protocolada',dataCriacao:p.dataCriacao||new Date().toISOString(),historico:Array.isArray(p.historico)?p.historico:[]};}
+    function normalizarProtocoloVaca(p={}){return {id:p.id||String(Date.now()),animal:p.animal||p.nomeAnimal||'',animalId:p.animalId||'',dataProtocolo:p.dataProtocolo||'',dataInseminacao:p.dataInseminacao||p.inseminacao||'',boi:p.boi||'',racaBoi:p.racaBoi||p.raca||'',dataToque:p.dataToque||'',status:p.status||'protocolada',ativo:p.ativo !== false,dataCriacao:p.dataCriacao||new Date().toISOString(),dataEncerramento:p.dataEncerramento||'',historico:Array.isArray(p.historico)?p.historico:[]};}
     function normalizarMedicacao(m={}){return {id:m.id||('med_'+Date.now()),nome:m.nome||m.medicamento||'',animal:m.animal||m.animalNome||'',animalId:m.animalId||'',data:m.data||m.dataAplicacao||'',dataRepetir:m.dataRepetir||m.repetirEm||'',valor:parseFloat(m.valor||m.custo)||0,obs:m.obs||m.observacoes||'',status:m.status||'ativo',criadoEm:m.criadoEm||new Date().toISOString(),financeiroId:m.financeiroId||''};}
 
     function abrirAppLogado(usuario) {
@@ -2920,16 +3092,117 @@ if (auth) {
       }
     }
 
-    function calcularPrevisoesPrenhez(dataPrenha) {
+    function animalEhNovilhaPrimeiraCria(a) {
+      if (!a) return true;
+      const categoria = String(a.categoria || '').toLowerCase();
+      const totalCrias = parseInt(a.totalCrias, 10) || 0;
+      return categoria.includes('novilha') || totalCrias === 0 || a.primeiraCria === true;
+    }
+
+    function animalEstaPrenha(a) {
+      if (!a) return false;
+      const campos = [
+        a.statusReproducao,
+        a.statusReprodutivo,
+        a.statusPrenhez,
+        a.gestacao,
+        a.statusToque
+      ].map(v => String(v || '').toLowerCase());
+      if (a.prenha === true || a.prenhezConfirmada === true || a.gestacao === true) return true;
+      if (campos.some(v => v.includes('prenhez confirmada') || v.includes('prenha') || v.includes('gestante'))) return true;
+      const nome = String(a.nome || '').toLowerCase().trim();
+      const brinco = String(a.brinco || '').toLowerCase().trim();
+      return (DB.protocolosVacas || []).map(normalizarProtocoloVaca).some(p => {
+        const status = String(p.status || '').toLowerCase();
+        const animalProt = String(p.animal || '').toLowerCase().trim();
+        return status.includes('prenhez confirmada') && ((p.animalId && p.animalId === a.id) || (animalProt && (animalProt === nome || animalProt === brinco)));
+      });
+    }
+
+    function animalEstaLactante(a) {
+      if (!a) return false;
+      const texto = [a.status, a.statusReproducao, a.statusReprodutivo, a.categoria].map(v => String(v || '').toLowerCase()).join(' ');
+      return a.lactacao === true || texto.includes('lactante') || texto.includes('em lactação') || texto.includes('em lactacao');
+    }
+
+    function animalEstaSeca(a) {
+      if (!a) return false;
+      const texto = [a.status, a.statusReproducao, a.statusReprodutivo].map(v => String(v || '').toLowerCase()).join(' ');
+      return a.secaConfirmada === true || a.secagemConcluida === true || texto.includes('seca');
+    }
+
+    function animalDeveTerSecagem(a) {
+      if (!a || (a.area || 'leiteiro') !== 'leiteiro') return false;
+      if (animalEhNovilhaPrimeiraCria(a)) return false;
+      return animalEstaLactante(a) && !animalEstaSeca(a);
+    }
+
+    function obterQuantidadeCriasAnimal(a) {
+      const manual = parseInt(a?.totalCrias, 10);
+      if (Number.isFinite(manual) && manual >= 0) return manual;
+      const historico = Array.isArray(a?.historicoPartos) ? a.historicoPartos.length : 0;
+      if (historico) return historico;
+      if (a?.dataUltimoParto || a?.partoRegistrado) return 1;
+      return 0;
+    }
+
+    function obterStatusAtualAnimal(a) {
+      const categoria = String(a?.categoria || '').trim();
+      if (animalEstaSeca(a)) return 'Seca';
+      if (animalEstaLactante(a)) return 'Lactante';
+      if (animalEstaPrenha(a) && animalEhNovilhaPrimeiraCria(a)) return 'Novilha prenha';
+      if (animalEstaPrenha(a)) return 'Prenha';
+      return categoria || String(a?.status || '').trim() || 'Não informado';
+    }
+
+    function animalTemProtocoloAtivo(a) {
+      if (!a) return false;
+      const nome = String(a.nome || '').toLowerCase().trim();
+      const brinco = String(a.brinco || '').toLowerCase().trim();
+      return (DB.protocolosVacas || []).map(normalizarProtocoloVaca).some(p => {
+        const status = String(p.status || '').toLowerCase();
+        const animalProt = String(p.animal || '').toLowerCase().trim();
+        return p.ativo !== false && !status.includes('confirmada') && !status.includes('não confirmada') && !status.includes('nao confirmada') && ((p.animalId && p.animalId === a.id) || (animalProt && (animalProt === nome || animalProt === brinco)));
+      });
+    }
+
+    function animalAptoParaAlertaReprodutivo(a) {
+      if (!a || (a.area || 'leiteiro') !== 'leiteiro') return false;
+      const sexo = String(a.sexo || '').toLowerCase();
+      const categoria = String(a.categoria || '').toLowerCase();
+      if (!(sexo.includes('fêmea') || sexo.includes('femea') || categoria.includes('vaca') || categoria.includes('novilha'))) return false;
+      if (categoria.includes('bezerra') || categoria.includes('bezerro')) return false;
+      return categoria.includes('vaca') || categoria.includes('novilha');
+    }
+
+    function deveGerarAlertaReproducao(a) {
+      if (!animalAptoParaAlertaReprodutivo(a)) return false;
+      if (animalEstaPrenha(a) || animalTemProtocoloAtivo(a) || a.partoRegistrado) return false;
+      return true;
+    }
+
+    function deveGerarAlertaVacaVaziaPosParto(a) {
+      if (!animalAptoParaAlertaReprodutivo(a)) return false;
+      const categoria = String(a.categoria || '').toLowerCase();
+      if (!categoria.includes('vaca')) return false;
+      if (animalEstaPrenha(a) || animalTemProtocoloAtivo(a)) return false;
+      const dataParto = a.dataUltimoParto || a.dataParto || '';
+      if (!dataParto) return false;
+      const dias = calcularDiasAte(dataParto);
+      return dias !== null && dias <= -20;
+    }
+
+    function calcularPrevisoesPrenhez(dataPrenha, animal) {
       if (!dataPrenha) return { parto: '', secagem: '', preParto: '' };
       const base = new Date(String(dataPrenha).slice(0, 10) + 'T12:00:00');
       if (isNaN(base.getTime())) return { parto: '', secagem: '', preParto: '' };
       const parto = new Date(base); parto.setDate(parto.getDate() + 280);
       const secagem = new Date(parto); secagem.setDate(secagem.getDate() - 60);
       const preParto = new Date(parto); preParto.setDate(preParto.getDate() - 20);
+      const incluirSecagem = !animal || animalDeveTerSecagem(animal);
       return {
         parto: parto.toISOString().slice(0, 10),
-        secagem: secagem.toISOString().slice(0, 10),
+        secagem: incluirSecagem ? secagem.toISOString().slice(0, 10) : '',
         preParto: preParto.toISOString().slice(0, 10)
       };
     }
@@ -2953,9 +3226,12 @@ if (auth) {
         aviso.textContent = 'Informe a data da confirmação para o sistema calcular secagem, pré-parto e previsão de parto.';
         return;
       }
-      const prev = calcularPrevisoesPrenhez(dataPrenha);
+      const lactacao = document.getElementById('a-lactacao')?.value === 'sim';
+      const categoria = (document.getElementById('a-categoria')?.value || '').trim();
+      const totalCrias = parseInt(document.getElementById('a-total-crias')?.value || '0', 10) || 0;
+      const prev = calcularPrevisoesPrenhez(dataPrenha, { area: 'leiteiro', lactacao, categoria, totalCrias });
       aviso.innerHTML = prev.parto
-        ? `Automático: secagem em ${formatarDataBR(prev.secagem)}, pré-parto em ${formatarDataBR(prev.preParto)} e previsão de parto em ${formatarDataBR(prev.parto)}.`
+        ? (prev.secagem ? `Automático: secagem em ${formatarDataBR(prev.secagem)}, pré-parto em ${formatarDataBR(prev.preParto)} e previsão de parto em ${formatarDataBR(prev.parto)}.` : `Automático: pré-parto em ${formatarDataBR(prev.preParto)} e previsão de parto em ${formatarDataBR(prev.parto)}.`)
         : 'Data inválida. Confira a data informada.';
     }
 
@@ -2963,7 +3239,7 @@ if (auth) {
       if (!a || (a.area || 'leiteiro') !== 'leiteiro' || !a.prenha || a.partoRegistrado) return '';
       const prev = (a.previsaoParto && a.previsaoSecagem)
         ? { parto: a.previsaoParto, secagem: a.previsaoSecagem, preParto: a.previsaoPreParto || '' }
-        : calcularPrevisoesPrenhez(a.dataPrenha || '');
+        : calcularPrevisoesPrenhez(a.dataInseminacao || a.dataPrenha || '', a);
       if (!prev.parto) return '';
       if (a.secaConfirmada || a.secagemConcluida) {
         return `
@@ -2973,10 +3249,13 @@ if (auth) {
           </div>
         `;
       }
+      const linhaManejo = prev.secagem
+        ? `Secagem prevista: ${formatarDataBR(prev.secagem)}${prev.preParto ? ` · Pré-parto: ${formatarDataBR(prev.preParto)}` : ''}`
+        : `${prev.preParto ? `Pré-parto: ${formatarDataBR(prev.preParto)} · ` : ''}Sem secagem para novilha/primeira cria`;
       return `
         <div class="note-badge" style="margin-top:8px;">
            Gestação: <strong>parto previsto em ${formatarDataBR(prev.parto)}</strong>
-          <span style="display:block;font-size:11px;color:var(--muted);margin-top:2px;">Secagem prevista: ${formatarDataBR(prev.secagem)}${prev.preParto ? ` · Pré-parto: ${formatarDataBR(prev.preParto)}` : ''}</span>
+          <span style="display:block;font-size:11px;color:var(--muted);margin-top:2px;">${linhaManejo}</span>
         </div>
       `;
     }
@@ -2987,11 +3266,11 @@ if (auth) {
       if (!a || (a.area || 'leiteiro') !== 'leiteiro') return [];
       const tags = [];
       if (a.secaConfirmada || a.secagemConcluida) {
-        const prevParto = a.previsaoParto || (a.dataPrenha ? calcularPrevisoesPrenhez(a.dataPrenha).parto : '');
+        const prevParto = a.previsaoParto || ((a.dataInseminacao || a.dataPrenha) ? calcularPrevisoesPrenhez(a.dataInseminacao || a.dataPrenha, a).parto : '');
         tags.push({ classe: 'tag', estilo: 'background:#211606;color:#fde68a;', texto: ` Vaca seca${prevParto ? ' até ' + formatarDataBR(prevParto) : ''}` });
       }
       if (a.lactacao && !a.secaConfirmada && !a.secagemConcluida) tags.push({ classe: 'tag tag-lactacao', estilo: '', texto: ' Em lactação' });
-      if (a.prenha) tags.push({ classe: 'tag tag-prenha', estilo: '', texto: ' Prenha' });
+      if (animalEstaPrenha(a)) tags.push({ classe: 'tag tag-prenha', estilo: '', texto: ' Prenha' });
       if (a.dataUltimoParto) tags.push({ classe: 'tag', estilo: 'background:#102210;color:#86efac;', texto: ` Último parto: ${formatarDataBR(a.dataUltimoParto)}` });
       if ((parseInt(a.totalCrias, 10) || 0) > 0) tags.push({ classe: 'tag', estilo: 'background:#F8FAFC;color:#334155;', texto: ` ${parseInt(a.totalCrias, 10)} cria(s)` });
       return tags;
@@ -3074,18 +3353,7 @@ if (auth) {
           obs: obsCria.trim(),
           criadoEm: new Date().toISOString()
         };
-        vaca.prenha = false;
-        vaca.dataPrenha = '';
-        vaca.previsaoParto = '';
-        vaca.previsaoSecagem = '';
-        vaca.previsaoPreParto = '';
-        vaca.secaConfirmada = false;
-        vaca.secagemConcluida = false;
-        vaca.partoRegistrado = true;
-        vaca.dataSecagemReal = '';
-        vaca.lactacao = true;
-        vaca.statusReprodutivo = 'lactacao';
-        vaca.dataUltimoParto = dataFinal;
+        marcarAnimalParida(vaca, dataFinal);
         vaca.totalCrias = (parseInt(vaca.totalCrias, 10) || 0) + 1;
         vaca.historicoPartos = Array.isArray(vaca.historicoPartos) ? vaca.historicoPartos : [];
         vaca.historicoPartos.unshift(registroParto);
@@ -3264,6 +3532,10 @@ if (auth) {
       });
     }
 
+    function otimizarImagemAnimal(file) {
+      return compactarFotoAnimal(file, 420, 0.45);
+    }
+
     function compactarDataUrlAnimal(dataUrl, maxLado = 420, qualidade = 0.45) {
       return new Promise((resolve) => {
         if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) {
@@ -3317,7 +3589,7 @@ if (auth) {
     function lerFotoAnimalBase64() {
       const file = document.getElementById('a-foto')?.files?.[0];
       if (!file) return Promise.resolve('');
-      return compactarFotoAnimal(file, 420, 0.45);
+      return otimizarImagemAnimal(file);
     }
 
     function limparFormularioAnimal() {
@@ -3396,11 +3668,11 @@ if (auth) {
       const alertas = [];
       const animais = Array.isArray(DB.animais) ? DB.animais : [];
       animais
-        .filter(a => (a.area || 'leiteiro') === 'leiteiro' && a.prenha && !a.partoRegistrado)
+        .filter(a => (a.area || 'leiteiro') === 'leiteiro' && animalEstaPrenha(a) && !a.partoRegistrado)
         .forEach(a => {
           const prev = (a.previsaoParto || a.previsaoSecagem || a.previsaoPreParto)
-            ? { parto: a.previsaoParto || '', secagem: a.previsaoSecagem || '', preParto: a.previsaoPreParto || '' }
-            : calcularPrevisoesPrenhez(a.dataPrenha || '');
+            ? { parto: a.previsaoParto || '', secagem: animalDeveTerSecagem(a) ? (a.previsaoSecagem || '') : '', preParto: a.previsaoPreParto || '' }
+            : calcularPrevisoesPrenhez(a.dataInseminacao || a.dataPrenha || '', a);
 
           if (prev.secagem && !a.secaConfirmada && !a.secagemConcluida) {
             const dias = calcularDiasAte(prev.secagem);
@@ -3443,27 +3715,33 @@ if (auth) {
         });
 
       animais
-        .filter(a => (a.area || 'leiteiro') === 'leiteiro' && !a.prenha && !a.partoRegistrado && String(a.categoria || '').toLowerCase().includes('vaca'))
+        .filter(deveGerarAlertaReproducao)
         .forEach(a => {
-          const temProtocoloAtivo = (DB.protocolosVacas || []).some(p => {
-            const status = String(p.status || '').toLowerCase();
-            const nome = String(p.animal || '').toLowerCase().trim();
-            return nome === String(a.nome || '').toLowerCase().trim() && !status.includes('confirmada') && !status.includes('não confirmada') && !status.includes('nao confirmada');
+          alertas.push({
+            tipo: 'Reprodução',
+            titulo: a.nome || a.brinco || 'Vaca sem protocolo',
+            detalhe: 'Sem protocolo ativo ou prenhez marcada. Avaliar necessidade de protocolar.',
+            nivel: 'info',
+            ordem: 20
           });
-          if (!temProtocoloAtivo) {
-            alertas.push({
-              tipo: 'Reprodução',
-              titulo: a.nome || a.brinco || 'Vaca sem protocolo',
-              detalhe: 'Sem protocolo ativo ou prenhez marcada. Avaliar necessidade de protocolar.',
-              nivel: 'info',
-              ordem: 20
-            });
-          }
+        });
+
+      animais
+        .filter(deveGerarAlertaVacaVaziaPosParto)
+        .forEach(a => {
+          const diasPosParto = Math.abs(calcularDiasAte(a.dataUltimoParto || a.dataParto || '') || 0);
+          alertas.push({
+            tipo: 'Vaca vazia',
+            titulo: a.nome || a.brinco || 'Vaca pós-parto',
+            detalhe: `${diasPosParto} dia(s) pós-parto · agendar protocolo com veterinário`,
+            nivel: diasPosParto >= 30 ? 'warn' : 'info',
+            ordem: 18
+          });
         });
 
       (DB.protocolosVacas || []).map(normalizarProtocoloVaca).forEach(p => {
         const status = String(p.status || '').toLowerCase();
-        const concluido = status.includes('confirmada') || status.includes('não confirmada') || status.includes('nao confirmada');
+        const concluido = p.ativo === false || status.includes('confirmada') || status.includes('não confirmada') || status.includes('nao confirmada');
         if (concluido) return;
 
         if (p.dataProtocolo) {
@@ -3488,6 +3766,18 @@ if (auth) {
               detalhe: `${textoDiasAlerta(diasToque)} · exame em ${formatarDataBR(p.dataToque)}`,
               nivel: nivelAlertaPorDias(diasToque, 5),
               ordem: diasToque
+            });
+          }
+        }
+        if (p.dataInseminacao) {
+          const diasInseminacao = calcularDiasAte(p.dataInseminacao);
+          if (diasInseminacao !== null && diasInseminacao >= 0 && diasInseminacao <= 5) {
+            alertas.push({
+              tipo: 'Inseminação',
+              titulo: p.animal || 'Vaca protocolada',
+              detalhe: `${textoDiasAlerta(diasInseminacao)} · inseminação em ${formatarDataBR(p.dataInseminacao)}`,
+              nivel: nivelAlertaPorDias(diasInseminacao, 3),
+              ordem: diasInseminacao
             });
           }
         }
@@ -4248,8 +4538,9 @@ if (auth) {
           avoPaterno: valor('a-avo-paterno')
         };
 
-        const previsoesPrenhez = (area === 'leiteiro' && prenha && dataPrenha) ? calcularPrevisoesPrenhez(dataPrenha) : { parto: '', secagem: '', preParto: '' };
         const totalCrias = Math.max(0, parseInt(valor('a-total-crias'), 10) || 0);
+        const animalBasePrevisao = { area, categoria, lactacao, totalCrias };
+        const previsoesPrenhez = (area === 'leiteiro' && prenha && dataPrenha) ? calcularPrevisoesPrenhez(dataPrenha, animalBasePrevisao) : { parto: '', secagem: '', preParto: '' };
         let animalFinal;
 
         if (animalEmEdicao) {
@@ -5364,21 +5655,56 @@ if (auth) {
     function textoResumoAnimal(a) {
       const partes = [];
       if (a.categoria) partes.push(escapeHtml(a.categoria));
-      if (a.status) partes.push(escapeHtml(a.status));
-      if (a.prenha) partes.push('Prenha');
-      if (a.lactacao) partes.push('Em lactação');
+      const statusAtual = obterStatusAtualAnimal(a);
+      if (statusAtual) partes.push(escapeHtml(statusAtual));
+      if (animalEstaPrenha(a) && !String(statusAtual).toLowerCase().includes('prenha')) partes.push('Prenha');
       return partes.length ? partes.join(' - ') : 'Animal cadastrado';
+    }
+
+    function renderAnimalCompacto(a) {
+      const id = escapeAttr(a.id || '');
+      const nome = escapeHtml(a.nome || 'Animal sem nome');
+      const foto = obterFotoLeveParaLista(a);
+      const avatar = foto ? '<img class="animal-photo" src="' + escapeAttr(foto) + '" alt="Foto de ' + escapeAttr(a.nome || 'Animal') + '" loading="lazy" decoding="async" />' : '<div class="animal-avatar"></div>';
+      return '<div class="animal-item compact">' + avatar + '<div class="animal-body"><div class="animal-summary-row"><div><div class="animal-name">' + nome + '</div><div class="animal-meta">' + textoResumoAnimal(a) + '</div></div><button class="btn btn-primary btn-sm" id="btn-detalhes-animal-' + id + '" onclick="toggleDetalhesAnimal(\'' + id + '\')">Detalhes</button></div><div class="animal-detail-panel hidden" id="detalhes-animal-' + id + '">' + montarDetalhesAnimalPainel(a) + '<div class="animal-actions"><button class="btn btn-outline btn-sm" onclick="abrirEdicaoAnimal(\'' + id + '\')">Editar</button><button class="btn btn-outline btn-sm" onclick="anotarAnimalPorId(\'' + id + '\')">Anotar</button><button class="btn btn-danger btn-sm" onclick="excluirAnimalPorId(\'' + id + '\')">Excluir</button></div></div></div></div>';
+    }
+
+    function classificarGrupoRebanho(a) {
+      const categoria = String(a.categoria || '').toLowerCase();
+      if (categoria.includes('bezerra') || categoria.includes('bezerro')) return 'bezerros';
+      if (categoria.includes('novilha')) return 'novilhas';
+      if (categoria.includes('vaca') && animalEstaSeca(a)) return 'secas';
+      if (categoria.includes('vaca') && animalEstaLactante(a)) return 'lactacao';
+      return 'outros';
+    }
+
+    function toggleGrupoRebanho(grupo) {
+      rebanhoExpandido[grupo] = !rebanhoExpandido[grupo];
+      renderRebanho();
+    }
+
+    function renderGrupoRebanho(titulo, chave, animais) {
+      if (!animais.length) return '';
+      const expandido = !!rebanhoExpandido[chave];
+      const visiveis = expandido ? animais : animais.slice(0, 5);
+      const botao = animais.length > 5 ? '<button class="btn btn-outline btn-sm" onclick="toggleGrupoRebanho(\'' + chave + '\')">' + (expandido ? 'Mostrar menos' : 'Mostrar mais') + '</button>' : '';
+      return '<section class="calendar-group"><div class="calendar-group-head"><div><div class="calendar-group-title">' + titulo + '</div></div><span class="calendar-group-count">' + animais.length + '</span></div><div class="calendar-list">' + visiveis.map(renderAnimalCompacto).join('') + '</div>' + (botao ? '<div style="margin-top:10px;">' + botao + '</div>' : '') + '</section>';
     }
 
     function montarDetalhesAnimalPainel(a) {
       const rel = montarRelatorioAnimalData(a);
       const prod = rel.producao || { total: 0, racao: 0 };
       const genealogia = rel.genealogia || {};
-      const protocolos = (DB.protocolosVacas || []).filter(p => { const nome = String(p.animal || '').toLowerCase().trim(); return nome && (nome === String(a.nome || '').toLowerCase().trim() || nome === String(a.brinco || '').toLowerCase().trim()); });
       const meds = (DB.medicacoes || []).filter(m => m.animalId === a.id || String(m.animal || '').toLowerCase().trim() === String(a.nome || '').toLowerCase().trim());
       const custosProduto = obterConsumoProdutosLeiteAnimal(a.id || '');
       const custoRacao = obterCustoRacaoAnimalLeite(a.id || '');
-      const prev = a.prenha ? ((a.previsaoParto || a.previsaoSecagem) ? { parto: a.previsaoParto, secagem: a.previsaoSecagem, preParto: a.previsaoPreParto || '' } : calcularPrevisoesPrenhez(a.dataPrenha || '')) : null;
+      const prenha = animalEstaPrenha(a);
+      const qtdCrias = obterQuantidadeCriasAnimal(a);
+      const textoCrias = qtdCrias > 0 ? `${qtdCrias} cria(s)` : 'Nenhuma cria registrada';
+      const prev = prenha ? ((a.previsaoParto || a.previsaoSecagem || a.previsaoPreParto) ? { parto: a.previsaoParto, secagem: animalDeveTerSecagem(a) ? (a.previsaoSecagem || '') : '', preParto: a.previsaoPreParto || '' } : calcularPrevisoesPrenhez(a.dataInseminacao || a.dataPrenha || '', a)) : null;
+      const textoPartoSecagem = prev && prev.parto
+        ? ((prev.secagem ? 'Secagem: ' + formatarDataBR(prev.secagem) + '<br>' : '') + (prev.preParto ? 'Pré-parto: ' + formatarDataBR(prev.preParto) + '<br>' : '') + 'Parto previsto: ' + formatarDataBR(prev.parto))
+        : 'Sem previsão ativa';
       const item = (titulo, valor) => '<div class="animal-detail-box"><strong>' + titulo + '</strong>' + (valor || 'Não informado') + '</div>';
       return ''
         + '<div class="animal-detail-grid">'
@@ -5387,13 +5713,14 @@ if (auth) {
         + item('Sexo', escapeHtml(a.sexo || ''))
         + item('Nascimento', a.dataNascimento ? formatarDataBR(a.dataNascimento) : '')
         + item('Categoria', escapeHtml(a.categoria || ''))
+        + item('Status atual', escapeHtml(obterStatusAtualAnimal(a)))
+        + item('Quantidade de crias', textoCrias + (a.dataUltimoParto ? '<br>Último parto: ' + formatarDataBR(a.dataUltimoParto) : ''))
         + item('Raça', escapeHtml(a.raca || a.racaAnimal || ''))
         + item('Produção', (prod.total ? prod.total.toFixed(1).replace('.', ',') + ' L/dia' : 'Sem produção registrada') + (prod.racao ? ' - ração estimada ' + prod.racao.toFixed(1).replace('.', ',') + ' kg/dia' : ''))
         + item('Consumo', (custoRacao.kgDia ? custoRacao.kgDia.toFixed(1).replace('.', ',') + ' kg/dia de ração' : 'Sem consumo de ração calculado') + (custosProduto.length ? '<br>' + custosProduto.map(c => escapeHtml(c.produto) + ': ' + c.kgDia.toFixed(1).replace('.', ',') + ' kg/dia').join('<br>') : ''))
-        + item('Reprodução', (a.prenha ? 'Prenha' : 'Não prenha') + (a.dataPrenha ? ' - confirmação ' + formatarDataBR(a.dataPrenha) : ''))
-        + item('Parto/secagem', prev ? ('Secagem: ' + (prev.secagem ? formatarDataBR(prev.secagem) : 'não calculada') + '<br>Pré-parto: ' + (prev.preParto ? formatarDataBR(prev.preParto) : 'não calculado') + '<br>Parto: ' + (prev.parto ? formatarDataBR(prev.parto) : 'não calculado')) : 'Sem previsão ativa')
+        + item('Reprodução', (prenha ? 'Prenha' : 'Não prenha') + (a.dataInseminacao ? ' - inseminação ' + formatarDataBR(a.dataInseminacao) : (a.dataPrenha ? ' - confirmação ' + formatarDataBR(a.dataPrenha) : '')))
+        + item('Parto/secagem', textoPartoSecagem)
         + item('Genealogia', 'Mãe: ' + escapeHtml(genealogia.mae || 'não informada') + '<br>Pai: ' + escapeHtml(genealogia.pai || 'não informado') + '<br>Avós: ' + escapeHtml([genealogia.avoMaterna, genealogia.avoMaterno, genealogia.avoPaterna, genealogia.avoPaterno].filter(Boolean).join(', ') || 'não informado'))
-        + item('Protocolos', protocolos.length ? protocolos.map(p => escapeHtml(p.status || 'protocolada') + ' - ' + (p.dataToque ? 'toque ' + formatarDataBR(p.dataToque) : 'sem toque')).join('<br>') : 'Sem protocolo ativo')
         + item('Medicações', meds.length ? meds.map(m => escapeHtml(m.nome) + ' - ' + (m.data ? formatarDataBR(m.data) : 'sem data') + ' - ' + escapeHtml(m.status || 'ativo')).join('<br>') : 'Sem medicação registrada')
         + item('Financeiro relacionado', meds.reduce((sum,m)=>sum+(parseFloat(m.valor)||0),0) ? 'Medicações: R$ ' + formatCurrencyBR(meds.reduce((sum,m)=>sum+(parseFloat(m.valor)||0),0)) : 'Sem custo direto registrado')
         + item('Anotações', escapeHtml(a.anotacaoRapida || a.obs || ''))
@@ -5432,13 +5759,24 @@ if (auth) {
         lista.innerHTML = '<div class="empty-state"><div class="empty-icon"></div>' + (termoBusca ? 'Nenhum animal encontrado com essa busca.' : 'Nenhum animal cadastrado ainda.<br />Clique em <strong>+ Cadastrar Animal</strong> para começar.') + '</div>';
         return;
       }
-      lista.innerHTML = animaisDaArea.map(a => {
-        const id = escapeAttr(a.id || '');
-        const nome = escapeHtml(a.nome || 'Animal sem nome');
-        const foto = obterFotoLeveParaLista(a);
-        const avatar = foto ? '<img class="animal-photo" src="' + escapeAttr(foto) + '" alt="Foto de ' + escapeAttr(a.nome || 'Animal') + '" loading="lazy" decoding="async" />' : '<div class="animal-avatar"></div>';
-        return '<div class="animal-item compact">' + avatar + '<div class="animal-body"><div class="animal-summary-row"><div><div class="animal-name">' + nome + '</div><div class="animal-meta">' + textoResumoAnimal(a) + '</div></div><button class="btn btn-primary btn-sm" id="btn-detalhes-animal-' + id + '" onclick="toggleDetalhesAnimal(\'' + id + '\')">Detalhes</button></div><div class="animal-detail-panel hidden" id="detalhes-animal-' + id + '">' + montarDetalhesAnimalPainel(a) + '<div class="animal-actions"><button class="btn btn-outline btn-sm" onclick="abrirEdicaoAnimal(\'' + id + '\')">Editar</button><button class="btn btn-outline btn-sm" onclick="anotarAnimalPorId(\'' + id + '\')">Anotar</button><button class="btn btn-danger btn-sm" onclick="excluirAnimalPorId(\'' + id + '\')">Excluir</button></div></div></div></div>';
-      }).join('');
+      const grupos = {
+        lactacao: [],
+        secas: [],
+        novilhas: [],
+        bezerros: [],
+        outros: []
+      };
+      animaisDaArea.forEach(a => {
+        const chave = classificarGrupoRebanho(a);
+        grupos[chave in grupos ? chave : 'outros'].push(a);
+      });
+      lista.innerHTML = '<div class="calendar-groups">'
+        + renderGrupoRebanho('Vacas em lactação', 'lactacao', grupos.lactacao)
+        + renderGrupoRebanho('Vacas secas', 'secas', grupos.secas)
+        + renderGrupoRebanho('Novilhas', 'novilhas', grupos.novilhas)
+        + renderGrupoRebanho('Bezerras/Bezerros', 'bezerros', grupos.bezerros)
+        + renderGrupoRebanho('Outros/Não classificados', 'outros', grupos.outros)
+        + '</div>';
     }
 
     async function editarAnotacaoRapida(id, nome) {
@@ -7046,71 +7384,288 @@ if (auth) {
       if (dp && !dp.value) dp.value = hoje;
     }
 
-    async function salvarProtocoloVaca() {
+    function chaveAnimalProtocolo(valor) {
+      return String(valor || '').toLowerCase().trim();
+    }
+
+    function encontrarAnimalPorNomeOuBrinco(valor) {
+      const chave = chaveAnimalProtocolo(valor);
+      if (!chave) return null;
+      return (DB.animais || []).find(a => (a.area || 'leiteiro') === 'leiteiro' && (chaveAnimalProtocolo(a.nome) === chave || chaveAnimalProtocolo(a.brinco) === chave)) || null;
+    }
+
+    function protocoloEstaAtivo(p) {
+      const status = String(p?.status || '').toLowerCase();
+      return p && p.ativo !== false && !status.includes('prenhez confirmada') && !status.includes('não confirmada') && !status.includes('nao confirmada') && !status.includes('encerrado');
+    }
+
+    function obterProtocolosUnicos() {
+      const vistos = new Set();
+      return (DB.protocolosVacas || []).map(normalizarProtocoloVaca).filter(p => {
+        if (!p.id || vistos.has(p.id)) return false;
+        vistos.add(p.id);
+        return true;
+      });
+    }
+
+    function obterProtocolosAtivosPrincipais() {
+      const porAnimal = new Map();
+      obterProtocolosUnicos().filter(protocoloEstaAtivo).forEach(p => {
+        const chave = p.animalId || chaveAnimalProtocolo(p.animal);
+        const atual = porAnimal.get(chave);
+        const dataP = p.dataCriacao || p.dataProtocolo || '';
+        const dataAtual = atual ? (atual.dataCriacao || atual.dataProtocolo || '') : '';
+        if (!atual || dataP >= dataAtual) porAnimal.set(chave, p);
+      });
+      return Array.from(porAnimal.values());
+    }
+
+    function registrarProducaoPorAnimal(animalId, dados = {}) {
+      if (!DB.producao || typeof DB.producao !== 'object') DB.producao = {};
+      const manha = parseFloat(dados.manha) || 0;
+      const tarde = parseFloat(dados.tarde) || 0;
+      const noite = parseFloat(dados.noite) || 0;
+      DB.producao[animalId] = { manha, tarde, noite, total: manha + tarde + noite, data: dados.data || new Date().toISOString().slice(0, 10) };
+      return DB.producao[animalId];
+    }
+
+    function registrarMedicacaoAnimal(dados = {}) {
+      const lista = getMedicacoes();
+      const registro = normalizarMedicacao({ ...dados, id: dados.id || ('med_' + Date.now()), criadoEm: dados.criadoEm || new Date().toISOString() });
+      const idx = lista.findIndex(m => m.id === registro.id);
+      if (idx >= 0) lista[idx] = registro; else lista.unshift(registro);
+      return registro;
+    }
+
+    function registrarEntregaEstoque(dados = {}) {
+      getEntregasProdutosLeite().unshift({ id: dados.id || ('prod_leite_' + Date.now()), criadoEm: new Date().toISOString(), ...dados });
+      return dados;
+    }
+
+    function marcarAnimalParida(animal, dataParto) {
+      if (!animal) return null;
+      const dataFinal = (dataParto || new Date().toISOString().slice(0, 10)).slice(0, 10);
+      animal.prenha = false;
+      animal.prenhezConfirmada = false;
+      animal.dataPrenha = '';
+      animal.dataInseminacao = '';
+      animal.previsaoParto = '';
+      animal.previsaoSecagem = '';
+      animal.previsaoPreParto = '';
+      animal.secaConfirmada = false;
+      animal.secagemConcluida = false;
+      animal.partoRegistrado = true;
+      animal.dataSecagemReal = '';
+      animal.lactacao = true;
+      if (String(animal.categoria || '').toLowerCase().includes('novilha')) animal.categoria = 'Vaca';
+      animal.statusReprodutivo = 'lactacao';
+      animal.statusReproducao = 'vazia_pos_parto';
+      animal.dataUltimoParto = dataFinal;
+      animal.atualizadoEm = new Date().toISOString();
+      return animal;
+    }
+
+    function criarProtocoloAnimal(dados = {}) {
+      const registro = normalizarProtocoloVaca({ id: dados.id || ('pv_' + Date.now()), ativo: true, status: dados.status || 'protocolada', dataCriacao: new Date().toISOString(), ...dados });
+      DB.protocolosVacas.unshift(registro);
+      return registro;
+    }
+
+    function registrarInseminacaoAnimal(protocolo, dataInseminacao, boi = '', racaBoi = '') {
+      if (!protocolo) return null;
+      protocolo.dataInseminacao = dataInseminacao || protocolo.dataInseminacao || '';
+      protocolo.boi = boi || protocolo.boi || '';
+      protocolo.racaBoi = racaBoi || protocolo.racaBoi || '';
+      return protocolo;
+    }
+
+    function confirmarPrenhezAnimal(animal, protocolo) {
+      if (!animal || !protocolo || !protocolo.dataInseminacao) return null;
+      const basePrenhez = String(protocolo.dataInseminacao).slice(0, 10);
+      const prev = calcularPrevisoesPrenhez(basePrenhez, animal);
+      animal.prenha = true;
+      animal.prenhezConfirmada = true;
+      animal.dataInseminacao = basePrenhez;
+      animal.dataPrenha = basePrenhez;
+      animal.dataConfirmacaoPrenhez = new Date().toISOString().slice(0, 10);
+      animal.boiPrenhez = protocolo.boi || animal.boiPrenhez || '';
+      animal.racaBoiPrenhez = protocolo.racaBoi || animal.racaBoiPrenhez || '';
+      animal.dataToquePrenhez = protocolo.dataToque || '';
+      animal.statusToque = 'Prenhez confirmada';
+      animal.statusReproducao = 'prenhez_confirmada';
+      animal.previsaoParto = prev.parto || '';
+      animal.previsaoSecagem = prev.secagem || '';
+      animal.previsaoPreParto = prev.preParto || '';
+      animal.partoRegistrado = false;
+      animal.atualizadoEm = new Date().toISOString();
+      return animal;
+    }
+
+    async function salvarProtocoloVaca(btnOrigem) {
       if (salvandoProtocoloVaca) return;
-      const btn = document.getElementById('btn-salvar-protocolo');
+      const btn = btnOrigem || document.getElementById('btn-salvar-protocolo');
       const msg = document.getElementById('pv-msg');
       const animal = document.getElementById('pv-animal').value.trim();
       const dataProtocolo = document.getElementById('pv-data-protocolo').value;
+      const dataInseminacao = document.getElementById('pv-data-inseminacao')?.value || '';
       const boi = document.getElementById('pv-boi').value.trim();
+      const racaBoi = document.getElementById('pv-raca-boi')?.value.trim() || '';
       const dataToque = document.getElementById('pv-data-toque').value;
-      if (!animal || !dataProtocolo || !boi || !dataToque) { alert('Preencha nome/brinco, data do protocolo, nome do boi e data do toque.'); return; }
+      if (!animal || !dataProtocolo || !dataInseminacao || !boi || !dataToque) { alert('Preencha nome/brinco, data do protocolo, data da inseminação, nome do boi e data do toque.'); return; }
+      const animalRef = encontrarAnimalPorNomeOuBrinco(animal);
+      const ativoExistente = obterProtocolosAtivosPrincipais().find(p => (animalRef && p.animalId === animalRef.id) || chaveAnimalProtocolo(p.animal) === chaveAnimalProtocolo(animal));
+      if (ativoExistente && !confirm('Já existe um protocolo ativo para este animal. Deseja encerrar o protocolo anterior e salvar este novo protocolo?')) return;
+      const travado = travarBotaoAcao(btn, 'Salvando...');
+      if (travado === false) return;
       salvandoProtocoloVaca = true;
-      if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
       try {
-        DB.protocolosVacas.unshift(normalizarProtocoloVaca({ id: 'pv_' + Date.now(), animal, dataProtocolo, boi, dataToque, status: 'protocolada', dataCriacao: new Date().toISOString(), historico: [] }));
+        if (ativoExistente) {
+          const idx = DB.protocolosVacas.findIndex(p => p.id === ativoExistente.id);
+          if (idx >= 0) {
+            DB.protocolosVacas[idx].ativo = false;
+            DB.protocolosVacas[idx].status = 'substituído';
+            DB.protocolosVacas[idx].dataEncerramento = new Date().toISOString();
+            DB.protocolosVacas[idx].historico = Array.isArray(DB.protocolosVacas[idx].historico) ? DB.protocolosVacas[idx].historico : [];
+            DB.protocolosVacas[idx].historico.push({ status: 'Substituído por novo protocolo', data: new Date().toISOString() });
+          }
+        }
+        criarProtocoloAnimal({ id: 'pv_' + Date.now(), animal: animalRef?.nome || animal, animalId: animalRef?.id || '', dataProtocolo, dataInseminacao, boi, racaBoi, dataToque, status: 'protocolada', historico: [] });
         await salvarDB();
         document.getElementById('pv-animal').value = '';
+        if (document.getElementById('pv-data-inseminacao')) document.getElementById('pv-data-inseminacao').value = '';
         document.getElementById('pv-boi').value = '';
+        if (document.getElementById('pv-raca-boi')) document.getElementById('pv-raca-boi').value = '';
         document.getElementById('pv-data-toque').value = '';
-        if (msg) { msg.textContent = 'Protocolo salvo e enviado automaticamente para o calendário.'; msg.classList.remove('hidden'); setTimeout(() => msg.classList.add('hidden'), 3500); }
-        renderVacasProtocoladas(); renderCalendario();
+        if (msg) { msg.textContent = 'Protocolo salvo com sucesso.'; msg.classList.remove('hidden'); setTimeout(() => msg.classList.add('hidden'), 3500); }
+        renderVacasProtocoladas(); renderCalendario(); renderAlertasInteligentesHome(); renderRebanho();
+      } catch (erro) {
+        console.error('Erro ao salvar protocolo:', erro);
+        if (msg) { msg.textContent = 'Erro ao salvar protocolo. Verifique a conexão e tente novamente.'; msg.classList.remove('hidden'); }
       } finally {
         salvandoProtocoloVaca = false;
-        if (btn) { btn.disabled = false; btn.textContent = ' Salvar protocolo'; }
+        liberarBotaoAcao(btn);
       }
     }
 
     function renderVacasProtocoladas() {
       const lista = document.getElementById('lista-vacas-protocoladas');
       if (!lista) return;
-      const protocolos = (DB.protocolosVacas || []).map(normalizarProtocoloVaca);
-      if (!protocolos.length) { lista.innerHTML = '<div class="empty-state"><div class="empty-icon"></div>Nenhuma vaca protocolada ainda.</div>'; return; }
-      lista.innerHTML = protocolos.map(p => '<div class="event-item protocolo-card"><h4 style="color:#111827;font-weight:800;">' + escapeHtml(p.animal) + ' <span class="tag">' + escapeHtml(p.status) + '</span></h4><p><strong>Data protocolo:</strong> ' + formatarData(new Date(p.dataProtocolo + 'T12:00:00')) + '</p><p><strong>Boi usado:</strong> ' + escapeHtml(p.boi) + '</p><p><strong>Data do toque:</strong> ' + formatarData(new Date(p.dataToque + 'T12:00:00')) + '</p><div class="animal-actions"><button class="btn btn-success btn-sm" onclick="atualizarStatusProtocolo(\'' + p.id + '\',\'Prenhez confirmada\')"> Prenhez confirmada</button><button class="btn btn-danger btn-sm" onclick="atualizarStatusProtocolo(\'' + p.id + '\',\'Não confirmada\')"> Não confirmada</button><button class="btn btn-outline btn-sm" onclick="novoProtocoloInteligente(\'' + p.id + '\')"> Novo protocolo</button><button class="btn btn-danger btn-sm" onclick="excluirProtocoloVaca(\'' + p.id + '\')"> Excluir</button></div></div>').join('');
+      const ativos = obterProtocolosAtivosPrincipais();
+      const historico = obterProtocolosUnicos().filter(p => !protocoloEstaAtivo(p));
+      if (!ativos.length && !historico.length) { lista.innerHTML = '<div class="empty-state"><div class="empty-icon"></div>Nenhuma vaca protocolada ainda.</div>'; return; }
+      const card = (p, ativo) => '<div class="event-item protocolo-card"><h4 style="color:#111827;font-weight:800;">' + escapeHtml(p.animal) + ' <span class="tag">' + escapeHtml(p.status) + '</span></h4><p><strong>Data protocolo:</strong> ' + (p.dataProtocolo ? formatarDataBR(p.dataProtocolo) : 'Não informada') + '</p><p><strong>Inseminação:</strong> ' + (p.dataInseminacao ? formatarDataBR(p.dataInseminacao) : 'Não informada') + '</p><p><strong>Boi usado:</strong> ' + escapeHtml(p.boi || 'Não informado') + (p.racaBoi ? ' · <strong>Raça:</strong> ' + escapeHtml(p.racaBoi) : '') + '</p><p><strong>Data do toque:</strong> ' + (p.dataToque ? formatarDataBR(p.dataToque) : 'Não informada') + '</p>' + (ativo ? '<div class="animal-actions"><button class="btn btn-success btn-sm" onclick="atualizarStatusProtocolo(\'' + p.id + '\',\'Prenhez confirmada\', this)">Prenhez confirmada</button><button class="btn btn-danger btn-sm" onclick="atualizarStatusProtocolo(\'' + p.id + '\',\'Não confirmada\', this)">Não confirmada</button><button class="btn btn-outline btn-sm" onclick="novoProtocoloInteligente(\'' + p.id + '\', this)">Novo protocolo</button><button class="btn btn-danger btn-sm" onclick="excluirProtocoloVaca(\'' + p.id + '\', this)">Excluir</button></div>' : '') + '</div>';
+      lista.innerHTML = (ativos.length ? '<h3 style="font-size:15px;margin:0 0 10px;color:#0f172a;">Protocolos ativos</h3>' + ativos.map(p => card(p, true)).join('') : '<div class="empty-state"><div class="empty-icon"></div>Nenhum protocolo ativo no momento.</div>')
+        + (historico.length ? '<div style="margin-top:14px;"><button class="btn btn-outline btn-sm" onclick="toggleHistoricoProtocolos()">' + (historicoProtocolosAberto ? 'Ocultar histórico de protocolos e inseminações' : 'Ver histórico de protocolos e inseminações') + '</button></div>' + (historicoProtocolosAberto ? '<h3 style="font-size:15px;margin:18px 0 10px;color:#475569;">Histórico</h3>' + historico.slice(0, 30).map(p => card(p, false)).join('') : '') : '');
     }
 
-    async function excluirProtocoloVaca(id) {
+    function toggleHistoricoProtocolos() {
+      historicoProtocolosAberto = !historicoProtocolosAberto;
+      renderVacasProtocoladas();
+    }
+
+    async function excluirProtocoloVaca(id, btn) {
       const p = DB.protocolosVacas.find(item => item.id === id);
       if (!p) return;
       const nome = p.animal || 'esta vaca protocolada';
       if (!confirm(`Excluir o protocolo de ${nome}?`)) return;
-      DB.protocolosVacas = DB.protocolosVacas.filter(item => item.id !== id);
-      await salvarDB();
-      renderVacasProtocoladas();
-      renderCalendario();
+      const travado = travarBotaoAcao(btn, 'Excluindo...');
+      if (travado === false) return;
+      try {
+        DB.protocolosVacas = DB.protocolosVacas.filter(item => item.id !== id);
+        await salvarDB();
+        renderVacasProtocoladas(); renderCalendario(); renderAlertasInteligentesHome();
+        alert('Protocolo excluído com sucesso.');
+      } catch (erro) {
+        console.error('Erro ao excluir protocolo:', erro);
+        alert('Erro ao excluir protocolo.');
+      } finally {
+        liberarBotaoAcao(btn);
+      }
     }
 
-    async function atualizarStatusProtocolo(id, status) {
+    async function atualizarStatusProtocolo(id, status, btn) {
       const p = DB.protocolosVacas.find(item => item.id === id);
       if (!p) return;
-      p.status = status;
-      p.historico = Array.isArray(p.historico) ? p.historico : [];
-      p.historico.push({ status, data: new Date().toISOString() });
-      await salvarDB(); renderVacasProtocoladas(); renderCalendario();
+      const travado = travarBotaoAcao(btn, 'Salvando...');
+      if (travado === false) return;
+      try {
+        const statusAnterior = p.status;
+        const ativoAnterior = p.ativo;
+        const dataEncerramentoAnterior = p.dataEncerramento || '';
+        p.status = status;
+        p.ativo = false;
+        p.dataEncerramento = new Date().toISOString();
+        p.historico = Array.isArray(p.historico) ? p.historico : [];
+        p.historico.push({ status, data: new Date().toISOString() });
+        if (String(status).toLowerCase().includes('prenhez confirmada')) {
+          let dataInseminacaoConfirmada = p.dataInseminacao || '';
+          if (!dataInseminacaoConfirmada) {
+            dataInseminacaoConfirmada = prompt('Informe a data da inseminação (AAAA-MM-DD) para calcular parto, pré-parto e secagem:', '');
+            if (!dataInseminacaoConfirmada) {
+              alert('Prenhez não confirmada. A data da inseminação é obrigatória para calcular a previsão de parto.');
+              p.status = statusAnterior || 'protocolada';
+              p.ativo = ativoAnterior !== false;
+              p.dataEncerramento = dataEncerramentoAnterior;
+              p.historico.pop();
+              return;
+            }
+          }
+          const testeData = new Date(String(dataInseminacaoConfirmada).slice(0, 10) + 'T12:00:00');
+          if (isNaN(testeData.getTime())) {
+            alert('Data da inseminação inválida. Informe no formato AAAA-MM-DD antes de confirmar a prenhez.');
+            p.status = statusAnterior || 'protocolada';
+            p.ativo = ativoAnterior !== false;
+            p.dataEncerramento = dataEncerramentoAnterior;
+            p.historico.pop();
+            return;
+          }
+          registrarInseminacaoAnimal(p, String(dataInseminacaoConfirmada).slice(0, 10), p.boi, p.racaBoi);
+          const animal = (p.animalId ? DB.animais.find(a => a.id === p.animalId) : encontrarAnimalPorNomeOuBrinco(p.animal));
+          if (animal) {
+            confirmarPrenhezAnimal(animal, p);
+          }
+        }
+        await salvarDB(); renderVacasProtocoladas(); renderCalendario(); renderAlertasInteligentesHome(); renderRebanho();
+        alert('Status salvo com sucesso.');
+      } catch (erro) {
+        console.error('Erro ao salvar status do protocolo:', erro);
+        alert('Erro ao salvar status do protocolo.');
+      } finally {
+        liberarBotaoAcao(btn);
+      }
     }
 
-    async function novoProtocoloInteligente(id) {
+    async function novoProtocoloInteligente(id, btn) {
       const p = DB.protocolosVacas.find(item => item.id === id);
       if (!p) return;
+      if (!confirm('Encerrar o protocolo atual como não confirmado e criar um novo protocolo ativo?')) return;
       const alterar = confirm('Alterar nome do boi?\n\nOK = alterar nome do boi\nCancelar = usar o mesmo boi');
       let boi = p.boi;
       if (alterar) { const novoBoi = prompt('Digite o nome do novo boi:', p.boi || ''); if (novoBoi === null) return; boi = novoBoi.trim() || p.boi; }
+      const racaBoi = prompt('Raça do boi (opcional):', p.racaBoi || '') || '';
       const dataProtocolo = prompt('Digite a nova data do protocolo (AAAA-MM-DD):', new Date().toISOString().slice(0,10));
       if (!dataProtocolo) return;
+      const dataInseminacao = prompt('Digite a nova data da inseminação (AAAA-MM-DD):', p.dataInseminacao || dataProtocolo);
+      if (!dataInseminacao) return;
       const dataToque = prompt('Digite a nova data do toque (AAAA-MM-DD):', p.dataToque || '');
       if (!dataToque) return;
-      DB.protocolosVacas.unshift(normalizarProtocoloVaca({ id: 'pv_' + Date.now(), animal: p.animal, dataProtocolo, boi, dataToque, status: 'novo protocolo', dataCriacao: new Date().toISOString(), historico: [{ status: 'Criado a partir de novo protocolo', protocoloAnterior: id, data: new Date().toISOString() }] }));
-      await salvarDB(); renderVacasProtocoladas(); renderCalendario();
+      const travado = travarBotaoAcao(btn, 'Salvando...');
+      if (travado === false) return;
+      try {
+        p.status = 'Não confirmada';
+        p.ativo = false;
+        p.dataEncerramento = new Date().toISOString();
+        p.historico = Array.isArray(p.historico) ? p.historico : [];
+        p.historico.push({ status: 'Encerrado para novo protocolo', data: new Date().toISOString() });
+        criarProtocoloAnimal({ id: 'pv_' + Date.now(), animal: p.animal, animalId: p.animalId || '', dataProtocolo, dataInseminacao, boi, racaBoi, dataToque, status: 'protocolada', historico: [{ status: 'Criado a partir de novo protocolo', protocoloAnterior: id, data: new Date().toISOString() }] });
+        await salvarDB(); renderVacasProtocoladas(); renderCalendario(); renderAlertasInteligentesHome();
+        alert('Novo protocolo salvo com sucesso.');
+      } catch (erro) {
+        console.error('Erro ao criar novo protocolo:', erro);
+        alert('Erro ao salvar novo protocolo.');
+      } finally {
+        liberarBotaoAcao(btn);
+      }
     }
 
 
@@ -7143,34 +7698,42 @@ if (auth) {
       const vacinas = document.getElementById('lista-vacinas');
       if (!lista || !vacinas) return;
 
-      const grupos = { partos: [], secagens: [], protocolos: [], medicacoes: [], estoque: [] };
+      const grupos = { partos: [], preparto: [], secagens: [], toques: [], inseminacoes: [], protocolos: [], medicacoes: [], estoque: [] };
 
       DB.animais.filter(a => (a.area || 'leiteiro') === 'leiteiro').forEach(a => {
-        if (a.prenha && a.dataPrenha && !a.partoRegistrado) {
-          const base = new Date(a.dataPrenha + 'T12:00:00');
+        const basePrenhezAnimal = a.dataInseminacao || a.dataPrenha || '';
+        if (animalEstaPrenha(a) && basePrenhezAnimal && !a.partoRegistrado) {
+          const base = new Date(basePrenhezAnimal + 'T12:00:00');
           if (!isNaN(base.getTime())) {
-            const prev = (a.previsaoParto && a.previsaoSecagem) ? { parto: a.previsaoParto, secagem: a.previsaoSecagem, preParto: a.previsaoPreParto || '' } : calcularPrevisoesPrenhez(a.dataPrenha);
+            const prev = (a.previsaoParto || a.previsaoSecagem || a.previsaoPreParto) ? { parto: a.previsaoParto || '', secagem: animalDeveTerSecagem(a) ? (a.previsaoSecagem || '') : '', preParto: a.previsaoPreParto || '' } : calcularPrevisoesPrenhez(a.dataInseminacao || a.dataPrenha, a);
             const parto = prev.parto ? new Date(prev.parto + 'T12:00:00') : addDias(base, 280);
-            const secagem = prev.secagem ? new Date(prev.secagem + 'T12:00:00') : addDias(parto, -60);
             const idAttr = escapeAttr(a.id || '');
-            if (!a.secaConfirmada && !a.secagemConcluida) {
-              grupos.secagens.push({ titulo: 'Secagem de ' + (a.nome || 'animal'), sub: a.lactacao ? 'Início recomendado do período seco.' : 'Data calculada para manejo de secagem.', data: secagem, acoes: '<button class="btn btn-success btn-sm" data-local-lock="calendario" onclick="marcarAnimalComoSeca(\'' + idAttr + '\', this)">Marcar como seca</button>' });
+            if (prev.secagem && animalDeveTerSecagem(a)) {
+              const secagem = new Date(prev.secagem + 'T12:00:00');
+              grupos.secagens.push({ titulo: 'Secagem de ' + (a.nome || 'animal'), sub: 'Início recomendado do período seco.', data: secagem, acoes: '<button class="btn btn-success btn-sm" data-local-lock="calendario" onclick="marcarAnimalComoSeca(\'' + idAttr + '\', this)">Marcar como seca</button>' });
             }
-            grupos.partos.push({ titulo: 'Parto previsto de ' + (a.nome || 'animal'), sub: 'Previsão baseada na confirmação de prenhez.', data: parto, acoes: '<button class="btn btn-success btn-sm" data-local-lock="calendario" onclick="marcarAnimalComoParida(\'' + idAttr + '\', this)">Marcar como parida</button>' });
+            if (prev.preParto) {
+              grupos.preparto.push({ titulo: 'Pré-parto de ' + (a.nome || 'animal'), sub: animalDeveTerSecagem(a) ? 'Observação intensiva antes do parto.' : 'Manejo pré-parto da primeira cria.', data: new Date(prev.preParto + 'T12:00:00') });
+            }
+            grupos.partos.push({ titulo: 'Parto previsto de ' + (a.nome || 'animal'), sub: 'Previsão baseada na inseminação ou data reprodutiva informada.', data: parto, acoes: '<button class="btn btn-success btn-sm" data-local-lock="calendario" onclick="marcarAnimalComoParida(\'' + idAttr + '\', this)">Marcar como parida</button>' });
           }
         }
       });
 
-      (DB.protocolosVacas || []).map(normalizarProtocoloVaca).forEach(prot => {
+      obterProtocolosAtivosPrincipais().forEach(prot => {
         const status = String(prot.status || '').toLowerCase();
-        const concluido = status.includes('prenhez confirmada') || status.includes('não confirmada') || status.includes('nao confirmada');
+        const concluido = prot.ativo === false || status.includes('prenhez confirmada') || status.includes('não confirmada') || status.includes('nao confirmada');
         if (prot.dataProtocolo && !concluido) {
           const data = new Date(prot.dataProtocolo + 'T12:00:00');
           if (!isNaN(data.getTime())) grupos.protocolos.push({ titulo: 'Protocolo de ' + (prot.animal || 'vaca'), sub: 'Boi: ' + (prot.boi || 'não informado') + ' - status: ' + (prot.status || 'protocolada'), data });
         }
+        if (prot.dataInseminacao && !concluido) {
+          const data = new Date(prot.dataInseminacao + 'T12:00:00');
+          if (!isNaN(data.getTime())) grupos.inseminacoes.push({ titulo: 'Inseminação de ' + (prot.animal || 'vaca'), sub: 'Boi: ' + (prot.boi || 'não informado') + (prot.racaBoi ? ' - raça ' + prot.racaBoi : ''), data });
+        }
         if (prot.dataToque && !concluido) {
           const data = new Date(prot.dataToque + 'T12:00:00');
-          if (!isNaN(data.getTime())) grupos.protocolos.push({ titulo: 'Toque de ' + (prot.animal || 'vaca'), sub: 'Verificar confirmação de prenhez. Boi: ' + (prot.boi || 'não informado'), data });
+          if (!isNaN(data.getTime())) grupos.toques.push({ titulo: 'Toque de ' + (prot.animal || 'vaca'), sub: 'Verificar confirmação de prenhez. Boi: ' + (prot.boi || 'não informado'), data });
         }
       });
 
@@ -7196,7 +7759,10 @@ if (auth) {
       } else {
         lista.innerHTML = '<div class="calendar-groups">'
           + renderGrupoCalendario('Partos previstos', 'partos', grupos.partos)
+          + renderGrupoCalendario('Pré-parto', 'preparto', grupos.preparto)
           + renderGrupoCalendario('Secagens previstas', 'secagens', grupos.secagens)
+          + renderGrupoCalendario('Toques', 'toques', grupos.toques)
+          + renderGrupoCalendario('Inseminações', 'inseminacoes', grupos.inseminacoes)
           + renderGrupoCalendario('Protocolos', 'protocolos', grupos.protocolos)
           + renderGrupoCalendario('Medicações', 'medicacoes', grupos.medicacoes)
           + renderGrupoCalendario('Estoque', 'estoque', grupos.estoque)
@@ -7381,40 +7947,15 @@ if (auth) {
     let tutorialTimerAuto = null;
 
     const tutorialPassos = [
-      {
-        title: 'Bem-vindo ao AgroMilk',
-        text: 'Este tutorial mostra a rotina principal do AgroMilk.',
-        page: 'inicio',
-        selector: '.nav-tab[data-page="inicio"]'
-      },
-      {
-        title: 'Rebanho',
-        text: 'Cadastre, edite e acompanhe os animais da fazenda.',
-        page: 'rebanho',
-        selector: '.nav-tab[data-page="rebanho"]',
-        before: async () => { showPage('rebanho'); }
-      },
-      {
-        title: 'Produ\u00e7\u00e3o',
-        text: 'Registre pesagens de leite e acompanhe o hist\u00f3rico produtivo.',
-        page: 'producao',
-        selector: '.nav-tab[data-page="producao"]',
-        before: async () => { showPage('producao'); }
-      },
-      {
-        title: 'Financeiro',
-        text: 'Controle despesas, entregas, estoque e resultado mensal.',
-        page: 'despesas',
-        selector: '.nav-tab[data-page="despesas"]',
-        before: async () => { showPage('despesas'); }
-      },
-      {
-        title: 'Mais',
-        text: 'Acesse protocolos, calend\u00e1rio, veterin\u00e1rio, genealogia, backup e instala\u00e7\u00e3o.',
-        page: 'mais',
-        selector: '.nav-tab[data-page="mais"]',
-        before: async () => { showPage('mais'); }
-      }
+      { title: 'Início', text: 'Veja os indicadores e os alertas inteligentes de partos, pré-parto, estoque, medicações e vacas vazias pós-parto.', page: 'inicio', selector: '.nav-tab[data-page="inicio"]' },
+      { title: 'Rebanho', text: 'Cadastre animais, confira grupos do rebanho e abra Detalhes para ver status, crias, produção e reprodução.', page: 'rebanho', selector: '.nav-tab[data-page="rebanho"]', before: async () => { showPage('rebanho'); } },
+      { title: 'Produção de leite', text: 'Registre pesagens por animal e acompanhe histórico, médias e produtividade.', page: 'producao', selector: '.nav-tab[data-page="producao"]', before: async () => { showPage('producao'); } },
+      { title: 'Medicações', text: 'Registre aplicações, custos e datas de repetição para gerar alertas no momento certo.', page: 'medicacoes', selector: '.nav-tab[data-page="medicacoes"]', before: async () => { showPage('medicacoes'); } },
+      { title: 'Financeiro e estoque', text: 'Controle despesas, entregas, ração, silo, estoque e resultado mensal da fazenda.', page: 'despesas', selector: '.nav-tab[data-page="despesas"]', before: async () => { showPage('despesas'); } },
+      { title: 'Protocolos', text: 'Em Mais, acompanhe protocolos, inseminações, toque e confirmação de prenhez.', page: 'mais', selector: '.nav-tab[data-page="mais"]', before: async () => { showPage('mais'); } },
+      { title: 'Calendário', text: 'Use o Calendário para partos, pré-parto, secagens, toques, inseminações, medicações e estoque.', page: 'calendario', selector: '.nav-tab[data-page="mais"]', before: async () => { showPage('mais'); } },
+      { title: 'Instalar App', text: 'Use Instalar App para transformar o AgroMilk em PWA no celular e acessar com mais praticidade.', page: 'inicio', selector: '#btn-instalar-app', before: async () => { showPage('inicio'); } },
+      { title: 'Próximas automações', text: 'A base está preparada para futuras rotinas por WhatsApp e comandos por voz, sempre com backend seguro.', page: 'inicio', selector: '#btn-whatsapp', before: async () => { showPage('inicio'); } }
     ];
 
     function tutorialStorageKey() {
