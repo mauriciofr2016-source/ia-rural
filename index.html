@@ -212,8 +212,10 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      padding: 10px 16px 8px;
+      padding: 11px 18px 9px;
       flex-wrap: wrap;
+      max-width: 1180px;
+      margin: 0 auto;
     }
 
     .nav-logo {
@@ -227,24 +229,26 @@
     .nav-right {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 9px;
       flex-wrap: wrap;
+      justify-content: flex-end;
     }
 
     .nav-user {
       font-size: 12px;
-      color: rgba(255,255,255,0.85);
-      padding: 6px 10px;
+      color: #ffffff;
+      padding: 7px 11px;
       border: 1px solid rgba(255,255,255,0.25);
       border-radius: 999px;
-      background: rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.12);
+      font-weight: 700;
     }
 
     .nav-btn {
-      padding: 7px 12px;
+      padding: 7px 13px;
       border: 1px solid rgba(255,255,255,0.3);
       border-radius: 999px;
-      background: rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.10);
       color: #ffffff;
       cursor: pointer;
       font-size: 12px;
@@ -439,19 +443,155 @@
     }
 
     .feat-card {
-      background: #ffffff;
-      border: 1px solid var(--border);
+      background: linear-gradient(145deg, #0B5CAD, #1677C7);
+      border: 1px solid rgba(255,255,255,0.22);
       border-radius: 14px;
-      padding: 14px;
+      padding: 16px;
       cursor: pointer;
-      box-shadow: 0 1px 6px rgba(15,23,42,0.05);
+      box-shadow: 0 10px 24px rgba(11,92,173,0.18);
+      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
     }
 
-    .feat-card:hover { border-color: #0B5CAD; }
+    .feat-card:hover {
+      border-color: rgba(255,255,255,0.45);
+      box-shadow: 0 14px 32px rgba(11,92,173,0.24);
+      transform: translateY(-2px);
+    }
 
     .feat-icon { display: none; }
-    .feat-label { font-size: 13px; font-weight: 700; color: var(--text); }
-    .feat-desc { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+    .feat-label { font-size: 14px; font-weight: 800; color: #ffffff; }
+    .feat-desc { font-size: 12px; color: rgba(255,255,255,0.88); margin-top: 6px; line-height: 1.45; }
+
+    .smart-alerts-panel {
+      margin-top: 18px;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 6px 18px rgba(15,23,42,0.06);
+    }
+
+    .smart-alerts-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .smart-alerts-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .smart-alerts-sub {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    .smart-alerts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+    }
+
+    .smart-alert-card {
+      border: 1px solid var(--border);
+      border-left: 4px solid #0B5CAD;
+      border-radius: 12px;
+      background: #F8FAFC;
+      padding: 12px;
+      box-shadow: 0 1px 5px rgba(15,23,42,0.04);
+    }
+
+    .smart-alert-card.info { border-left-color: #0B5CAD; background: #EFF6FF; }
+    .smart-alert-card.ok { border-left-color: #2EAD4F; background: #F0FDF4; }
+    .smart-alert-card.warn { border-left-color: #F59E0B; background: #FFFBEB; }
+    .smart-alert-card.danger { border-left-color: #DC2626; background: #FEF2F2; }
+    .smart-alert-type { font-size: 11px; font-weight: 800; text-transform: uppercase; color: #475569; letter-spacing: .02em; }
+    .smart-alert-main { font-size: 13px; font-weight: 800; color: var(--text); margin-top: 4px; }
+    .smart-alert-meta { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.45; }
+    .smart-alert-empty {
+      border: 1px solid #BBF7D0;
+      background: #F0FDF4;
+      color: #166534;
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .calendar-groups {
+      display: grid;
+      gap: 14px;
+    }
+
+    .calendar-group {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: 0 4px 14px rgba(15,23,42,0.05);
+    }
+
+    .calendar-group-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .calendar-group-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .calendar-group-count {
+      font-size: 11px;
+      font-weight: 800;
+      border-radius: 999px;
+      padding: 4px 9px;
+      background: var(--blue-soft);
+      color: #0B5CAD;
+    }
+
+    .calendar-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .calendar-item {
+      border: 1px solid var(--border);
+      border-left: 4px solid #0B5CAD;
+      border-radius: 12px;
+      background: #F8FAFC;
+      padding: 11px;
+    }
+
+    .calendar-item.info { border-left-color: #0B5CAD; }
+    .calendar-item.ok { border-left-color: #2EAD4F; }
+    .calendar-item.warn { border-left-color: #F59E0B; }
+    .calendar-item.danger { border-left-color: #DC2626; }
+    .calendar-item h4 { color: var(--text); font-size: 13px; margin-bottom: 4px; font-weight: 800; }
+    .calendar-item p { color: var(--muted); font-size: 12px; line-height: 1.45; margin-top: 3px; }
+    .calendar-date {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 4px 9px;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      color: #0B5CAD;
+      font-size: 12px;
+      font-weight: 800;
+      margin-top: 6px;
+    }
 
     .animal-item,
     .prod-card,
@@ -490,6 +630,53 @@
     .animal-meta { font-size: 12px; color: var(--muted); margin-top: 3px; }
     .animal-obs { font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
     .animal-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .animal-item.compact { align-items: center; }
+    .animal-item.compact .animal-photo,
+    .animal-photo {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      object-fit: cover;
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+      background: var(--blue-soft);
+    }
+    .animal-summary-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      width: 100%;
+      flex-wrap: wrap;
+    }
+    .animal-detail-panel {
+      margin-top: 12px;
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+      width: 100%;
+    }
+    .animal-detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .animal-detail-box {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #F8FAFC;
+      padding: 10px;
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--text);
+    }
+    .animal-detail-box strong {
+      display: block;
+      color: #0B5CAD;
+      font-size: 11px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
 
     .tag-wrap { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
 
@@ -938,7 +1125,7 @@
 
 
     .cut-card {
-      background: #000000;
+      background: #fff;
       border: 1px solid var(--border);
       border-radius: 14px;
       padding: 14px;
@@ -1209,6 +1396,7 @@
 <div class="nav-tab active" data-page="inicio" onclick="showPage('inicio')">Início</div>
 <div class="nav-tab" data-page="rebanho" onclick="showPage('rebanho')">Rebanho</div>
 <div class="nav-tab" data-page="producao" onclick="showPage('producao')">Produção</div>
+<div class="nav-tab" data-page="medicacoes" onclick="showPage('medicacoes')">Medicações</div>
 <div class="nav-tab" data-page="despesas" onclick="showPage('despesas')">Financeiro</div>
 <div class="nav-tab" data-page="mais" onclick="showPage('mais')">Mais</div>
 </div>
@@ -1216,11 +1404,10 @@
 <div class="page" id="page-mais">
   <div class="card agromilk-module-panel">
     <div class="section-title">Mais ferramentas</div>
-    <p class="muted" style="margin-bottom:14px;">Acesse aqui os módulos complementares sem poluir a navegaáo principal.</p>
+    <p class="muted" style="margin-bottom:14px;">Acesse aqui os módulos complementares sem poluir a navegação principal.</p>
     <div class="module-grid">
       <button class="module-card" type="button" onclick="showPage('protocolar-vaca')"><strong>Protocolar vaca</strong><span>Protocolos reprodutivos e acompanhamento.</span></button>
       <button class="module-card" type="button" onclick="showPage('vacas-protocoladas')"><strong>Vacas protocoladas</strong><span>Lista e histórico dos protocolos ativos.</span></button>
-      <button class="module-card" type="button" onclick="showPage('veterinario')"><strong>Veterinário</strong><span>Sanidade, ocorrências e cuidados do rebanho.</span></button>
       <button class="module-card" type="button" onclick="showPage('genealogia')"><strong>Árvore genealógica</strong><span>Origem, parentesco e linhagem dos animais.</span></button>
       <button class="module-card" type="button" onclick="showPage('calendario')"><strong>Calendário</strong><span>Eventos, partos, secagens e lembretes.</span></button>
       <button class="module-card" type="button" onclick="showPage('fabrica-racao')"><strong>Fábrica de ração</strong><span>Formulações, ingredientes e custo por kg.</span></button>
@@ -1228,7 +1415,7 @@
     </div>
   </div>
 </div>
-<div class="page active" id="page-inicio"><div class="welcome-hero"><h1>Bem-vindo ao<br/><span>AgroMilk</span></h1><p class="muted" id="home-area-logada">Sistema carregado conforme a área permitida para este login.</p><div class="features-grid" id="features-grid-home"></div><div id="onboarding-primeiros-passos"></div><div id="quick-summary-home"></div></div></div>
+<div class="page active" id="page-inicio"><div class="welcome-hero"><h1>Bem-vindo ao<br/><span>AgroMilk</span></h1><p class="muted" id="home-area-logada">Gest&atilde;o leiteira inteligente para a rotina da fazenda.</p><div class="features-grid" id="features-grid-home"></div><div class="smart-alerts-panel" id="smart-alerts-home"><div class="smart-alerts-head"><div><div class="smart-alerts-title">Alertas inteligentes</div><div class="smart-alerts-sub">Partos, secagens, protocolos e exames calculados com os dados j&aacute; cadastrados.</div></div></div><div class="smart-alerts-grid" id="smart-alerts-grid"><div class="smart-alert-empty">Nenhum alerta importante no momento.</div></div></div><div id="onboarding-primeiros-passos"></div><div id="quick-summary-home"></div></div></div>
 <div class="page" id="page-rebanho">
 <div class="backup-notice">Dados salvos localmente e sincronizados na nuvem para o usuário logado.</div>
 <div class="card">
@@ -1314,67 +1501,8 @@
 </div>
 </div>
 </div>
-<div class="area-only" id="bloco-corte-form">
-<div class="form-row">
-<div class="form-group">
-<label>Fase do animal (opcional)</label>
-<select id="a-fase-corte">
-<option value="">Selecione</option>
-<option>Cria</option>
-<option>Recria</option>
-<option>Engorda</option>
-</select>
-</div>
-<div class="form-group">
-<label>Peso estimado em kg (opcional)</label>
-<input id="a-peso" placeholder="Ex: 320" type="number"/>
-</div>
-</div>
-<div class="form-row">
-<div class="form-group">
-<label>Lote do confinamento (opcional)</label>
-<select id="a-lote-corte">
-<option value="">- Sem lote -</option>
-</select>
-<div class="muted" style="margin-top:6px;font-size:12px;">Ao escolher um lote, o animal aparecerá automaticamente no resumo desse lote.</div>
-</div>
-<div class="form-group">
-<label>Peso inicial para cálculo (opcional)</label>
-<input id="a-peso-inicial" placeholder="Ex: 250" type="number"/>
-</div>
-<div class="form-group">
-<label>Data do peso inicial (opcional)</label>
-<input id="a-data-peso-inicial" type="tel" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" class="data-br-input"/>
-</div>
-</div>
-<div class="form-row">
-<div class="form-group">
-<label>Sistema alimentar (opcional)</label>
-<select id="a-sistema-alimentar">
-<option value="">Selecione</option>
-<option>Pasto</option>
-<option>Semi-confinamento</option>
-<option>Confinamento</option>
-</select>
-</div>
-<div class="form-group">
-<label>Última vermifugação (opcional)</label>
-<input id="a-vermifugo" type="tel" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" class="data-br-input"/>
-</div>
-</div>
-<div class="form-row">
-<div class="form-group">
-<label>Última vacinação (opcional)</label>
-<input id="a-vacina" type="tel" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" class="data-br-input"/>
-</div>
-<div class="form-group">
-<label>Controle de carrapato (opcional)</label>
-<input id="a-carrapato" type="tel" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" class="data-br-input"/>
-</div>
-</div>
-</div>
-<div class="card" style="padding:14px;margin:12px 0;background:#0f0f0f;">
-<div class="section-title" style="font-size:14px;margin-bottom:10px;">³ Dados da árvore genealógica</div>
+<div class="card" style="padding:14px;margin:12px 0;background:#fff;">
+<div class="section-title" style="font-size:14px;margin-bottom:10px;">Dados da árvore genealógica</div>
 <div class="form-row">
 <div class="form-group">
 <label>Nome da mãe (opcional)</label>
@@ -1422,371 +1550,18 @@
 </div>
 <div id="lista-rebanho"></div>
 </div>
-<!-- NOVAS PÁGINAS CONFINAMENTO -->
-<div class="page" id="page-lotes-corte">
-<div class="card">
-<div class="section-title">¦ Lotes</div>
-<p class="muted" style="margin-bottom:14px;">Gerencie os lotes do confinamento. Cada lote agrupa animais com entrada, peso médio e custo consolidado.</p>
-<div id="form-lote-corte" class="hidden" style="margin-bottom:16px;">
-  <div class="form-row">
-    <div class="form-group"><label>Nome do lote *</label><input type="text" id="lc-nome" placeholder="Ex: Lote 1 - Engorda Maio" /></div>
-    <div class="form-group"><label>Data de entrada</label><input type="tel" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" class="data-br-input" id="lc-data-entrada" /></div>
-  </div>
-  <div class="form-row">
-    <div class="form-group"><label>Qtd. de animais</label><input type="number" id="lc-qtd" min="0" placeholder="Ex: 30" /></div>
-    <div class="form-group"><label>Peso médio inicial (kg)</label><input type="number" id="lc-peso-medio-inicial" min="0" step="0.1" placeholder="Ex: 280" /></div>
-  </div>
-  <div class="form-group"><label>Status</label><select id="lc-status"><option value="ativo">Ativo</option><option value="encerrado">Encerrado</option></select></div>
-  <div class="form-group"><label>Observações</label><textarea id="lc-obs" placeholder="Ex: Garrotes Nelore, raça, origem..."></textarea></div>
-  <input type="hidden" id="lc-id" value="" />
-  <div style="display:flex;gap:8px;flex-wrap:wrap;">
-    <button class="btn btn-success" onclick="salvarLoteCorte(this)"> Salvar Lote</button>
-    <button class="btn btn-outline" onclick="document.getElementById('form-lote-corte').classList.add('hidden');document.getElementById('lc-id').value=''">Cancelar</button>
-  </div>
-</div>
-<div style="margin-bottom:14px;"><button class="btn btn-primary" onclick="abrirFormLoteCorte()">+ Novo Lote</button></div>
-<div id="lista-lotes-corte"></div>
-</div>
-</div>
-
-<div class="page" id="page-pesagens-corte">
-<div class="card">
-<div class="section-title"> Pesagens</div>
-<p class="muted" style="margin-bottom:14px;">Registre pesagens e acompanhe o ganho de peso e GMD (ganho médio diário).</p>
-<div id="form-pesagem-corte" class="hidden" style="margin-bottom:16px;">
-  <div class="form-row">
-    <div class="form-group"><label>Animal (nome ou brinco)</label><input type="text" id="pc-animal" placeholder="Ex: Touro 01" list="pc-animal-list" /><datalist id="pc-animal-list"></datalist></div>
-    <div class="form-group"><label>Lote</label><select id="pc-lote"><option value="">- Sem lote -</option></select></div>
-  </div>
-  <div class="form-row">
-    <div class="form-group"><label>Data da pesagem *</label><input type="tel" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" class="data-br-input" id="pc-data" /></div>
-    <div class="form-group"><label>Peso (kg) *</label><input type="number" id="pc-peso" min="0" step="0.1" placeholder="Ex: 340" /></div>
-  </div>
-  <div class="form-group"><label>Observações</label><input type="text" id="pc-obs" placeholder="Ex: pesagem de rotina..." /></div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap;">
-    <button class="btn btn-success" onclick="salvarPesagemCorte(this)"> Registrar Pesagem</button>
-    <button class="btn btn-outline" onclick="document.getElementById('form-pesagem-corte').classList.add('hidden')">Cancelar</button>
-  </div>
-</div>
-<div style="margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap;">
-  <button class="btn btn-primary" onclick="abrirFormPesagemCorte()">+ Registrar Pesagem</button>
-  <select id="pc-filtro-lote" onchange="renderPesagensCorte()" style="padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:#fff;color:#000;font-size:13px;"><option value="">Todos os lotes</option></select>
-</div>
-<div id="lista-pesagens-corte"></div>
-</div>
-</div>
-
-<div class="page" id="page-vacinas-medicamentos-corte">
-<div class="card">
-<div class="section-title">‰ Vacinas e Medicamentos</div>
-<p class="muted" style="margin-bottom:14px;">Registre aplicações por animal ou lote. O custo entra automaticamente no financeiro como custo sanitário.</p>
-<div id="form-sanitario-historico" class="hidden" style="margin-bottom:16px;">
-  <div class="form-row">
-    <div class="form-group"><label>Tipo *</label><select id="sh-tipo"><option value="vacina">Vacina</option><option value="vermifugo">Vermífugo</option><option value="antibiotico">Antibiótico</option><option value="vitamina">Vitamina</option><option value="outro">Outro</option></select></div>
-    <div class="form-group"><label>Nome do produto *</label><input type="text" id="sh-produto" placeholder="Ex: Aftosa, Ivermectina, Vitamina ADE" /></div>
-  </div>
-  <div class="form-row">
-    <div class="form-group"><label>Data da aplicação *</label><input type="tel" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" class="data-br-input" id="sh-data" /></div>
-    <div class="form-group"><label>Próxima dose (opcional)</label><input type="tel" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" class="data-br-input" id="sh-proxima" /></div>
-  </div>
-  <div class="form-row">
-    <div class="form-group"><label>Aplicação por</label><select id="sh-aplicacao-por" onchange="toggleCamposAplicacaoSanitario()"><option value="lote">Lote</option><option value="animal">Animal individual</option></select></div>
-    <div class="form-group" id="sh-lote-grupo"><label>Lote</label><select id="sh-lote" onchange="sincronizarQtdSanitarioPorLote(); calcularCustoSanitario();"><option value="">- Selecione -</option></select></div>
-  </div>
-  <div class="form-group hidden" id="sh-animal-grupo"><label>Animal (nome ou brinco)</label><input type="text" id="sh-animal" placeholder="Ex: Touro 01" list="sh-animal-list" /><datalist id="sh-animal-list"></datalist></div>
-  <div class="form-row">
-    <div class="form-group"><label>Qtd. de animais</label><input type="number" id="sh-qtd-animais" min="1" placeholder="Ex: 30" oninput="calcularCustoSanitario()" /></div>
-    <div class="form-group"><label>Valor total (R$)</label><input type="number" id="sh-valor-total" min="0" step="0.01" placeholder="Ex: 180.00" oninput="calcularCustoSanitario()" /></div>
-  </div>
-  <div class="info-box" id="sh-custo-por-animal-info" style="margin-bottom:10px;">Custo por animal: -</div>
-  <div class="form-group"><label>Observações</label><textarea id="sh-obs" placeholder="Ex: aplicado no curral, todos os animais do lote 1..."></textarea></div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap;">
-    <button class="btn btn-success" onclick="salvarSanitarioCorteHistorico(this)"> Registrar Aplicação</button>
-    <button class="btn btn-outline" onclick="document.getElementById('form-sanitario-historico').classList.add('hidden')">Cancelar</button>
-  </div>
-</div>
-<div style="margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap;">
-  <button class="btn btn-primary" onclick="abrirFormSanitarioHistorico()">+ Registrar Aplicação</button>
-  <select id="sh-filtro-tipo" onchange="renderVacinasMedicamentosCorte()" style="padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:#fff;color:#000;font-size:13px;"><option value="">Todos os tipos</option><option value="vacina">Vacinas</option><option value="vermifugo">Vermífugos</option><option value="antibiotico">Antibióticos</option><option value="vitamina">Vitaminas</option><option value="outro">Outros</option></select>
-</div>
-<div id="lista-vacinas-medicamentos-corte"></div>
-</div>
-</div>
-
-<div class="page" id="page-financeiro-corte">
-<div class="card">
-<div class="section-title">¹ Financeiro do Confinamento</div>
-<p class="muted" style="margin-bottom:14px;">Registre despesas e receitas. O sistema calcula saldo, custo por lote e custo por animal automaticamente.</p>
-<div id="resumo-financeiro-corte" style="margin-bottom:16px;"></div>
-<div id="form-financeiro-corte" class="hidden" style="margin-bottom:16px;">
-  <div class="form-row">
-    <div class="form-group"><label>Tipo *</label><select id="fc-tipo" onchange="toggleCategoriasFinanceiro()"><option value="despesa">Despesa</option><option value="receita">Receita</option></select></div>
-    <div class="form-group"><label>Categoria *</label><select id="fc-categoria"><option value="compra_animais">Compra de animais</option><option value="racao">Ração</option><option value="silo">Silo/Silagem</option><option value="milho">Milho</option><option value="nucleo">Núcleo</option><option value="sal_mineral">Sal mineral</option><option value="trato">Trato diário</option><option value="medicamento">Medicamento</option><option value="vacina">Vacina</option><option value="mao_de_obra">Mão de obra</option><option value="frete">Frete</option><option value="veterinario">Veterinário</option><option value="manutencao">Manutenção</option><option value="outros_despesa">Outros</option></select></div>
-  </div>
-  <div class="form-row">
-    <div class="form-group"><label>Data *</label><input type="tel" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" class="data-br-input" id="fc-data" /></div>
-    <div class="form-group"><label>Valor total (R$) *</label><input type="number" id="fc-valor" min="0" step="0.01" placeholder="Ex: 3500.00" oninput="calcularCustoFinanceiroCorte()" /></div>
-  </div>
-  <div class="form-row">
-    <div class="form-group"><label>Lote relacionado</label><select id="fc-lote"><option value="">- Sem lote -</option></select></div>
-    <div class="form-group"><label>Animal relacionado (opcional)</label><input type="text" id="fc-animal" placeholder="Ex: Touro 01" list="fc-animal-list" /><datalist id="fc-animal-list"></datalist></div>
-  </div>
-  <div class="form-row">
-    <div class="form-group"><label>Qtd. de animais envolvidos</label><input type="number" id="fc-qtd-animais" min="0" placeholder="Ex: 30" oninput="calcularCustoFinanceiroCorte()" /></div>
-    <div class="form-group"><label>Descrição</label><input type="text" id="fc-descricao" placeholder="Ex: Compra de silagem para lote 1" /></div>
-  </div>
-  <div class="info-box" id="fc-custo-por-animal-info" style="margin-bottom:10px;">Custo por animal: -</div>
-  <div class="form-group"><label>Observações</label><textarea id="fc-obs" placeholder="Ex: nota fiscal 00512..."></textarea></div>
-  <input type="hidden" id="fc-id" value="" />
-  <div style="display:flex;gap:8px;flex-wrap:wrap;">
-    <button class="btn btn-success" onclick="salvarLancamentoFinanceiroCorte(this)"> Salvar Lançamento</button>
-    <button class="btn btn-outline" onclick="fecharFormFinanceiroCorte()">Cancelar</button>
-  </div>
-</div>
-<div style="margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap;">
-  <button class="btn btn-primary" onclick="abrirFormFinanceiroCorte()">+ Novo Lançamento</button>
-  <select id="fc-filtro-lote" onchange="renderFinanceiroCorte()" style="padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:#fff;color:#000;font-size:13px;"><option value="">Todos os lotes</option></select>
-  <select id="fc-filtro-tipo" onchange="renderFinanceiroCorte()" style="padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:#fff;color:#000;font-size:13px;"><option value="">Tudo</option><option value="despesa">Despesas</option><option value="receita">Receitas</option></select>
-</div>
-<div id="lista-financeiro-corte"></div>
-</div>
-</div>
-
-<div class="page" id="page-mortes-vendas-corte">
-<div class="card">
-<div class="section-title">‹ Mortes e Vendas</div>
-<p class="muted" style="margin-bottom:14px;">Registre saídas do rebanho por venda ou morte. Use o botão <strong>Detalhes</strong> para ver peso inicial, peso de saída, ganho de peso, consumo estimado no período, custos e resultado.</p>
-<div id="lista-mortes-vendas-corte"></div>
-</div>
-</div>
-<!-- FIM NOVAS PÁGINAS -->
-
-<div class="page" id="page-sanitario-corte">
-<div class="card">
-<div class="section-title">´ Sanitário do Confinamento</div>
-<p class="muted" style="margin-bottom:14px;">Registre vacinação, vermifugação, controle de carrapato e observações sanitárias por animal.</p>
-<div id="lista-sanitario-corte"></div>
-</div>
-</div>
-<div class="page" id="page-nutricao-corte">
-<div class="card">
-<div class="section-title">¾ Nutrição do Confinamento</div>
-<p class="muted" style="margin-bottom:14px;">Aqui ficam apenas os dados nutricionais de cada animal: sistema alimentar, peso, fase, consumo diário de milho, silagem e ração, além do custo diário calculado automaticamente.</p>
-<div id="lista-nutricao-corte"></div>
-</div>
-</div>
-<div class="page" id="page-manejo-corte">
-<div class="card">
-<div class="section-title">‹ Manejo do Confinamento</div>
-<p class="muted" style="margin-bottom:14px;">Faça anotações de lote, objetivo, manejo diário e observações práticas para cada animal.</p>
-<div id="lista-manejo-corte"></div>
-</div>
-</div>
-
-<div class="page" id="page-trato-corte">
-<div class="card">
-<div class="section-title">£ Registrar trato por animal</div>
-<p class="muted" style="margin-bottom:14px;">Informe quantos kg por dia cada animal recebe dos produtos comprados/estocados. O sistema calcula custo diário, atualiza o animal, mostra no lote e registra no financeiro.</p>
-<div id="form-trato-corte" style="margin-bottom:16px;">
-  <div class="form-row">
-    <div class="form-group"><label>Animal *</label><input type="text" id="tc-animal" placeholder="Digite ou escolha o animal" list="tc-animal-list" oninput="atualizarInfoTratoCorte()" /><datalist id="tc-animal-list"></datalist></div>
-    <div class="form-group"><label>Lote do animal</label><select id="tc-lote" onchange="atualizarInfoTratoCorte()"><option value="">- Detectar pelo animal -</option></select></div>
-  </div>
-  <div class="form-row">
-    <div class="form-group"><label>Data do trato *</label><input type="tel" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" class="data-br-input" id="tc-data" /></div>
-    <div class="form-group"><label>Observações</label><input type="text" id="tc-obs" placeholder="Ex: trato da manhã, ajuste de dieta..." /></div>
-  </div>
-  <div class="form-row">
-    <div class="form-group"><label>Milho por animal/dia (kg)</label><input type="number" id="tc-milho" min="0" step="0.01" placeholder="Ex: 2" oninput="atualizarInfoTratoCorte()" /></div>
-    <div class="form-group"><label>Silagem/Silo por animal/dia (kg)</label><input type="number" id="tc-silagem" min="0" step="0.01" placeholder="Ex: 18" oninput="atualizarInfoTratoCorte()" /></div>
-    <div class="form-group"><label>Ração por animal/dia (kg)</label><input type="number" id="tc-racao" min="0" step="0.01" placeholder="Ex: 3" oninput="atualizarInfoTratoCorte()" /></div>
-  </div>
-  <div id="tc-resumo" class="info-box" style="margin-bottom:12px;">Selecione um animal e informe o trato diário para calcular automaticamente.</div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap;">
-    <button class="btn btn-success" onclick="salvarTratoCorte(this)"> Registrar trato</button>
-    <button class="btn btn-outline" onclick="limparFormTratoCorte()">Limpar</button>
-  </div>
-</div>
-<div class="section-title" style="font-size:16px;margin-top:18px;">‹ Histórico de tratos registrados</div>
-<div id="lista-tratos-corte"></div>
-</div>
-</div>
-
-<div class="page" id="page-despesas-corte">
-<div class="card">
-<div class="section-title">¦ Registrar compra de ração, silo etc.</div>
-<p class="muted" style="margin-bottom:14px;">Cadastre compras/entregas de milho, silagem/silo e ração para formar o estoque e calcular custo por kg. O trato diário por animal agora fica na aba <strong>Registrar Trato</strong>.</p>
-
-<div class="cut-card" style="margin-bottom:14px;">
-  <div class="cut-card-header">
-    <div>
-      <div class="cut-card-title">½ Milho</div>
-      <div class="cut-helper">Informe em sacos de 40/50 kg ou em toneladas.</div>
-    </div>
-  </div>
-  <div class="form-row">
-    <div class="form-group">
-      <label>Data da entrega</label>
-      <input type="tel" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" class="data-br-input" id="dc-milho-data" />
-    </div>
-    <div class="form-group">
-      <label>Formato da compra</label>
-      <select id="dc-milho-formato" onchange="toggleCompraFields('milho'); calcCompraProduto('milho')">
-        <option value="saco">Saco</option>
-        <option value="tonelada">Tonelada</option>
-      </select>
-    </div>
-  </div>
-  <div class="form-row" id="dc-milho-saco-row">
-    <div class="form-group">
-      <label>Saco de</label>
-      <select id="dc-milho-saco-kg" onchange="calcCompraProduto('milho')">
-        <option value="40">40 kg</option>
-        <option value="50">50 kg</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>Quantidade de sacos</label>
-      <input type="number" id="dc-milho-sacos" min="0" step="1" placeholder="Ex: 20" oninput="calcCompraProduto('milho')" />
-    </div>
-  </div>
-  <div class="form-row hidden" id="dc-milho-ton-row">
-    <div class="form-group">
-      <label>Toneladas</label>
-      <input type="number" id="dc-milho-ton" min="0" step="0.01" placeholder="Ex: 2" oninput="calcCompraProduto('milho')" />
-    </div>
-    <div class="form-group">
-      <label>Preço por tonelada (R$)</label>
-      <input type="number" id="dc-milho-preco-ton" min="0" step="0.01" placeholder="Ex: 1800" oninput="calcCompraProduto('milho')" />
-    </div>
-  </div>
-  <div class="form-row" id="dc-milho-price-row">
-    <div class="form-group">
-      <label>Preço por saco (R$)</label>
-      <input type="number" id="dc-milho-preco-saco" min="0" step="0.01" placeholder="Ex: 95" oninput="calcCompraProduto('milho')" />
-    </div>
-    <div class="form-group">
-      <label>Total calculado</label>
-      <div id="dc-milho-total" class="info-box">-</div>
-    </div>
-  </div>
-  <button class="btn btn-success" onclick="salvarCompraProduto('milho')">+ Registrar milho</button>
-</div>
-
-<div class="cut-card" style="margin-bottom:14px;">
-  <div class="cut-card-header">
-    <div>
-      <div class="cut-card-title">¾ Silagem</div>
-      <div class="cut-helper">Informe a quantidade em toneladas e o preço por tonelada.</div>
-    </div>
-  </div>
-  <div class="form-row">
-    <div class="form-group">
-      <label>Data da entrega</label>
-      <input type="tel" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" class="data-br-input" id="dc-silagem-data" />
-    </div>
-    <div class="form-group">
-      <label>Toneladas</label>
-      <input type="number" id="dc-silagem-ton" min="0" step="0.01" placeholder="Ex: 8" oninput="calcCompraProduto('silagem')" />
-    </div>
-  </div>
-  <div class="form-row">
-    <div class="form-group">
-      <label>Preço por tonelada (R$)</label>
-      <input type="number" id="dc-silagem-preco-ton" min="0" step="0.01" placeholder="Ex: 350" oninput="calcCompraProduto('silagem')" />
-    </div>
-    <div class="form-group">
-      <label>Total calculado</label>
-      <div id="dc-silagem-total" class="info-box">-</div>
-    </div>
-  </div>
-  <button class="btn btn-success" onclick="salvarCompraProduto('silagem')">+ Registrar silagem</button>
-</div>
-
-<div class="cut-card">
-  <div class="cut-card-header">
-    <div>
-      <div class="cut-card-title">£ Ração</div>
-      <div class="cut-helper">Informe em sacos de 40/50 kg.</div>
-    </div>
-  </div>
-  <div class="form-row">
-    <div class="form-group">
-      <label>Data da entrega</label>
-      <input type="tel" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" class="data-br-input" id="dc-racao-data" />
-    </div>
-    <div class="form-group">
-      <label>Saco de</label>
-      <select id="dc-racao-saco-kg" onchange="calcCompraProduto('racao')">
-        <option value="40">40 kg</option>
-        <option value="50">50 kg</option>
-      </select>
-    </div>
-  </div>
-  <div class="form-row">
-    <div class="form-group">
-      <label>Quantidade de sacos</label>
-      <input type="number" id="dc-racao-sacos" min="0" step="1" placeholder="Ex: 15" oninput="calcCompraProduto('racao')" />
-    </div>
-    <div class="form-group">
-      <label>Preço por saco (R$)</label>
-      <input type="number" id="dc-racao-preco-saco" min="0" step="0.01" placeholder="Ex: 120" oninput="calcCompraProduto('racao')" />
-    </div>
-  </div>
-  <div class="form-group">
-    <label>Total calculado</label>
-    <div id="dc-racao-total" class="info-box">-</div>
-  </div>
-  <button class="btn btn-success" onclick="salvarCompraProduto('racao')">+ Registrar ração</button>
-</div>
-</div>
-
-<div class="card">
-<div class="section-title">Š Estoque atual e custo por produto</div>
-<div id="painel-estoque-corte"></div>
-</div>
-
-<div class="card">
-<div class="section-title">‚ Gasto diário por animal</div>
-<div id="painel-custo-animal-corte"></div>
-</div>
-
-<div class="card">
-<div class="section-title">° Total geral diário da área de corte</div>
-<div id="painel-total-geral-corte"></div>
-</div>
-
-<div class="card">
-<div class="section-title">† Gasto mensal automático da área de corte</div>
-<div id="painel-total-mensal-corte"></div>
-</div>
-
-<div class="card">
-<div class="section-title">‹ Histórico de compras</div>
-<div id="historico-corte"></div>
-</div>
-</div>
-
-<div class="page" id="page-vendidos-corte">
-<div class="card">
-<div class="section-title">° Animais Vendidos</div>
-<p class="muted" style="margin-bottom:14px;">Aqui ficam os animais vendidos com preço, peso final, tempo até a venda, consumo estimado e custo alimentar estimado calculado pelo sistema.</p>
-<div id="lista-vendidos-corte"></div>
-</div>
-</div>
-
 <div class="page" id="page-producao">
 <div class="area-gate hidden" id="gate-producao">
-<h3>› Área exclusiva do leite</h3>
+<h3>Área exclusiva do leite</h3>
 <p>A área de produção fica disponível quando o sistema estiver no modo <strong>Gado Leiteiro</strong>. Você pode trocar a área na tela inicial quando quiser.</p>
 <button class="btn btn-primary" onclick="showPage('inicio')">Trocar área na tela inicial</button>
 </div>
 <div class="card" data-area="leiteiro">
-<div class="section-title">› Registrar Pesagem Leite</div>
+<div class="section-title">Registrar Pesagem Leite</div>
 <p class="muted" style="margin-bottom:14px;">Clique em <strong>Registrar pesagem</strong>, informe os litros por animal em lactação e salve tudo de uma vez. O histórico fica por data e a última pesagem aparece automaticamente no Meu Rebanho.</p>
 
-<div class="card" style="background:#0f0f0f;padding:14px;margin-bottom:14px;">
-  <div class="section-title" style="font-size:14px;margin-bottom:10px;">° Preço do Litro de Leite</div>
+<div class="card" style="background:#fff;padding:14px;margin-bottom:14px;">
+  <div class="section-title" style="font-size:14px;margin-bottom:10px;">Preço do Litro de Leite</div>
   <p class="muted" style="margin-bottom:10px;font-size:12px;">O valor salvo aqui é usado em todos os cálculos financeiros do sistema. Altere sempre que o preço mudar.</p>
   <div class="form-row" style="align-items:flex-end;">
     <div class="form-group" style="margin-bottom:0;">
@@ -1809,22 +1584,44 @@
 </div>
 <div id="lista-producao" style="margin-top:14px;"></div>
 <div class="empty-state" id="empty-prod">
-<div class="empty-icon">›</div>
+<div class="empty-icon"></div>
           Nenhuma vaca em lactação cadastrada.<br/>
           Vá em <strong>Meu Rebanho</strong> e marque o animal como em lactação.
         </div>
 </div>
 </div>
+<div class="page" id="page-medicacoes">
+<div class="card" data-area="leiteiro">
+<div class="section-title">Medicações</div>
+<p class="muted" style="margin-bottom:14px;">Registre aplicações, custos e próximas repetições sem sair da rotina leiteira.</p>
+<div class="form-row">
+  <div class="form-group"><label>Nome do medicamento *</label><input id="med-nome" type="text" placeholder="Ex: Antibiótico, vermífugo" /></div>
+  <div class="form-group"><label>Animal</label><input id="med-animal" type="text" list="med-animais-list" placeholder="Nome ou brinco" /><datalist id="med-animais-list"></datalist></div>
+</div>
+<div class="form-row">
+  <div class="form-group"><label>Data da aplicação *</label><input id="med-data" type="tel" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" class="data-br-input" /></div>
+  <div class="form-group"><label>Repetir em</label><input id="med-repetir" type="tel" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" class="data-br-input" /></div>
+</div>
+<div class="form-row">
+  <div class="form-group"><label>Valor/custo (R$)</label><input id="med-valor" type="number" min="0" step="0.01" placeholder="Ex: 85,00" /></div>
+  <div class="form-group"><label>Status</label><select id="med-status"><option value="ativo">Ativo</option><option value="concluido">Concluído</option></select></div>
+</div>
+<div class="form-group"><label>Observações</label><textarea id="med-obs" placeholder="Dose, lote, via de aplicação ou observações importantes"></textarea></div>
+<input type="hidden" id="med-id" value="" />
+<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;"><button class="btn btn-success" id="btn-salvar-medicacao" onclick="salvarMedicacao(this)">Salvar medicação</button><button class="btn btn-outline" type="button" onclick="limparFormMedicacao()">Limpar</button><span id="med-status-msg" style="font-size:12px;color:#166534;font-weight:700;"></span></div>
+</div>
+<div class="card" data-area="leiteiro"><div class="section-title">Histórico de medicações</div><div id="lista-medicacoes"></div></div>
+</div>
 <div class="page" id="page-despesas">
 <div class="area-gate hidden" id="gate-despesas">
-<h3>¦ Área exclusiva do leite</h3>
+<h3>Área exclusiva do leite</h3>
 <p>A área de despesas e ração fica disponível quando o sistema estiver no modo <strong>Gado Leiteiro</strong>. Você pode trocar a área na tela inicial quando quiser.</p>
 <button class="btn btn-primary" onclick="showPage('inicio')">Trocar área na tela inicial</button>
 </div>
 <div data-area="leiteiro" id="alerta-racao"></div>
 
-<div class="card" data-area="leiteiro" style="background:#0a150a;">
-<div class="section-title">¼ Leite para Bezerros</div>
+<div class="card" data-area="leiteiro" style="background:#fff;">
+<div class="section-title">Leite para Bezerros</div>
 <p class="muted" style="margin-bottom:12px;font-size:12px;">O leite fornecido diariamente aos bezerros será descontado automaticamente do resumo financeiro e relatório mensal.</p>
 <div class="form-row">
   <div class="form-group">
@@ -1841,8 +1638,8 @@
 <div id="bezerros-status" style="font-size:12px;color:#6dd56d;margin-top:8px;min-height:18px;"></div>
 </div>
 
-<div class="card" data-area="leiteiro" style="background:#0a0a15;">
-<div class="section-title">´ Produtos de Lavagem da Ordenha</div>
+<div class="card" data-area="leiteiro" style="background:#fff;">
+<div class="section-title">Produtos de Lavagem da Ordenha</div>
 <p class="muted" style="margin-bottom:12px;font-size:12px;">Cadastre produtos usados na limpeza da ordenha. Cada produto entra automaticamente nas despesas mensais.</p>
 <div class="form-row">
   <div class="form-group">
@@ -1859,8 +1656,8 @@
 <div id="lista-produtos-lavagem" style="margin-top:12px;"></div>
 </div>
 
-<div class="card" data-area="leiteiro" style="background:#15100a;">
-<div class="section-title">¾ Outros Gastos</div>
+<div class="card" data-area="leiteiro" style="background:#fff;">
+<div class="section-title">Outros Gastos</div>
 <p class="muted" style="margin-bottom:12px;font-size:12px;">Use para sal, MUB, ração de bezerras, proteinado, mineral ou qualquer outro gasto mensal. Os itens salvos entram automaticamente no Resumo Faturamento-Gastos Mensal.</p>
 <div class="form-row">
   <div class="form-group">
@@ -1899,7 +1696,7 @@
 
 
 <div class="card" data-area="leiteiro">
-<div class="section-title">¦ Registrar Entrega de Ração</div>
+<div class="section-title">Registrar Entrega de Ração</div>
 <div class="form-row">
 <div class="form-group">
 <label>Data da entrega</label>
@@ -1937,7 +1734,7 @@
 <button class="btn btn-success" onclick="salvarEntregaRacao(this)">+ Registrar Entrega</button>
 </div>
 <div class="card" data-area="leiteiro">
-<div class="section-title">¾ Registrar entrega de Silo / Produto</div>
+<div class="section-title">Registrar entrega de Silo / Produto</div>
 <p class="muted" style="margin-bottom:12px;">Use para silagem, silo, feno, pré-secado ou outro alimento. Você pode informar consumo total diário ou abrir a lista dos animais para colocar kg/dia individual.</p>
 <div class="form-row">
 <div class="form-group">
@@ -1977,11 +1774,11 @@
 <button class="btn btn-success" onclick="salvarEntregaProdutoLeite(this)">+ Registrar Produto</button>
 </div>
 <div class="card" data-area="leiteiro">
-<div class="section-title">Š Estoque Atual de Ração / Silo</div>
+<div class="section-title">Estoque Atual de Ração / Silo</div>
 <div id="painel-estoque"></div>
 </div>
 <div class="card" data-area="leiteiro">
-<div class="section-title">‹ Histórico de Entregas</div>
+<div class="section-title">Histórico de Entregas</div>
 <div id="historico-racao"></div>
 <div id="historico-produtos-leite" style="margin-top:12px;"></div>
 </div>
@@ -1991,20 +1788,20 @@
 
 <!-- SEÇÃO 1: ESTOQUE DE COMPRAS -->
 <div class="card">
-<div class="section-title">’ Estoque de Ingredientes Comprados</div>
+<div class="section-title">Estoque de Ingredientes Comprados</div>
 <p class="muted" style="margin-bottom:12px;">Informe quanto comprou de cada ingrediente e quanto pagou. O sistema calcula o preço por kg automaticamente e usa esses valores para calcular o custo da ração fabricada.</p>
 <div class="formula-grid" id="fr-estoque-ingredientes"></div>
 <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;">
-  <button class="btn btn-success" onclick="salvarEstoqueIngredientes(this)">¾ Salvar estoque</button>
+  <button class="btn btn-success" onclick="salvarEstoqueIngredientes(this)">Salvar estoque</button>
   <button class="btn btn-secondary" onclick="limparEstoqueIngredientes(this)">Limpar</button>
 </div>
 </div>
 
 <!-- SEÇÃO 2: FABRICAR RAÇÃO -->
 <div class="card">
-<div class="section-title">­ Fabricar Ração</div>
+<div class="section-title">Fabricar Ração</div>
 <p class="muted" style="margin-bottom:12px;">Monte a mistura informando os ingredientes em kg. O custo é calculado automaticamente com base no estoque cadastrado acima. Ao salvar, o total entra na aba de despesas/estoque da área atual.</p>
-<div class="alert-strip" style="margin-bottom:14px;"><strong>âš  Segurança:</strong> núcleo, sal mineral, ureia, tamponantes e premix devem seguir orientação do fabricante ou técnico. O sistema organiza o estoque, mas não substitui formulação nutricional profissional.</div>
+<div class="alert-strip" style="margin-bottom:14px;"><strong>Segurança:</strong> núcleo, sal mineral, ureia, tamponantes e premix devem seguir orientação do fabricante ou técnico. O sistema organiza o estoque, mas não substitui formulação nutricional profissional.</div>
 
 <!-- Receitas salvas -->
 <div class="form-row" style="margin-bottom:10px;">
@@ -2035,17 +1832,17 @@
 </div>
 <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;">
   <button class="btn btn-success" onclick="salvarFabricaRacao(this)">Ativo Salvar ração fabricada</button>
-  <button class="btn btn-primary" onclick="salvarComoReceita(this)" style="background:#7c3aed;">¾ Salvar como receita</button>
+  <button class="btn btn-primary" onclick="salvarComoReceita(this)" style="background:#7c3aed;">Salvar como receita</button>
   <button class="btn btn-secondary" onclick="limparFabricaRacao(true, this)">Limpar campos</button>
 </div>
 </div>
 
-<div class="card"><div class="section-title">‹ Histórico da Fábrica de Ração</div><div id="fr-historico" class="formula-history"></div></div>
+<div class="card"><div class="section-title">Histórico da Fábrica de Ração</div><div id="fr-historico" class="formula-history"></div></div>
 </div>
 
 <div class="page" id="page-veterinario">
 <div class="card">
-<div class="section-title">º Veterinário</div>
+<div class="section-title">Veterinário</div>
 <p class="muted" style="margin-bottom:12px;">Biblioteca prática com doenças comuns em bezerros e vacas. Use a busca e os filtros para localizar mais rápido.</p>
 <div class="form-group" style="margin-bottom:12px;">
 <label>Buscar doença</label>
@@ -2059,26 +1856,26 @@
 <div class="vet-grid" id="vet-lista"></div>
 </div>
 </div>
-<div class="page" id="page-protocolar-vaca"><div class="card" data-area="leiteiro"><div class="section-title">„ Protocolar Vaca</div><p class="muted" style="margin-bottom:14px;">Cadastre o protocolo reprodutivo. A data do protocolo e a data do toque entram automaticamente no calendário inteligente.</p><div class="form-row"><div class="form-group"><label>Nome ou brinco</label><input id="pv-animal" type="text" placeholder="Ex: Mimosa ou 025" /></div><div class="form-group"><label>Data do protocolo</label><input id="pv-data-protocolo" type="tel" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" class="data-br-input" /></div></div><div class="form-row"><div class="form-group"><label>Nome do boi</label><input id="pv-boi" type="text" placeholder="Ex: Touro Imperial" /></div><div class="form-group"><label>Data do toque (exame)</label><input id="pv-data-toque" type="tel" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" class="data-br-input" /></div></div><button class="btn btn-success" id="btn-salvar-protocolo" onclick="salvarProtocoloVaca()"> Salvar protocolo</button><div class="info-box hidden" id="pv-msg" style="margin-top:12px;"></div></div></div><div class="page" id="page-vacas-protocoladas"><div class="card" data-area="leiteiro"><div class="section-title">‹ Vacas Protocoladas</div><p class="muted" style="margin-bottom:14px;">Acompanhe protocolos, confirme prenhez, marque não confirmada ou crie um novo protocolo inteligente.</p><div id="lista-vacas-protocoladas"></div></div></div>
+<div class="page" id="page-protocolar-vaca"><div class="card" data-area="leiteiro"><div class="section-title">Protocolar Vaca</div><p class="muted" style="margin-bottom:14px;">Cadastre o protocolo reprodutivo. A data do protocolo e a data do toque entram automaticamente no calendário inteligente.</p><div class="form-row"><div class="form-group"><label>Nome ou brinco</label><input id="pv-animal" type="text" placeholder="Ex: Mimosa ou 025" /></div><div class="form-group"><label>Data do protocolo</label><input id="pv-data-protocolo" type="tel" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" class="data-br-input" /></div></div><div class="form-row"><div class="form-group"><label>Nome do boi</label><input id="pv-boi" type="text" placeholder="Ex: Touro Imperial" /></div><div class="form-group"><label>Data do toque (exame)</label><input id="pv-data-toque" type="tel" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" class="data-br-input" /></div></div><button class="btn btn-success" id="btn-salvar-protocolo" onclick="salvarProtocoloVaca()"> Salvar protocolo</button><div class="info-box hidden" id="pv-msg" style="margin-top:12px;"></div></div></div><div class="page" id="page-vacas-protocoladas"><div class="card" data-area="leiteiro"><div class="section-title">Vacas Protocoladas</div><p class="muted" style="margin-bottom:14px;">Acompanhe protocolos, confirme prenhez, marque não confirmada ou crie um novo protocolo inteligente.</p><div id="lista-vacas-protocoladas"></div></div></div>
 <div class="page" id="page-calendario">
 <div class="area-gate hidden" id="gate-calendario">
-<h3>… Área exclusiva do leite</h3>
+<h3>Área exclusiva do leite</h3>
 <p>O calendário reprodutivo desta versão fica disponível quando o sistema estiver no modo <strong>Gado Leiteiro</strong>. Você pode trocar a área na tela inicial quando quiser.</p>
 <button class="btn btn-primary" onclick="showPage('inicio')">Trocar área na tela inicial</button>
 </div>
 <div class="card" data-area="leiteiro">
-<div class="section-title">… Calendário Inteligente</div>
+<div class="section-title">Calendário Inteligente</div>
 <p class="muted" style="margin-bottom:14px;">Eventos calculados automaticamente com base nos animais prenhes e protocolos fixos.</p>
 <div id="lista-calendario"></div>
 </div>
 <div class="card" data-area="leiteiro">
-<div class="section-title">‰ Protocolos Fixos</div>
+<div class="section-title">Protocolos Fixos</div>
 <div id="lista-vacinas"></div>
 </div>
 </div>
 <div class="page" id="page-genealogia">
 <div class="card">
-<div class="section-title">³ Árvore Genealógica</div>
+<div class="section-title">Árvore Genealógica</div>
 <p class="muted" style="margin-bottom:14px;">Digite o nome do animal da área atual para visualizar os dados completos já registrados no sistema, incluindo genealogia, produção, gastos e indicadores disponíveis.</p>
 <div class="form-row">
 <div class="form-group">
@@ -2096,7 +1893,7 @@
 
 <div class="page" id="page-arquivados">
 <div class="card">
-<div class="section-title">‚ Animais Arquivados</div>
+<div class="section-title">Animais Arquivados</div>
 <div id="lista-arquivados"></div>
 </div>
 </div>
@@ -2106,8 +1903,8 @@
 <h3 id="modal-excluir-titulo">O que aconteceu com o animal</h3>
 <p>Selecione o motivo. O animal irá para a aba <strong>Arquivados</strong>, sem ser perdido.</p>
 <div class="modal-actions">
-<button class="btn btn-primary" onclick="confirmarExclusao('vendido')">° Foi vendido</button>
-<button class="btn btn-danger" onclick="confirmarExclusao('faleceu')">Š Faleceu</button>
+<button class="btn btn-primary" onclick="confirmarExclusao('vendido')">Foi vendido</button>
+<button class="btn btn-danger" onclick="confirmarExclusao('faleceu')">Faleceu</button>
 <button class="btn btn-outline" onclick="fecharModal('modal-excluir')">Cancelar</button>
 </div>
 </div>
@@ -2116,7 +1913,7 @@
 <!-- MODAL MORTE CORTE -->
 <div class="modal-bg" id="modal-morte-corte">
 <div class="modal-box">
-<h3>Š Registrar morte</h3>
+<h3>Registrar morte</h3>
 <p>Preencha os dados do falecimento. O registro alimenta o histórico e o financeiro automaticamente.</p>
 <div class="form-group">
 <label>Data da morte</label>
@@ -2174,10 +1971,10 @@
 
 <div class="modal-bg" id="modal-backup">
 <div class="modal-box">
-<h3>â˜ Backup e Restauração</h3>
+<h3>Backup e Restauração</h3>
 <p>Exporte ou importe um arquivo de backup do seu banco do app.</p>
 <div class="modal-actions">
-<button class="btn btn-success" onclick="exportarDados()">â¬‡ Exportar backup (.json)</button>
+<button class="btn btn-success" onclick="exportarDados()">Exportar backup (.json)</button>
 <label class="btn btn-outline" style="cursor:pointer;">
           â¬† Importar backup
           <input accept=".json" onchange="importarDados(event)" style="display:none;" type="file"/>
@@ -2245,6 +2042,8 @@
       precoLitroLeite: 0,
       leiteBezerros: { litrosDia: 0, quantidadeBezerros: 0 },
       produtosLavagem: [],
+      medicacoes: [],
+      estoqueControle: { ultimaBaixaISO: '' },
       lotesCorte: [],
       pesagensCorte: [],
       sanitarioCorteHistorico: [],
@@ -2264,6 +2063,9 @@
     let areaLoginSelecionada = '';
     let usuarioAreaPermitida = '';
     let salvandoProtocoloVaca = false;
+    let restaurandoSessaoFirebase = false;
+    let loginManualEmAndamento = false;
+    const calendarioExpandido = {};
 
     let animalEmEdicao = null;
     const AREAS_DISPONIVEIS = ['leiteiro', 'corte'];
@@ -2442,6 +2244,7 @@ async function fazerLogin() {
   }
 
   try {
+    loginManualEmAndamento = true;
     const cred = await auth.signInWithEmailAndPassword(usuarioParaEmail(usuario), senha);
     const statusConta = await obterStatusDaConta(cred.user.uid);
 
@@ -2476,7 +2279,53 @@ async function fazerLogin() {
 
     erroBox.textContent = msg;
     erroBox.style.display = 'block';
+  } finally {
+    loginManualEmAndamento = false;
   }
+}
+
+if (auth) {
+  auth.onAuthStateChanged(async (user) => {
+    if (!user || restaurandoSessaoFirebase) return;
+    if (loginManualEmAndamento) return;
+    if (usuarioFirebase && usuarioFirebase.uid === user.uid && usuarioLogado) return;
+    restaurandoSessaoFirebase = true;
+    const erroBox = document.getElementById('login-erro');
+    try {
+      const dadosConta = await obterDadosContaCompleta(user.uid, '');
+      const statusConta = dadosConta?.accountStatus || dadosConta?.status || await obterStatusDaConta(user.uid);
+      if (statusConta === 'bloqueado') {
+        await auth.signOut();
+        if (erroBox) {
+          erroBox.textContent = dadosConta?.bloqueioMotivo || 'Seu acesso está bloqueado. Procure o administrador.';
+          erroBox.style.display = 'block';
+        }
+        return;
+      }
+      const trial = await validarTesteGratisNoLogin(dadosConta || {}, user.uid);
+      if (trial.bloqueado) {
+        await auth.signOut();
+        if (erroBox) {
+          erroBox.textContent = trial.mensagem;
+          erroBox.style.display = 'block';
+        }
+        return;
+      }
+      const usuario = normalizarUsuario(dadosConta?.usuario || (user.email || '').split('@')[0] || 'usuario');
+      usuarioFirebase = user;
+      usuarioLogado = usuario;
+      usuarioAreaPermitida = await buscarAreaPermitidaUsuario(user.uid, usuario);
+      DB = DB_PADRAO();
+      aplicarAreaPermitidaOuRedirecionar(usuarioAreaPermitida || 'leiteira');
+      abrirAppLogado(usuario);
+      mostrarCarregandoDadosIniciais();
+      await carregarFirestore();
+    } catch (erroSessao) {
+      console.error('Erro ao restaurar sessão:', erroSessao);
+    } finally {
+      restaurandoSessaoFirebase = false;
+    }
+  });
 }
 
     async function carregarConfigWhatsApp() {
@@ -2529,7 +2378,7 @@ async function fazerLogin() {
     }
     function areaContaParaInterna(area){return 'leiteiro';}
     function areaInternaParaConta(area){return 'leiteira';}
-    function nomeArea(area){return '?rea Leiteira';}
+    function nomeArea(area){return '\u00c1rea Leiteira';}
     function usuarioPodeAcessarArea(areaConta){
       const area=normalizarAreaContaValor(areaConta);
       const permitida=normalizarAreaAcesso(usuarioAreaPermitida);
@@ -2593,7 +2442,7 @@ async function fazerLogin() {
       if(!areaEncontrada && (planoEncontrado.includes('completo') || planoEncontrado.includes('duas') || planoEncontrado.includes('ambas'))) return 'ambas';
       return areaEncontrada || normalizarAreaAcesso(areaLoginSelecionada) || 'leiteira';
     }
-    function abrirLoginArea(area){areaLoginSelecionada=normalizarAreaContaValor(area);if(!AREAS_CONTA.includes(areaLoginSelecionada))return;const chip=document.getElementById('login-area-chip');if(chip)chip.textContent=areaLoginSelecionada==='confinamento'?'Confinamento':'Área Leiteira';document.getElementById('landing-screen').style.display='none';document.getElementById('tela-login').style.display='flex';document.getElementById('app-wrapper').style.display='none';document.getElementById('login-erro').style.display='none';document.getElementById('login-usuario').focus();}
+    function abrirLoginArea(area){areaLoginSelecionada='leiteira';document.getElementById('landing-screen').style.display='none';document.getElementById('tela-login').style.display='flex';document.getElementById('app-wrapper').style.display='none';document.getElementById('login-erro').style.display='none';document.getElementById('login-usuario').focus();}
     function voltarLanding(){areaLoginSelecionada='';document.getElementById('login-usuario').value='';document.getElementById('login-senha').value='';document.getElementById('login-erro').style.display='none';document.getElementById('tela-login').style.display='none';document.getElementById('app-wrapper').style.display='none';document.getElementById('landing-screen').style.display='flex';carregarConfigWhatsApp();}
 
     async function fazerLogout() {
@@ -2680,10 +2529,11 @@ async function fazerLogin() {
       return {bloqueado:true,mensagem};
     }
     function normalizarProtocoloVaca(p={}){return {id:p.id||String(Date.now()),animal:p.animal||p.nomeAnimal||'',dataProtocolo:p.dataProtocolo||'',boi:p.boi||'',dataToque:p.dataToque||'',status:p.status||'protocolada',dataCriacao:p.dataCriacao||new Date().toISOString(),historico:Array.isArray(p.historico)?p.historico:[]};}
+    function normalizarMedicacao(m={}){return {id:m.id||('med_'+Date.now()),nome:m.nome||m.medicamento||'',animal:m.animal||m.animalNome||'',animalId:m.animalId||'',data:m.data||m.dataAplicacao||'',dataRepetir:m.dataRepetir||m.repetirEm||'',valor:parseFloat(m.valor||m.custo)||0,obs:m.obs||m.observacoes||'',status:m.status||'ativo',criadoEm:m.criadoEm||new Date().toISOString(),financeiroId:m.financeiroId||''};}
 
     function abrirAppLogado(usuario) {
       usuarioLogado = usuario;
-      document.getElementById('nav-usuario').textContent = usuario + (obterAreaAtual() ? ' · ' + nomeArea(obterAreaAtual()) : '');
+      document.getElementById('nav-usuario').textContent = usuario;
       document.getElementById('landing-screen').style.display = 'none';
       document.getElementById('tela-login').style.display = 'none';
       document.getElementById('app-wrapper').style.display = 'block';
@@ -2732,7 +2582,7 @@ async function fazerLogin() {
       const paginasConfinamentoOcultas = ['lotes-corte','pesagens-corte','vacinas-medicamentos-corte','financeiro-corte','trato-corte','despesas-corte','mortes-vendas-corte','sanitario-corte','nutricao-corte','manejo-corte','vendidos-corte'];
       if (paginasConfinamentoOcultas.includes(id)) id = 'inicio';
       const area = obterAreaAtual();
-      const paginasBloqueadasNoCorte = ['producao', 'despesas', 'calendario', 'protocolar-vaca', 'vacas-protocoladas', 'genealogia'];
+      const paginasBloqueadasNoCorte = ['producao', 'medicacoes', 'despesas', 'calendario', 'protocolar-vaca', 'vacas-protocoladas', 'genealogia'];
 
       if (area === 'corte' && paginasBloqueadasNoCorte.includes(id)) {
         id = 'inicio';
@@ -2760,6 +2610,7 @@ async function fazerLogin() {
       if (id === 'inicio') atualizarHomeArea();
       if (id === 'rebanho') renderRebanho();
       if (id === 'producao') { renderProducao(); try { carregarPrecoLitroNaTela(); } catch(e) {} }
+      if (id === 'medicacoes') renderMedicacoes();
       if (id === 'despesas') renderDespesas();
       if (id === 'protocolar-vaca') renderProtocolarVaca();
       if (id === 'vacas-protocoladas') renderVacasProtocoladas();
@@ -2914,6 +2765,8 @@ async function fazerLogin() {
         precoLitroLeite: typeof obj?.precoLitroLeite === 'number' ? obj.precoLitroLeite : (parseFloat(obj?.precoLitroLeite) || 0),
         leiteBezerros: (obj?.leiteBezerros && typeof obj.leiteBezerros === 'object') ? { litrosDia: parseFloat(obj.leiteBezerros.litrosDia) || 0, quantidadeBezerros: parseFloat(obj.leiteBezerros.quantidadeBezerros) || 0 } : base.leiteBezerros,
         produtosLavagem: Array.isArray(obj?.produtosLavagem) ? obj.produtosLavagem : base.produtosLavagem,
+        medicacoes: Array.isArray(obj?.medicacoes) ? obj.medicacoes.map(normalizarMedicacao) : base.medicacoes,
+        estoqueControle: obj?.estoqueControle && typeof obj.estoqueControle === 'object' ? { ultimaBaixaISO: obj.estoqueControle.ultimaBaixaISO || '' } : base.estoqueControle,
         lotesCorte: Array.isArray(obj?.lotesCorte) ? obj.lotesCorte : base.lotesCorte,
         pesagensCorte: Array.isArray(obj?.pesagensCorte) ? obj.pesagensCorte : base.pesagensCorte,
         sanitarioCorteHistorico: Array.isArray(obj?.sanitarioCorteHistorico) ? obj.sanitarioCorteHistorico : base.sanitarioCorteHistorico,
@@ -2971,6 +2824,8 @@ async function fazerLogin() {
         precoLitroLeite: principalTemCampo('precoLitroLeite') ? dbPrincipal.precoLitroLeite : dbSecundaria.precoLitroLeite,
         leiteBezerros: principalTemCampo('leiteBezerros') ? dbPrincipal.leiteBezerros : dbSecundaria.leiteBezerros,
         produtosLavagem: principalTemCampo('produtosLavagem') ? dbPrincipal.produtosLavagem : dbSecundaria.produtosLavagem,
+        medicacoes: principalTemCampo('medicacoes') ? dbPrincipal.medicacoes : dbSecundaria.medicacoes,
+        estoqueControle: principalTemCampo('estoqueControle') ? dbPrincipal.estoqueControle : dbSecundaria.estoqueControle,
         lotesCorte: principalTemCampo('lotesCorte') ? dbPrincipal.lotesCorte : dbSecundaria.lotesCorte,
         pesagensCorte: principalTemCampo('pesagensCorte') ? dbPrincipal.pesagensCorte : dbSecundaria.pesagensCorte,
         sanitarioCorteHistorico: principalTemCampo('sanitarioCorteHistorico') ? dbPrincipal.sanitarioCorteHistorico : dbSecundaria.sanitarioCorteHistorico,
@@ -3477,21 +3332,21 @@ async function fazerLogin() {
       document.getElementById('a-data-prenha').value = '';
       document.getElementById('a-lactacao').value = 'nao';
       const campoTotalCrias = document.getElementById('a-total-crias'); if (campoTotalCrias) campoTotalCrias.value = '0';
-      document.getElementById('a-fase-corte').value = '';
+      document.getElementById('a-fase-corte') && (document.getElementById('a-fase-corte').value = '');
       if (document.getElementById('a-lote-corte')) document.getElementById('a-lote-corte').value = '';
-      document.getElementById('a-peso').value = '';
-      document.getElementById('a-peso-inicial').value = '';
-      document.getElementById('a-data-peso-inicial').value = '';
-      document.getElementById('a-sistema-alimentar').value = '';
+      document.getElementById('a-peso') && (document.getElementById('a-peso').value = '');
+      document.getElementById('a-peso-inicial') && (document.getElementById('a-peso-inicial').value = '');
+      document.getElementById('a-data-peso-inicial') && (document.getElementById('a-data-peso-inicial').value = '');
+      document.getElementById('a-sistema-alimentar') && (document.getElementById('a-sistema-alimentar').value = '');
       document.getElementById('a-mae').value = '';
       document.getElementById('a-pai').value = '';
       document.getElementById('a-avo-materna').value = '';
       document.getElementById('a-avo-materno').value = '';
       document.getElementById('a-avo-paterna').value = '';
       document.getElementById('a-avo-paterno').value = '';
-      document.getElementById('a-vacina').value = '';
-      document.getElementById('a-vermifugo').value = '';
-      document.getElementById('a-carrapato').value = '';
+      document.getElementById('a-vacina') && (document.getElementById('a-vacina').value = '');
+      document.getElementById('a-vermifugo') && (document.getElementById('a-vermifugo').value = '');
+      document.getElementById('a-carrapato') && (document.getElementById('a-carrapato').value = '');
       document.getElementById('a-obs').value = '';
       document.getElementById('a-foto').value = '';
       document.getElementById('a-categoria-box').textContent = 'Informe sexo e data de nascimento. A categoria será calculada automaticamente.';
@@ -3503,80 +3358,231 @@ async function fazerLogin() {
     }
 
     function getHomeFeatures(area) {
-      if (area === 'corte') {
-        return [
-          { icon: '', label: 'Meu Rebanho', desc: 'Cadastre e acompanhe os animais com peso, lote e histórico.', action: "showPage('rebanho')" },
-          { icon: '', label: 'Lotes', desc: 'Gerencie lotes, peso médio, custo e resumo do confinamento.', action: "showPage('lotes-corte')" },
-          { icon: '️', label: 'Pesagens', desc: 'Registre pesagens e acompanhe GMD e ganho de peso.', action: "showPage('pesagens-corte')" },
-          { icon: '', label: 'Vacinas/Medicamentos', desc: 'Aplicações por animal ou lote com custo por cabeça.', action: "showPage('vacinas-medicamentos-corte')" },
-          { icon: '', label: 'Financeiro', desc: 'Despesas, receitas, saldo, custo por lote e por animal.', action: "showPage('financeiro-corte')" },
-          { icon: '', label: 'Registrar trato por animal', desc: 'Informe kg/dia por animal e veja custo automático no lote e financeiro.', action: "showPage('trato-corte')" },
-          { icon: '', label: 'Registrar compra de ração/silo', desc: 'Registre compras de milho, silo, ração e forme estoque/custo por kg.', action: "showPage('despesas-corte')" },
-          { icon: '', label: 'Mortes/Vendas', desc: 'Registre saídas com histórico e integração financeira.', action: "showPage('mortes-vendas-corte')" },
-          { icon: '', label: 'Fábrica de Ração', desc: 'Monte a mistura e envie para o estoque.', action: "showPage('fabrica-racao')" },
-          { icon: '', label: 'Veterinário', desc: 'Consulte orientações práticas quando precisar.', action: "showPage('veterinario')" },
-        ];
-      }
-
       return [
         { icon: '', label: 'Rebanho', desc: 'Cadastre, organize e acompanhe seus animais.', action: "showPage('rebanho')" },
-        { icon: '', label: 'Produ??o', desc: 'Lance a pesagem de leite por animal e acompanhe o hist?rico.', action: "showPage('producao')" },
-        { icon: '', label: 'Financeiro', desc: 'Controle despesas, entregas, ra??o, silo e estoque.', action: "showPage('despesas')" },
-        { icon: '', label: 'Relat?rio mensal', desc: 'Receitas, despesas e resultado da produ??o leiteira.', action: "abrirRelatorioFinanceiro()" },
-        { icon: '', label: 'Mais ferramentas', desc: 'Protocolos, calend?rio, veterin?rio, genealogia e f?brica de ra??o.', action: "showPage('mais')" }
+        { icon: '', label: 'Produ\u00e7\u00e3o', desc: 'Lance a pesagem de leite por animal e acompanhe o hist\u00f3rico.', action: "showPage('producao')" },
+        { icon: '', label: 'Medicações', desc: 'Registre aplicações, custos e repetições.', action: "showPage('medicacoes')" },
+        { icon: '', label: 'Financeiro', desc: 'Controle despesas, entregas, ra\u00e7\u00e3o, silo e estoque.', action: "showPage('despesas')" },
+        { icon: '', label: 'Relat\u00f3rio mensal', desc: 'Receitas, despesas e resultado da produ\u00e7\u00e3o leiteira.', action: "abrirRelatorioFinanceiro()" },
+        { icon: '', label: 'Mais ferramentas', desc: 'Protocolos, calend\u00e1rio, genealogia e f\u00e1brica de ra\u00e7\u00e3o.', action: "showPage('mais')" }
       ];
     }
 
+    function calcularDiasAte(dataIso) {
+      if (!dataIso) return null;
+      const alvo = new Date(String(dataIso).slice(0, 10) + 'T12:00:00');
+      if (isNaN(alvo.getTime())) return null;
+      const hoje = new Date();
+      hoje.setHours(12, 0, 0, 0);
+      return Math.ceil((alvo - hoje) / (1000 * 60 * 60 * 24));
+    }
+
+    function textoDiasAlerta(dias) {
+      if (dias === null || dias === undefined) return '';
+      if (dias < 0) return `${Math.abs(dias)} dia(s) em atraso`;
+      if (dias === 0) return 'Hoje';
+      if (dias === 1) return 'Amanhã';
+      return `Em ${dias} dias`;
+    }
+
+    function nivelAlertaPorDias(dias, limiteAtencao) {
+      if (dias === null || dias === undefined) return 'info';
+      if (dias < 0 || dias <= 2) return 'danger';
+      if (dias <= limiteAtencao) return 'warn';
+      return 'info';
+    }
+
+    function montarAlertasInteligentes() {
+      const alertas = [];
+      const animais = Array.isArray(DB.animais) ? DB.animais : [];
+      animais
+        .filter(a => (a.area || 'leiteiro') === 'leiteiro' && a.prenha && !a.partoRegistrado)
+        .forEach(a => {
+          const prev = (a.previsaoParto || a.previsaoSecagem || a.previsaoPreParto)
+            ? { parto: a.previsaoParto || '', secagem: a.previsaoSecagem || '', preParto: a.previsaoPreParto || '' }
+            : calcularPrevisoesPrenhez(a.dataPrenha || '');
+
+          if (prev.secagem && !a.secaConfirmada && !a.secagemConcluida) {
+            const dias = calcularDiasAte(prev.secagem);
+            if (dias !== null && dias <= 15) {
+              alertas.push({
+                tipo: 'Secagem',
+                titulo: a.nome || a.brinco || 'Animal sem nome',
+                detalhe: `${textoDiasAlerta(dias)} · prevista para ${formatarDataBR(prev.secagem)}`,
+                nivel: nivelAlertaPorDias(dias, 10),
+                ordem: dias
+              });
+            }
+          }
+
+          if (prev.preParto) {
+            const dias = calcularDiasAte(prev.preParto);
+            if (dias !== null && dias <= 12) {
+              alertas.push({
+                tipo: 'Pré-parto',
+                titulo: a.nome || a.brinco || 'Animal sem nome',
+                detalhe: `${textoDiasAlerta(dias)} · observação intensiva em ${formatarDataBR(prev.preParto)}`,
+                nivel: nivelAlertaPorDias(dias, 7),
+                ordem: dias
+              });
+            }
+          }
+
+          if (prev.parto) {
+            const dias = calcularDiasAte(prev.parto);
+            if (dias !== null && dias <= 30) {
+              alertas.push({
+                tipo: 'Parto',
+                titulo: a.nome || a.brinco || 'Animal sem nome',
+                detalhe: `${textoDiasAlerta(dias)} · previsão ${formatarDataBR(prev.parto)}`,
+                nivel: nivelAlertaPorDias(dias, 15),
+                ordem: dias
+              });
+            }
+          }
+        });
+
+      animais
+        .filter(a => (a.area || 'leiteiro') === 'leiteiro' && !a.prenha && !a.partoRegistrado && String(a.categoria || '').toLowerCase().includes('vaca'))
+        .forEach(a => {
+          const temProtocoloAtivo = (DB.protocolosVacas || []).some(p => {
+            const status = String(p.status || '').toLowerCase();
+            const nome = String(p.animal || '').toLowerCase().trim();
+            return nome === String(a.nome || '').toLowerCase().trim() && !status.includes('confirmada') && !status.includes('não confirmada') && !status.includes('nao confirmada');
+          });
+          if (!temProtocoloAtivo) {
+            alertas.push({
+              tipo: 'Reprodução',
+              titulo: a.nome || a.brinco || 'Vaca sem protocolo',
+              detalhe: 'Sem protocolo ativo ou prenhez marcada. Avaliar necessidade de protocolar.',
+              nivel: 'info',
+              ordem: 20
+            });
+          }
+        });
+
+      (DB.protocolosVacas || []).map(normalizarProtocoloVaca).forEach(p => {
+        const status = String(p.status || '').toLowerCase();
+        const concluido = status.includes('confirmada') || status.includes('não confirmada') || status.includes('nao confirmada');
+        if (concluido) return;
+
+        if (p.dataProtocolo) {
+          const diasProtocolo = calcularDiasAte(p.dataProtocolo);
+          if (diasProtocolo !== null && diasProtocolo >= 0 && diasProtocolo <= 3) {
+            alertas.push({
+              tipo: 'Protocolo',
+              titulo: p.animal || 'Vaca protocolada',
+              detalhe: `${textoDiasAlerta(diasProtocolo)} · protocolo em ${formatarDataBR(p.dataProtocolo)}`,
+              nivel: nivelAlertaPorDias(diasProtocolo, 3),
+              ordem: diasProtocolo
+            });
+          }
+        }
+
+        if (p.dataToque) {
+          const diasToque = calcularDiasAte(p.dataToque);
+          if (diasToque !== null && diasToque <= 7) {
+            alertas.push({
+              tipo: 'Toque',
+              titulo: p.animal || 'Vaca protocolada',
+              detalhe: `${textoDiasAlerta(diasToque)} · exame em ${formatarDataBR(p.dataToque)}`,
+              nivel: nivelAlertaPorDias(diasToque, 5),
+              ordem: diasToque
+            });
+          }
+        }
+      });
+
+      (DB.medicacoes || []).map(normalizarMedicacao).forEach(m => {
+        if (String(m.status || '').toLowerCase() === 'concluido') return;
+        const dias = calcularDiasAte(m.dataRepetir || '');
+        if (dias !== null && dias >= 0 && dias <= 5) {
+          alertas.push({
+            tipo: 'Medicação',
+            titulo: m.animal || m.nome || 'Medicação',
+            detalhe: `${textoDiasAlerta(dias)} · repetir ${escapeHtml(m.nome || 'medicação')} em ${formatarDataBR(m.dataRepetir)}`,
+            nivel: nivelAlertaPorDias(dias, 3),
+            ordem: dias
+          });
+        }
+      });
+
+      try {
+        const consumo = getConsumoDiario();
+        const estoque = parseFloat(DB.estoqueRacao) || 0;
+        const diasRacao = consumo > 0 ? Math.floor(estoque / consumo) : null;
+        if (diasRacao !== null && diasRacao <= 10) {
+          alertas.push({
+            tipo: 'Estoque',
+            titulo: 'Ração perto de acabar',
+            detalhe: `${diasRacao <= 0 ? 'Estoque crítico' : 'Restam cerca de ' + diasRacao + ' dia(s)'} · registre nova entrega se necessário`,
+            nivel: diasRacao <= 2 ? 'danger' : 'warn',
+            ordem: diasRacao
+          });
+        }
+        const resumoProdutos = calcularResumoProdutosLeiteEstoque();
+        if (resumoProdutos.diasRestantes !== null && resumoProdutos.diasRestantes <= 10) {
+          alertas.push({
+            tipo: 'Estoque',
+            titulo: 'Silo/produtos perto de acabar',
+            detalhe: `${resumoProdutos.diasRestantes <= 0 ? 'Estoque crítico' : 'Restam cerca de ' + resumoProdutos.diasRestantes + ' dia(s)'}`,
+            nivel: resumoProdutos.diasRestantes <= 2 ? 'danger' : 'warn',
+            ordem: resumoProdutos.diasRestantes
+          });
+        }
+      } catch(e) {}
+
+      return alertas
+        .filter(a => a.ordem === null || a.ordem <= 30)
+        .sort((a, b) => (a.ordem ?? 999) - (b.ordem ?? 999))
+        .slice(0, 8);
+    }
+
+    function renderAlertasInteligentesHome() {
+      const grid = document.getElementById('smart-alerts-grid');
+      if (!grid) return;
+      const alertas = montarAlertasInteligentes();
+      if (!alertas.length) {
+        grid.innerHTML = '<div class="smart-alert-empty">Nenhum alerta importante no momento.</div>';
+        return;
+      }
+      grid.innerHTML = alertas.map(alerta => `
+        <div class="smart-alert-card ${alerta.nivel}">
+          <div class="smart-alert-type">${escapeHtml(alerta.tipo)}</div>
+          <div class="smart-alert-main">${escapeHtml(alerta.titulo)}</div>
+          <div class="smart-alert-meta">${escapeHtml(alerta.detalhe)}</div>
+        </div>
+      `).join('');
+    }
+
     function atualizarHomeArea() {
-      const area = obterAreaAtual();
       const title = document.getElementById('area-status-title');
       const desc = document.getElementById('area-status-desc');
       const guideTitle = document.getElementById('home-guide-title');
       const guideContent = document.getElementById('home-guide-content');
       const grid = document.getElementById('features-grid-home');
       const cardLeite = document.getElementById('area-card-leiteiro');
-      const cardCorte = document.getElementById('area-card-corte');
 
-      if (cardLeite) cardLeite.classList.toggle('active', area === 'leiteiro');
-      if (cardCorte) cardCorte.classList.toggle('active', area === 'corte');
+      if (cardLeite) cardLeite.classList.add('active');
 
       if (title && desc) {
-        if (area === 'leiteiro') {
-          title.textContent = 'Área atual: Gado Leiteiro';
-          desc.textContent = 'Você está no modo leiteiro. Produção, despesas e calendário permanecem ativos normalmente.';
-        } else if (area === 'corte') {
-          title.textContent = 'Área atual: Confinamento';
-          desc.textContent = 'Você está no modo confinamento. Use Lotes, Pesagens, Vacinas/Medicamentos, Financeiro, Registrar Trato, Compras de Ração/Silo e Mortes/Vendas para gestão completa.';
-        } else {
-          title.textContent = 'Área atual: ainda não selecionada';
-          desc.textContent = 'Escolha uma das duas áreas acima para o sistema adaptar a navegação inicial. Sua escolha fica salva para o usuário logado.';
-        }
+        title.textContent = 'AgroMilk ativo';
+        desc.textContent = 'Produ\u00e7\u00e3o, rebanho, financeiro e calend\u00e1rio organizados para a rotina leiteira.';
       }
 
       if (guideTitle && guideContent) {
-        if (area === 'corte') {
-          if (guideTitle) guideTitle.textContent = ' Como usar a área de confinamento';
-          if (guideContent) guideContent.innerHTML = `
-            <p style="margin-bottom:8px;"><strong>1.</strong> Crie <strong>Lotes</strong> e cadastre animais em <strong>Meu Rebanho</strong> vinculando ao lote.</p>
-            <p style="margin-bottom:8px;"><strong>2.</strong> Registre <strong>Pesagens</strong> para acompanhar GMD e ganho de peso.</p>
-            <p style="margin-bottom:8px;"><strong>3.</strong> Em <strong>Vacinas/Medicamentos</strong>, registre aplicações por animal ou lote — o custo vai automaticamente ao financeiro.</p>
-            <p style="margin-bottom:8px;"><strong>4.</strong> Use <strong>Financeiro</strong> para registrar despesas e receitas. O saldo e custo por animal são calculados automaticamente.</p>
-            <p><strong>5.</strong> Em <strong>Mortes/Vendas</strong>, acompanhe saídas do rebanho. Vendas entram como receita no financeiro.</p>
-          `;
-        } else {
-          if (guideTitle) guideTitle.textContent = ' Como usar o AgroMilk';
-          if (guideContent) guideContent.innerHTML = `
-            <p style="margin-bottom:8px;"><strong>1.</strong> Escolha a área principal em <strong>Gado Leiteiro</strong> ou <strong>Confinamento</strong>.</p>
-            <p style="margin-bottom:8px;"><strong>2.</strong> Vá em <strong>Meu Rebanho</strong> e cadastre seus animais com nome, brinco, sexo e idade em meses.</p>
-            <p style="margin-bottom:8px;"><strong>3.</strong> No modo leiteiro, use <strong>Registrar Pesagem Leite</strong>, <strong>Despesas/reg.entrega(Ração/Silo)</strong> e <strong>Calendário</strong> normalmente.</p>
-            <p style="margin-bottom:8px;"><strong>4.</strong> No modo corte, o rebanho fica separado e você já pode usar as abas de sanitário, nutrição e manejo.</p>
-            <p><strong>5.</strong> Seus dados ficam salvos no navegador e também na nuvem do usuário logado.</p>
-          `;
-        }
+        guideTitle.textContent = 'Como usar o AgroMilk';
+        guideContent.innerHTML = `
+          <p style="margin-bottom:8px;"><strong>1.</strong> Cadastre seus animais em <strong>Rebanho</strong> com nome, brinco, sexo e idade.</p>
+          <p style="margin-bottom:8px;"><strong>2.</strong> Use <strong>Produ\u00e7\u00e3o</strong> para registrar pesagens de leite e acompanhar o hist\u00f3rico.</p>
+          <p style="margin-bottom:8px;"><strong>3.</strong> Em <strong>Financeiro</strong>, controle despesas, entregas, ra\u00e7\u00e3o, silo e estoque.</p>
+          <p style="margin-bottom:8px;"><strong>4.</strong> Em <strong>Mais</strong>, acesse protocolos, calend\u00e1rio, veterin\u00e1rio, genealogia, backup e instala\u00e7\u00e3o.</p>
+          <p><strong>5.</strong> Seus dados ficam salvos no navegador e tamb\u00e9m na nuvem do usu\u00e1rio logado.</p>
+        `;
       }
 
       if (grid) {
-        grid.innerHTML = getHomeFeatures(area).map(item => `
+        grid.innerHTML = getHomeFeatures('leiteiro').map(item => `
           <div class="feat-card" onclick="${item.action}">
             <div class="feat-icon">${item.icon}</div>
             <div class="feat-label">${item.label}</div>
@@ -3584,45 +3590,23 @@ async function fazerLogin() {
           </div>
         `).join('');
       }
+
+      renderAlertasInteligentesHome();
     }
 
     function aplicarAreaNaInterface() {
-      const area = obterAreaAtual();
-      const leiteiroAtivo = area !== 'corte';
-      const corteAtivo = false;
-
-      // Controle forte de visibilidade por área.
-      // Não altera a área leiteira: apenas garante que abas leiteiras não apareçam quando a área ativa é Confinamento/Corte.
       document.querySelectorAll('[data-area="leiteiro"]').forEach(el => {
-        el.classList.toggle('hidden', !leiteiroAtivo);
-        if (!leiteiroAtivo) el.style.setProperty('display', 'none', 'important');
-        else el.style.removeProperty('display');
+        el.classList.remove('hidden');
+        el.style.removeProperty('display');
       });
-
-      document.querySelectorAll('[data-area="corte"]').forEach(el => {
-        const legadoOculto = ['sanitario-corte', 'nutricao-corte', 'manejo-corte'].includes(el.dataset.page || '');
-        el.classList.toggle('hidden', !corteAtivo || legadoOculto);
-        if (!corteAtivo || legadoOculto) el.style.setProperty('display', 'none', 'important');
-        else el.style.removeProperty('display');
-      });
-
-      const paginasLeiteirasNoMenuCorte = ['producao', 'despesas', 'protocolar-vaca', 'vacas-protocoladas', 'calendario', 'genealogia'];
-      if (corteAtivo) {
-        paginasLeiteirasNoMenuCorte.forEach(page => {
-          document.querySelectorAll(`.nav-tab[data-page="${page}"]`).forEach(el => {
-            el.classList.add('hidden');
-            el.style.setProperty('display', 'none', 'important');
-          });
-        });
-      }
 
       const gateProd = document.getElementById('gate-producao');
       const gateDesp = document.getElementById('gate-despesas');
       const gateCal = document.getElementById('gate-calendario');
 
-      if (gateProd) gateProd.classList.toggle('hidden', leiteiroAtivo);
-      if (gateDesp) gateDesp.classList.toggle('hidden', leiteiroAtivo);
-      if (gateCal) gateCal.classList.toggle('hidden', leiteiroAtivo);
+      if (gateProd) gateProd.classList.add('hidden');
+      if (gateDesp) gateDesp.classList.add('hidden');
+      if (gateCal) gateCal.classList.add('hidden');
 
       atualizarHomeArea();
       atualizarVisibilidadeCamposCadastro();
@@ -3658,7 +3642,7 @@ async function fazerLogin() {
         return;
       }
 
-      alert('Escolha primeiro se deseja entrar em Gado Leiteiro ou Confinamento.');
+      alert('Faça login novamente para continuar.');
     }
 
     function obterAreaContaAtualSegura() {
@@ -3757,6 +3741,7 @@ async function fazerLogin() {
     function renderTudo() {
       try { renderRebanho(); } catch(e) {}
       try { renderProducao(); } catch(e) {}
+      try { renderMedicacoes(); } catch(e) {}
       try { renderDespesas(); } catch(e) {}
       try { renderCalendario(); } catch(e) {}
       try { renderVacasProtocoladas(); } catch(e) {}
@@ -3970,7 +3955,11 @@ async function fazerLogin() {
         }
 
         DB.areaSelecionada = areaInterna;
+        const baixaEstoqueAplicada = processarBaixaEstoqueDiaria();
         salvarLocal();
+        if (baixaEstoqueAplicada) {
+          try { await salvarDB({ sincronizarAnimais: false }); } catch(e) { console.warn('Baixa automática de estoque não sincronizada agora:', e); }
+        }
         setTimeout(async () => {
           try {
             const fotosForamReduzidas = await reduzirFotosGrandesDoRebanho();
@@ -4941,7 +4930,7 @@ async function fazerLogin() {
                 <option value="" ${!a.sistemaAlimentar ? 'selected' : ''}>Selecione</option>
                 <option ${a.sistemaAlimentar === 'Pasto' ? 'selected' : ''}>Pasto</option>
                 <option ${a.sistemaAlimentar === 'Semi-confinamento' ? 'selected' : ''}>Semi-confinamento</option>
-                <option ${a.sistemaAlimentar === 'Confinamento' ? 'selected' : ''}>Confinamento</option>
+                <option value="Confinamento" ${a.sistemaAlimentar === 'Confinamento' ? 'selected' : ''}>Sistema intensivo</option>
               </select>
             </div>
           </div>
@@ -5106,7 +5095,7 @@ async function fazerLogin() {
 
       addSec('Identificação do animal', `
         <p><strong>Nome:</strong> ${escapeHtml(formatarCampo(animal.nome))}</p>
-        <p><strong>Área:</strong> ${area === 'leiteiro' ? 'Gado Leiteiro' : 'Confinamento'}</p>
+        <p><strong>Area:</strong> Gestao leiteira</p>
         <p><strong>Brinco:</strong> ${escapeHtml(formatarCampo(animal.brinco))}</p>
         <p><strong>Sexo:</strong> ${escapeHtml(formatarCampo(animal.sexo))}</p>
         <p><strong>Categoria:</strong> ${escapeHtml(formatarCampo(animal.categoria))}</p>
@@ -5371,151 +5360,85 @@ async function fazerLogin() {
       `;
     }
 
+
+    function textoResumoAnimal(a) {
+      const partes = [];
+      if (a.categoria) partes.push(escapeHtml(a.categoria));
+      if (a.status) partes.push(escapeHtml(a.status));
+      if (a.prenha) partes.push('Prenha');
+      if (a.lactacao) partes.push('Em lactação');
+      return partes.length ? partes.join(' - ') : 'Animal cadastrado';
+    }
+
+    function montarDetalhesAnimalPainel(a) {
+      const rel = montarRelatorioAnimalData(a);
+      const prod = rel.producao || { total: 0, racao: 0 };
+      const genealogia = rel.genealogia || {};
+      const protocolos = (DB.protocolosVacas || []).filter(p => { const nome = String(p.animal || '').toLowerCase().trim(); return nome && (nome === String(a.nome || '').toLowerCase().trim() || nome === String(a.brinco || '').toLowerCase().trim()); });
+      const meds = (DB.medicacoes || []).filter(m => m.animalId === a.id || String(m.animal || '').toLowerCase().trim() === String(a.nome || '').toLowerCase().trim());
+      const custosProduto = obterConsumoProdutosLeiteAnimal(a.id || '');
+      const custoRacao = obterCustoRacaoAnimalLeite(a.id || '');
+      const prev = a.prenha ? ((a.previsaoParto || a.previsaoSecagem) ? { parto: a.previsaoParto, secagem: a.previsaoSecagem, preParto: a.previsaoPreParto || '' } : calcularPrevisoesPrenhez(a.dataPrenha || '')) : null;
+      const item = (titulo, valor) => '<div class="animal-detail-box"><strong>' + titulo + '</strong>' + (valor || 'Não informado') + '</div>';
+      return ''
+        + '<div class="animal-detail-grid">'
+        + item('Nome', escapeHtml(a.nome || ''))
+        + item('Brinco', escapeHtml(a.brinco || ''))
+        + item('Sexo', escapeHtml(a.sexo || ''))
+        + item('Nascimento', a.dataNascimento ? formatarDataBR(a.dataNascimento) : '')
+        + item('Categoria', escapeHtml(a.categoria || ''))
+        + item('Raça', escapeHtml(a.raca || a.racaAnimal || ''))
+        + item('Produção', (prod.total ? prod.total.toFixed(1).replace('.', ',') + ' L/dia' : 'Sem produção registrada') + (prod.racao ? ' - ração estimada ' + prod.racao.toFixed(1).replace('.', ',') + ' kg/dia' : ''))
+        + item('Consumo', (custoRacao.kgDia ? custoRacao.kgDia.toFixed(1).replace('.', ',') + ' kg/dia de ração' : 'Sem consumo de ração calculado') + (custosProduto.length ? '<br>' + custosProduto.map(c => escapeHtml(c.produto) + ': ' + c.kgDia.toFixed(1).replace('.', ',') + ' kg/dia').join('<br>') : ''))
+        + item('Reprodução', (a.prenha ? 'Prenha' : 'Não prenha') + (a.dataPrenha ? ' - confirmação ' + formatarDataBR(a.dataPrenha) : ''))
+        + item('Parto/secagem', prev ? ('Secagem: ' + (prev.secagem ? formatarDataBR(prev.secagem) : 'não calculada') + '<br>Pré-parto: ' + (prev.preParto ? formatarDataBR(prev.preParto) : 'não calculado') + '<br>Parto: ' + (prev.parto ? formatarDataBR(prev.parto) : 'não calculado')) : 'Sem previsão ativa')
+        + item('Genealogia', 'Mãe: ' + escapeHtml(genealogia.mae || 'não informada') + '<br>Pai: ' + escapeHtml(genealogia.pai || 'não informado') + '<br>Avós: ' + escapeHtml([genealogia.avoMaterna, genealogia.avoMaterno, genealogia.avoPaterna, genealogia.avoPaterno].filter(Boolean).join(', ') || 'não informado'))
+        + item('Protocolos', protocolos.length ? protocolos.map(p => escapeHtml(p.status || 'protocolada') + ' - ' + (p.dataToque ? 'toque ' + formatarDataBR(p.dataToque) : 'sem toque')).join('<br>') : 'Sem protocolo ativo')
+        + item('Medicações', meds.length ? meds.map(m => escapeHtml(m.nome) + ' - ' + (m.data ? formatarDataBR(m.data) : 'sem data') + ' - ' + escapeHtml(m.status || 'ativo')).join('<br>') : 'Sem medicação registrada')
+        + item('Financeiro relacionado', meds.reduce((sum,m)=>sum+(parseFloat(m.valor)||0),0) ? 'Medicações: R$ ' + formatCurrencyBR(meds.reduce((sum,m)=>sum+(parseFloat(m.valor)||0),0)) : 'Sem custo direto registrado')
+        + item('Anotações', escapeHtml(a.anotacaoRapida || a.obs || ''))
+        + '</div>';
+    }
+
+    function toggleDetalhesAnimal(id) {
+      const painel = document.getElementById('detalhes-animal-' + id);
+      const btn = document.getElementById('btn-detalhes-animal-' + id);
+      if (!painel) return;
+      const abrir = painel.classList.contains('hidden');
+      painel.classList.toggle('hidden', !abrir);
+      if (btn) btn.textContent = abrir ? 'Ocultar detalhes' : 'Detalhes';
+    }
+
+    function anotarAnimalPorId(id) {
+      const animal = (DB.animais || []).find(a => a.id === id);
+      editarAnotacaoRapida(id, animal?.nome || 'Animal');
+    }
+
+    function excluirAnimalPorId(id) {
+      const animal = (DB.animais || []).find(a => a.id === id);
+      abrirExcluir(id, animal?.nome || 'Animal');
+    }
+
     function renderRebanho() {
       const area = obterAreaAtual() || 'leiteiro';
       const lista = document.getElementById('lista-rebanho');
       const contador = document.getElementById('count-rebanho');
       if (!lista) return;
-
       const termoBusca = (document.getElementById('busca-rebanho')?.value || '').trim().toLowerCase();
-      const animaisDaAreaBase = (typeof getAnimaisDaArea === 'function' ? getAnimaisDaArea(area) : [])
-        .filter(a => a && typeof a === 'object');
-      const animaisDaArea = termoBusca
-        ? animaisDaAreaBase.filter(a => {
-            const buscaCampos = [
-              String(a.nome || '').toLowerCase(),
-              String(a.brinco || '').toLowerCase(),
-              String(a.loteCorte || '').toLowerCase(),
-              String(a.categoria || '').toLowerCase(),
-              String(a.obs || '').toLowerCase(),
-              String(a.anotacaoRapida || '').toLowerCase(),
-              String(a.status || '').toLowerCase()
-            ];
-            return buscaCampos.some(c => c.includes(termoBusca));
-          })
-        : animaisDaAreaBase;
-
+      const animaisDaAreaBase = (typeof getAnimaisDaArea === 'function' ? getAnimaisDaArea(area) : []).filter(a => a && typeof a === 'object');
+      const animaisDaArea = termoBusca ? animaisDaAreaBase.filter(a => [a.nome, a.brinco, a.categoria, a.status, a.obs, a.anotacaoRapida].some(v => String(v || '').toLowerCase().includes(termoBusca))) : animaisDaAreaBase;
       if (contador) contador.textContent = animaisDaArea.length;
-
       if (!animaisDaArea.length) {
-        lista.innerHTML = `
-          <div class="empty-state">
-            <div class="empty-icon">${area === 'corte' ? '' : ''}</div>
-            ${termoBusca ? 'Nenhum animal encontrado com essa busca.' : 'Nenhum animal cadastrado nesta área ainda.<br />Clique em <strong>+ Cadastrar Animal</strong> para começar.'}
-          </div>
-        `;
+        lista.innerHTML = '<div class="empty-state"><div class="empty-icon"></div>' + (termoBusca ? 'Nenhum animal encontrado com essa busca.' : 'Nenhum animal cadastrado ainda.<br />Clique em <strong>+ Cadastrar Animal</strong> para começar.') + '</div>';
         return;
       }
-
-      try {
-        lista.innerHTML = animaisDaArea.map(a => {
-          const nomeSeguro = escapeHtml(a.nome || 'Animal sem nome');
-          const nomeAttr = escapeAttr(a.nome || 'Animal');
-          const brincoSeguro = escapeHtml(a.brinco || '');
-          const sexoSeguro = escapeHtml(a.sexo || 'Sexo não informado');
-          const categoriaSeguro = escapeHtml(a.categoria || 'Não definido');
-          const obsSeguro = escapeHtml(a.obs || '');
-          const anotacaoSeguro = escapeHtml(a.anotacaoRapida || '');
-          const idAttr = escapeAttr(a.id || '');
-          const nomeJs = String(a.nome || 'Animal').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-          const rec = area === 'corte' && typeof gerarRecomendacoesCorte === 'function' ? gerarRecomendacoesCorte(a) : null;
-          const fotoLista = obterFotoLeveParaLista(a);
-          const avatar = fotoLista
-            ? `<img class="animal-photo" src="${escapeAttr(fotoLista)}" alt="Foto de ${nomeAttr}" loading="lazy" decoding="async" />`
-            : `<div class="animal-avatar">${emojiAnimal(a.categoria)}</div>`;
-
-          // Bloco de info do corte (pesagem/lote)
-          let blocoCorte = '';
-          if (area === 'corte') {
-            const ultimaPesagem = calcularUltimaPesagemAnimal(a.id);
-            const loteResolvido = resolverLoteDoAnimal(a);
-            const loteDisplay = loteResolvido.loteNome || loteResolvido.loteId || '';
-            const ultimaSanitario = (DB.sanitarioCorteHistorico || [])
-              .filter(s => s.animalId === a.id || s.animalNome === a.nome)
-              .sort((x,y) => (y.data||'').localeCompare(x.data||''))[0];
-            blocoCorte = `
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;">
-                <div style="background:#0f0f0f;border:1px solid var(--border);border-radius:8px;padding:8px;">
-                  <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:2px;">Lote</div>
-                  <div style="font-size:12px;color:var(--text);">${loteDisplay ? escapeHtml(loteDisplay) : '—'}</div>
-                </div>
-                <div style="background:#0f0f0f;border:1px solid var(--border);border-radius:8px;padding:8px;">
-                  <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:2px;">Último peso</div>
-                  <div style="font-size:12px;color:var(--text);">${ultimaPesagem ? ultimaPesagem.peso + ' kg' : (a.pesoEstimado ? a.pesoEstimado + ' kg (est.)' : '—')}</div>
-                </div>
-                <div style="background:#0f0f0f;border:1px solid var(--border);border-radius:8px;padding:8px;">
-                  <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:2px;">Data pesagem</div>
-                  <div style="font-size:12px;color:var(--text);">${ultimaPesagem ? new Date(ultimaPesagem.data+'T12:00:00').toLocaleDateString('pt-BR') : '—'}</div>
-                </div>
-                <div style="background:#0f0f0f;border:1px solid var(--border);border-radius:8px;padding:8px;">
-                  <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:2px;">Última sanidade</div>
-                  <div style="font-size:12px;color:var(--text);">${ultimaSanitario ? escapeHtml(ultimaSanitario.produto||ultimaSanitario.tipo||'—') : '—'}</div>
-                </div>
-              </div>
-            `;
-          }
-
-          return `
-          <div class="animal-item">
-            ${avatar}
-
-            <div class="animal-body">
-              <div class="animal-name">
-                ${nomeSeguro}
-                ${brincoSeguro ? `<span style="font-size:11px;color:var(--muted);font-weight:400;">· Brinco ${brincoSeguro}</span>` : ''}
-              </div>
-
-              <div class="animal-meta">
-                ${sexoSeguro}
-                ${a.dataNascimento ? `· Nasc.: ${new Date(a.dataNascimento + 'T12:00:00').toLocaleDateString('pt-BR')}` : ''}
-              </div>
-
-              <div class="tag-wrap">
-                <span class="tag ${tagClass(a.categoria)}">${categoriaSeguro}</span>
-                ${renderTagsStatusReprodutivo(a)}
-                ${area === 'corte' && a.faseCorte ? `<span class="tag" style="background:#F8FAFC;color:#334155;">${escapeHtml(a.faseCorte)}</span>` : ''}
-                ${area === 'corte' && a.sistemaAlimentar ? `<span class="tag" style="background:#F8FAFC;color:#334155;">${escapeHtml(a.sistemaAlimentar)}</span>` : ''}
-              </div>
-
-              ${area === 'leiteiro' ? blocoUltimaPesagemRebanho(a.id) : ''}
-              ${area === 'leiteiro' ? blocoCustoRacaoLeiteRebanho(a.id) : ''}
-              ${area === 'leiteiro' ? blocoCustoProdutosLeiteRebanho(a.id) : ''}
-              ${area === 'leiteiro' ? blocoPrevisoesPrenhezRebanho(a) : ''}
-
-              ${area === 'corte' ? blocoCorte : ''}
-
-              ${obsSeguro ? `<div class="animal-obs">${obsSeguro}</div>` : ''}
-              ${anotacaoSeguro ? `<div class="note-badge"> ${anotacaoSeguro}</div>` : ''}
-
-              ${area === 'corte' && rec ? `
-                <div class="rec-grid">
-                  <div class="rec-box"><h5> Veterinário</h5><p>${escapeHtml(rec.veterinario || '')}</p></div>
-                  <div class="rec-box"><h5> Sanitário</h5><p>${escapeHtml(rec.sanitario || '')}</p></div>
-                  <div class="rec-box"><h5> Nutricional</h5><p>${escapeHtml(rec.nutricional || '')}</p></div>
-                </div>
-              ` : ''}
-
-              <div class="animal-actions">
-                <button class="btn btn-outline btn-sm" onclick="abrirEdicaoAnimal('${idAttr}')">Editar</button>
-                <button class="btn btn-outline btn-sm" onclick="editarAnotacaoRapida('${idAttr}', '${nomeJs}')"> Anotar</button>
-                ${area === 'corte' ? `<button class="btn btn-outline btn-sm" onclick="abrirHistoricoAnimal('${idAttr}')"> Prontuário</button>` : ''}
-                <button class="btn btn-outline btn-sm" onclick="abrirExcluir('${idAttr}', '${nomeJs}')">Excluir</button>
-              </div>
-            </div>
-          </div>
-        `}).join('');
-      } catch (erroRenderRebanho) {
-        console.error('Erro ao renderizar rebanho:', erroRenderRebanho, animaisDaArea);
-        lista.innerHTML = animaisDaArea.map(a => `
-          <div class="animal-item">
-            <div class="animal-avatar"></div>
-            <div class="animal-body">
-              <div class="animal-name">${escapeHtml(a?.nome || 'Animal sem nome')}</div>
-              <div class="animal-meta">${escapeHtml(a?.categoria || 'Animal cadastrado')}</div>
-            </div>
-          </div>
-        `).join('');
-      }
+      lista.innerHTML = animaisDaArea.map(a => {
+        const id = escapeAttr(a.id || '');
+        const nome = escapeHtml(a.nome || 'Animal sem nome');
+        const foto = obterFotoLeveParaLista(a);
+        const avatar = foto ? '<img class="animal-photo" src="' + escapeAttr(foto) + '" alt="Foto de ' + escapeAttr(a.nome || 'Animal') + '" loading="lazy" decoding="async" />' : '<div class="animal-avatar"></div>';
+        return '<div class="animal-item compact">' + avatar + '<div class="animal-body"><div class="animal-summary-row"><div><div class="animal-name">' + nome + '</div><div class="animal-meta">' + textoResumoAnimal(a) + '</div></div><button class="btn btn-primary btn-sm" id="btn-detalhes-animal-' + id + '" onclick="toggleDetalhesAnimal(\'' + id + '\')">Detalhes</button></div><div class="animal-detail-panel hidden" id="detalhes-animal-' + id + '">' + montarDetalhesAnimalPainel(a) + '<div class="animal-actions"><button class="btn btn-outline btn-sm" onclick="abrirEdicaoAnimal(\'' + id + '\')">Editar</button><button class="btn btn-outline btn-sm" onclick="anotarAnimalPorId(\'' + id + '\')">Anotar</button><button class="btn btn-danger btn-sm" onclick="excluirAnimalPorId(\'' + id + '\')">Excluir</button></div></div></div></div>';
+      }).join('');
     }
 
     async function editarAnotacaoRapida(id, nome) {
@@ -6250,7 +6173,7 @@ async function fazerLogin() {
         `).join('');
         grade.dataset.montado = '1';
       }
-      const nomeAreaAtual = area === 'corte' ? 'Confinamento' : 'Área Leiteira';
+      const nomeAreaAtual = 'Gestao leiteira';
       if (areaInfo) areaInfo.textContent = nomeAreaAtual;
       const dataEl = document.getElementById('fr-data');
       if (dataEl && !dataEl.value) dataEl.value = new Date().toISOString().slice(0,10);
@@ -6809,7 +6732,162 @@ async function fazerLogin() {
       return parseFloat(total.toFixed(2));
     }
 
+    function getMedicacoes() {
+      if (!Array.isArray(DB.medicacoes)) DB.medicacoes = [];
+      return DB.medicacoes;
+    }
+
+    function popularDatalistMedicacoes() {
+      const dl = document.getElementById('med-animais-list');
+      if (!dl) return;
+      dl.innerHTML = (DB.animais || [])
+        .filter(a => (a.area || 'leiteiro') === 'leiteiro')
+        .map(a => `<option value="${escapeAttr(a.nome || a.brinco || '')}">${escapeHtml(a.brinco || a.categoria || '')}</option>`)
+        .join('');
+    }
+
+    function encontrarAnimalPorTextoMed(texto) {
+      const t = String(texto || '').trim().toLowerCase();
+      if (!t) return null;
+      return (DB.animais || []).find(a =>
+        String(a.nome || '').toLowerCase().trim() === t ||
+        String(a.brinco || '').toLowerCase().trim() === t
+      ) || null;
+    }
+
+    function limparFormMedicacao() {
+      ['med-id','med-nome','med-animal','med-data','med-repetir','med-valor','med-obs'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+      const status = document.getElementById('med-status');
+      if (status) status.value = 'ativo';
+    }
+
+    async function salvarMedicacao(btn) {
+      const travou = travarBotaoAcao(btn, 'Salvando...');
+      if (travou === false) return;
+      try {
+        const idAtual = document.getElementById('med-id')?.value || '';
+        const nome = (document.getElementById('med-nome')?.value || '').trim();
+        const animalTexto = (document.getElementById('med-animal')?.value || '').trim();
+        const data = document.getElementById('med-data')?.value || '';
+        const dataRepetir = document.getElementById('med-repetir')?.value || '';
+        const valor = parseBRNumber(document.getElementById('med-valor')?.value);
+        const obs = (document.getElementById('med-obs')?.value || '').trim();
+        const status = document.getElementById('med-status')?.value || 'ativo';
+        if (!nome) return alert('Informe o nome do medicamento.');
+        if (!data) return alert('Informe a data da aplicação.');
+
+        const animal = encontrarAnimalPorTextoMed(animalTexto);
+        const registro = normalizarMedicacao({
+          id: idAtual || ('med_' + Date.now()),
+          nome,
+          animal: animal ? (animal.nome || animal.brinco || animalTexto) : animalTexto,
+          animalId: animal?.id || '',
+          data,
+          dataRepetir,
+          valor,
+          obs,
+          status,
+          criadoEm: new Date().toISOString(),
+          financeiroId: idAtual || ('med_' + Date.now())
+        });
+
+        const lista = getMedicacoes();
+        const duplicada = lista.some(m => m.id !== registro.id && String(m.nome || '').toLowerCase() === nome.toLowerCase() && String(m.animal || '').toLowerCase() === String(registro.animal || '').toLowerCase() && m.data === data);
+        if (duplicada) return alert('Esta medicação já foi registrada para este animal nesta data.');
+        const idx = lista.findIndex(m => m.id === registro.id);
+        if (idx >= 0) lista[idx] = registro;
+        else lista.unshift(registro);
+
+        await salvarDB({ sincronizarAnimais: false });
+        limparFormMedicacao();
+        renderMedicacoes();
+        renderDespesas();
+        renderAlertasInteligentesHome();
+        const msg = document.getElementById('med-status-msg');
+        if (msg) { msg.textContent = 'Medicação salva com sucesso'; setTimeout(() => { if (msg) msg.textContent = ''; }, 4000); }
+        alert('Medicação salva com sucesso');
+      } finally {
+        liberarBotaoAcao(btn);
+      }
+    }
+
+    async function atualizarStatusMedicacao(id, status, btn) {
+      const travou = travarBotaoAcao(btn, 'Salvando...');
+      if (travou === false) return;
+      try {
+        const med = getMedicacoes().find(m => m.id === id);
+        if (!med) return;
+        med.status = status;
+        await salvarDB({ sincronizarAnimais: false });
+        renderMedicacoes();
+        renderAlertasInteligentesHome();
+      } finally {
+        liberarBotaoAcao(btn);
+      }
+    }
+
+    async function excluirMedicacao(id, btn) {
+      const travou = travarBotaoAcao(btn, 'Excluindo...');
+      if (travou === false) return;
+      try {
+        if (!confirm('Excluir esta medicação?')) return;
+        DB.medicacoes = getMedicacoes().filter(m => m.id !== id);
+        await salvarDB({ sincronizarAnimais: false });
+        renderMedicacoes();
+        renderDespesas();
+        renderAlertasInteligentesHome();
+      } finally {
+        liberarBotaoAcao(btn);
+      }
+    }
+
+    function renderMedicacoes() {
+      popularDatalistMedicacoes();
+      const lista = document.getElementById('lista-medicacoes');
+      if (!lista) return;
+      const meds = getMedicacoes().slice().sort((a,b) => String(b.data || '').localeCompare(String(a.data || '')));
+      if (!meds.length) {
+        lista.innerHTML = '<div class="empty-state"><div class="empty-icon"></div>Nenhuma medicação registrada ainda.</div>';
+        return;
+      }
+      lista.innerHTML = meds.map(m => `
+        <div class="event-item">
+          <h4 style="color:#111827;font-weight:800;">${escapeHtml(m.nome || 'Medicação')}</h4>
+          <p><strong>Animal:</strong> ${escapeHtml(m.animal || 'Não vinculado')}</p>
+          <p><strong>Aplicação:</strong> ${m.data ? formatarDataBR(m.data) : 'Não informada'}${m.dataRepetir ? ' · repetir em ' + formatarDataBR(m.dataRepetir) : ''}</p>
+          <p><strong>Custo:</strong> R$ ${formatCurrencyBR(m.valor || 0)} · <strong>Status:</strong> ${escapeHtml(m.status || 'ativo')}</p>
+          ${m.obs ? `<p>${escapeHtml(m.obs)}</p>` : ''}
+          <div class="animal-actions">
+            <button class="btn btn-success btn-sm" onclick="atualizarStatusMedicacao('${escapeAttr(m.id)}','concluido', this)">Concluir</button>
+            <button class="btn btn-outline btn-sm" onclick="atualizarStatusMedicacao('${escapeAttr(m.id)}','ativo', this)">Reabrir</button>
+            <button class="btn btn-danger btn-sm" onclick="excluirMedicacao('${escapeAttr(m.id)}', this)">Excluir</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function processarBaixaEstoqueDiaria() {
+      if (!DB.estoqueControle || typeof DB.estoqueControle !== 'object') DB.estoqueControle = { ultimaBaixaISO: '' };
+      const hojeIso = new Date().toISOString().slice(0, 10);
+      const ultima = DB.estoqueControle.ultimaBaixaISO || '';
+      if (!ultima) {
+        DB.estoqueControle.ultimaBaixaISO = hojeIso;
+        return false;
+      }
+      if (ultima >= hojeIso) return false;
+      const inicio = new Date(ultima + 'T12:00:00');
+      const fim = new Date(hojeIso + 'T12:00:00');
+      const dias = Math.max(0, Math.floor((fim - inicio) / (1000 * 60 * 60 * 24)));
+      const consumoDia = getConsumoDiario();
+      if (dias > 0 && consumoDia > 0) {
+        DB.estoqueRacao = Math.max(0, (parseFloat(DB.estoqueRacao) || 0) - (consumoDia * dias));
+      }
+      DB.estoqueControle.ultimaBaixaISO = hojeIso;
+      return dias > 0;
+    }
+
     function renderDespesas() {
+      processarBaixaEstoqueDiaria();
       const consumo = getConsumoDiario();
       const estoque = DB.estoqueRacao || 0;
       const diasRestantes = consumo > 0 ? Math.floor(estoque / consumo) : null;
@@ -6820,7 +6898,7 @@ async function fazerLogin() {
       const ultimaEntregaValor = obterUltimaEntregaRacaoComValor();
 
       const alertEl = document.getElementById('alerta-racao');
-      if (diasRestantes !== null && diasRestantes <= 5) {
+      if (diasRestantes !== null && diasRestantes <= 10) {
         alertEl.innerHTML = `
           <div class="alert-strip">
             <strong> Atenção:</strong> com o consumo atual, a ração deve durar aproximadamente <strong>${diasRestantes} dia(s)</strong>.
@@ -6833,6 +6911,7 @@ async function fazerLogin() {
       const painel = document.getElementById('painel-estoque');
       const historico = document.getElementById('historico-racao');
       const resumoProdutosLeite = calcularResumoProdutosLeiteEstoque();
+      const resumoFinanceiroMes = calcularResumoFinanceiroCentral();
       const avisoFimProdutos = resumoProdutosLeite.diasRestantes !== null && resumoProdutosLeite.dataFim
         ? `Previsão de duração: <strong>${resumoProdutosLeite.diasRestantes} dia(s)</strong> · até <strong>${formatarData(resumoProdutosLeite.dataFim)}</strong>`
         : 'Informe o consumo diário para calcular a previsão de duração.';
@@ -6860,6 +6939,11 @@ async function fazerLogin() {
           <p>Consumo diário ativo: <strong>${resumoProdutosLeite.consumoDia.toFixed(1).replace('.', ',')} kg</strong> · <strong>R$ ${formatCurrencyBR(resumoProdutosLeite.custoDia)}</strong></p>
           <p>Consumo mensal projetado: <strong>${resumoProdutosLeite.consumoMes.toFixed(1).replace('.', ',')} kg</strong> · <strong>R$ ${formatCurrencyBR(resumoProdutosLeite.custoMes)}</strong></p>
           <p>${avisoFimProdutos}</p>
+        </div>
+        <div class="delivery-item">
+          <h4>Medicações no financeiro</h4>
+          <p>Despesas de medicação no mês: <strong>R$ ${formatCurrencyBR(resumoFinanceiroMes.custoMedicacoesMes || 0)}</strong></p>
+          <p>Os lançamentos vêm da aba <strong>Medicações</strong> e entram automaticamente no resultado mensal.</p>
         </div>
       `;
 
@@ -6992,7 +7076,7 @@ async function fazerLogin() {
       if (!lista) return;
       const protocolos = (DB.protocolosVacas || []).map(normalizarProtocoloVaca);
       if (!protocolos.length) { lista.innerHTML = '<div class="empty-state"><div class="empty-icon"></div>Nenhuma vaca protocolada ainda.</div>'; return; }
-      lista.innerHTML = protocolos.map(p => '<div class="event-item"><h4>' + escapeHtml(p.animal) + ' <span class="tag">' + escapeHtml(p.status) + '</span></h4><p><strong>Data protocolo:</strong> ' + formatarData(new Date(p.dataProtocolo + 'T12:00:00')) + '</p><p><strong>Boi usado:</strong> ' + escapeHtml(p.boi) + '</p><p><strong>Data do toque:</strong> ' + formatarData(new Date(p.dataToque + 'T12:00:00')) + '</p><div class="animal-actions"><button class="btn btn-success btn-sm" onclick="atualizarStatusProtocolo(\'' + p.id + '\',\'Prenhez confirmada\')"> Prenhez confirmada</button><button class="btn btn-danger btn-sm" onclick="atualizarStatusProtocolo(\'' + p.id + '\',\'Não confirmada\')"> Não confirmada</button><button class="btn btn-outline btn-sm" onclick="novoProtocoloInteligente(\'' + p.id + '\')"> Novo protocolo</button><button class="btn btn-danger btn-sm" onclick="excluirProtocoloVaca(\'' + p.id + '\')"> Excluir</button></div></div>').join('');
+      lista.innerHTML = protocolos.map(p => '<div class="event-item protocolo-card"><h4 style="color:#111827;font-weight:800;">' + escapeHtml(p.animal) + ' <span class="tag">' + escapeHtml(p.status) + '</span></h4><p><strong>Data protocolo:</strong> ' + formatarData(new Date(p.dataProtocolo + 'T12:00:00')) + '</p><p><strong>Boi usado:</strong> ' + escapeHtml(p.boi) + '</p><p><strong>Data do toque:</strong> ' + formatarData(new Date(p.dataToque + 'T12:00:00')) + '</p><div class="animal-actions"><button class="btn btn-success btn-sm" onclick="atualizarStatusProtocolo(\'' + p.id + '\',\'Prenhez confirmada\')"> Prenhez confirmada</button><button class="btn btn-danger btn-sm" onclick="atualizarStatusProtocolo(\'' + p.id + '\',\'Não confirmada\')"> Não confirmada</button><button class="btn btn-outline btn-sm" onclick="novoProtocoloInteligente(\'' + p.id + '\')"> Novo protocolo</button><button class="btn btn-danger btn-sm" onclick="excluirProtocoloVaca(\'' + p.id + '\')"> Excluir</button></div></div>').join('');
     }
 
     async function excluirProtocoloVaca(id) {
@@ -7029,12 +7113,37 @@ async function fazerLogin() {
       await salvarDB(); renderVacasProtocoladas(); renderCalendario();
     }
 
+
+    function prioridadeCalendario(data) {
+      const dias = calcularDiasAte(data instanceof Date ? data.toISOString().slice(0,10) : data);
+      if (dias !== null && dias <= 2) return 'danger';
+      if (dias !== null && dias <= 10) return 'warn';
+      return 'info';
+    }
+
+    function toggleGrupoCalendario(grupo) {
+      calendarioExpandido[grupo] = !calendarioExpandido[grupo];
+      renderCalendario();
+    }
+
+    function renderGrupoCalendario(titulo, chave, itens) {
+      const ordenados = itens.slice().sort((a,b) => a.data - b.data);
+      const expandido = !!calendarioExpandido[chave];
+      const visiveis = expandido ? ordenados : ordenados.slice(0, 5);
+      const corpo = visiveis.length ? visiveis.map(ev => {
+        const cls = ev.prioridade || prioridadeCalendario(ev.data);
+        return '<div class="calendar-item ' + cls + '"><h4>' + escapeHtml(ev.titulo) + '</h4><p>' + escapeHtml(ev.sub || '') + '</p><span class="calendar-date">' + formatarData(ev.data) + '</span>' + (ev.acoes ? '<div class="animal-actions" style="margin-top:10px;">' + ev.acoes + '</div>' : '') + '</div>';
+      }).join('') : '<div class="smart-alert-empty">Nenhum item neste grupo.</div>';
+      const botao = ordenados.length > 5 ? '<button class="btn btn-outline btn-sm" onclick="toggleGrupoCalendario(\'' + chave + '\')">' + (expandido ? 'Mostrar menos' : 'Mostrar mais') + '</button>' : '';
+      return '<section class="calendar-group"><div class="calendar-group-head"><div><div class="calendar-group-title">' + titulo + '</div></div><span class="calendar-group-count">' + ordenados.length + '</span></div><div class="calendar-list">' + corpo + '</div>' + (botao ? '<div style="margin-top:10px;">' + botao + '</div>' : '') + '</section>';
+    }
+
     function renderCalendario() {
       const lista = document.getElementById('lista-calendario');
       const vacinas = document.getElementById('lista-vacinas');
       if (!lista || !vacinas) return;
 
-      let eventos = [];
+      const grupos = { partos: [], secagens: [], protocolos: [], medicacoes: [], estoque: [] };
 
       DB.animais.filter(a => (a.area || 'leiteiro') === 'leiteiro').forEach(a => {
         if (a.prenha && a.dataPrenha && !a.partoRegistrado) {
@@ -7043,92 +7152,64 @@ async function fazerLogin() {
             const prev = (a.previsaoParto && a.previsaoSecagem) ? { parto: a.previsaoParto, secagem: a.previsaoSecagem, preParto: a.previsaoPreParto || '' } : calcularPrevisoesPrenhez(a.dataPrenha);
             const parto = prev.parto ? new Date(prev.parto + 'T12:00:00') : addDias(base, 280);
             const secagem = prev.secagem ? new Date(prev.secagem + 'T12:00:00') : addDias(parto, -60);
-            const preParto = prev.preParto ? new Date(prev.preParto + 'T12:00:00') : addDias(parto, -20);
             const idAttr = escapeAttr(a.id || '');
-
             if (!a.secaConfirmada && !a.secagemConcluida) {
-              eventos.push({
-                tipo: 'secagem',
-                animalId: a.id,
-                titulo: `Secagem de ${a.nome}`,
-                sub: a.lactacao ? `Início recomendado do período seco para animal em lactação.` : `Data de referência calculada; confirme com o manejo/veterinário se o animal não estiver em lactação.`,
-                data: secagem,
-                acoes: `<button class="btn btn-success btn-sm" data-local-lock="calendario" onclick="marcarAnimalComoSeca('${idAttr}', this)"> Marcar como seca</button>`
-              });
+              grupos.secagens.push({ titulo: 'Secagem de ' + (a.nome || 'animal'), sub: a.lactacao ? 'Início recomendado do período seco.' : 'Data calculada para manejo de secagem.', data: secagem, acoes: '<button class="btn btn-success btn-sm" data-local-lock="calendario" onclick="marcarAnimalComoSeca(\'' + idAttr + '\', this)">Marcar como seca</button>' });
             }
-
-            eventos.push({
-              tipo: 'preparto',
-              animalId: a.id,
-              titulo: `Pré-parto de ${a.nome}`,
-              sub: (a.secaConfirmada || a.secagemConcluida) ? `Animal já marcado como seco. Separar e observar intensivamente.` : `Separação e observação intensiva.`,
-              data: preParto,
-              acoes: (a.secaConfirmada || a.secagemConcluida) ? '' : `<button class="btn btn-outline btn-sm" data-local-lock="calendario" onclick="marcarAnimalComoSeca('${idAttr}', this)"> Marcar seca agora</button>`
-            });
-
-            eventos.push({
-              tipo: 'parto',
-              animalId: a.id,
-              titulo: `Previsão de parto de ${a.nome}`,
-              sub: `Data estimada com base na confirmação da prenhez. Ao marcar como parida, o sistema atualiza Meu Rebanho, encerra a secagem e cadastra a cria se informado.`,
-              data: parto,
-              acoes: `<button class="btn btn-success btn-sm" data-local-lock="calendario" onclick="marcarAnimalComoParida('${idAttr}', this)"> Marcar como parida</button>`
-            });
+            grupos.partos.push({ titulo: 'Parto previsto de ' + (a.nome || 'animal'), sub: 'Previsão baseada na confirmação de prenhez.', data: parto, acoes: '<button class="btn btn-success btn-sm" data-local-lock="calendario" onclick="marcarAnimalComoParida(\'' + idAttr + '\', this)">Marcar como parida</button>' });
           }
         }
       });
 
-      (DB.protocolosVacas || []).forEach(p => {
-        const prot = normalizarProtocoloVaca(p);
-        if (prot.dataProtocolo) {
+      (DB.protocolosVacas || []).map(normalizarProtocoloVaca).forEach(prot => {
+        const status = String(prot.status || '').toLowerCase();
+        const concluido = status.includes('prenhez confirmada') || status.includes('não confirmada') || status.includes('nao confirmada');
+        if (prot.dataProtocolo && !concluido) {
           const data = new Date(prot.dataProtocolo + 'T12:00:00');
-          if (!isNaN(data.getTime())) eventos.push({ titulo: 'Protocolo de ' + prot.animal, sub: 'Boi usado: ' + prot.boi, data, acoes: '' });
+          if (!isNaN(data.getTime())) grupos.protocolos.push({ titulo: 'Protocolo de ' + (prot.animal || 'vaca'), sub: 'Boi: ' + (prot.boi || 'não informado') + ' - status: ' + (prot.status || 'protocolada'), data });
         }
-        if (prot.dataToque) {
+        if (prot.dataToque && !concluido) {
           const data = new Date(prot.dataToque + 'T12:00:00');
-          if (!isNaN(data.getTime())) eventos.push({ titulo: 'Toque / exame de ' + prot.animal, sub: 'Verificar confirmação de prenhez. Boi: ' + prot.boi, data, acoes: '' });
+          if (!isNaN(data.getTime())) grupos.protocolos.push({ titulo: 'Toque de ' + (prot.animal || 'vaca'), sub: 'Verificar confirmação de prenhez. Boi: ' + (prot.boi || 'não informado'), data });
         }
       });
 
-      eventos = eventos.sort((a, b) => a.data - b.data);
+      (DB.medicacoes || []).map(normalizarMedicacao).forEach(m => {
+        if (String(m.status || '').toLowerCase() === 'concluido') return;
+        if (!m.dataRepetir) return;
+        const data = new Date(m.dataRepetir + 'T12:00:00');
+        if (!isNaN(data.getTime())) grupos.medicacoes.push({ titulo: m.nome || 'Medicação', sub: (m.animal ? 'Animal: ' + m.animal + ' - ' : '') + 'Repetição programada.', data });
+      });
 
-      if (!eventos.length) {
-        lista.innerHTML = `
-          <div class="empty-state">
-            <div class="empty-icon"></div>
-            Nenhum evento calculado ainda.<br />
-            Marque animais prenhes ou cadastre protocolos de vaca.
-          </div>
-        `;
+      try {
+        const consumo = getConsumoDiario();
+        const estoque = parseFloat(DB.estoqueRacao) || 0;
+        const diasRacao = consumo > 0 ? Math.floor(estoque / consumo) : null;
+        if (diasRacao !== null && diasRacao <= 10) grupos.estoque.push({ titulo: 'Ração perto de acabar', sub: 'Restam cerca de ' + diasRacao + ' dia(s) pelo consumo atual.', data: addDias(new Date(), Math.max(diasRacao, 0)), prioridade: diasRacao <= 2 ? 'danger' : 'warn' });
+        const resumo = calcularResumoProdutosLeiteEstoque();
+        if (resumo.diasRestantes !== null && resumo.diasRestantes <= 10) grupos.estoque.push({ titulo: 'Silo/produtos perto de acabar', sub: 'Restam cerca de ' + resumo.diasRestantes + ' dia(s).', data: addDias(new Date(), Math.max(resumo.diasRestantes, 0)), prioridade: resumo.diasRestantes <= 2 ? 'danger' : 'warn' });
+      } catch(e) {}
+
+      const total = Object.values(grupos).reduce((s, arr) => s + arr.length, 0);
+      if (!total) {
+        lista.innerHTML = '<div class="empty-state"><div class="empty-icon"></div>Nenhum evento calculado no momento.</div>';
       } else {
-        lista.innerHTML = eventos.map(ev => `
-          <div class="event-item">
-            <h4>${escapeHtml(ev.titulo)}</h4>
-            <p>${escapeHtml(ev.sub)}</p>
-            <p><strong>Data:</strong> ${formatarData(ev.data)}</p>
-            ${ev.acoes ? `<div class="animal-actions" style="margin-top:10px;">${ev.acoes}</div>` : ''}
-          </div>
-        `).join('');
+        lista.innerHTML = '<div class="calendar-groups">'
+          + renderGrupoCalendario('Partos previstos', 'partos', grupos.partos)
+          + renderGrupoCalendario('Secagens previstas', 'secagens', grupos.secagens)
+          + renderGrupoCalendario('Protocolos', 'protocolos', grupos.protocolos)
+          + renderGrupoCalendario('Medicações', 'medicacoes', grupos.medicacoes)
+          + renderGrupoCalendario('Estoque', 'estoque', grupos.estoque)
+          + '</div>';
       }
 
-      vacinas.innerHTML = `
-        <div class="event-item">
-          <h4> Cura de umbigo</h4>
-          <p>Realizar logo após o nascimento, conforme protocolo da fazenda.</p>
-        </div>
-        <div class="event-item">
-          <h4> Vacinação clostridioses</h4>
-          <p>Seguir calendário regional e reforços conforme orientação técnica.</p>
-        </div>
-        <div class="event-item">
-          <h4> Controle parasitário</h4>
-          <p>Definir com apoio veterinário conforme categoria, peso e manejo da fazenda.</p>
-        </div>
-        <div class="event-item">
-          <h4> Controle de carrapatos</h4>
-          <p>Manter rotina preventiva e revisar resistência de princípios ativos.</p>
-        </div>
-      `;
+      vacinas.innerHTML = '<div class="calendar-groups">'
+        + renderGrupoCalendario('Protocolos fixos', 'fixos', [
+          { titulo: 'Cura de umbigo', sub: 'Realizar após o nascimento, conforme protocolo da fazenda.', data: new Date(), prioridade: 'info' },
+          { titulo: 'Vacinação clostridioses', sub: 'Seguir calendário regional e orientação técnica.', data: new Date(), prioridade: 'info' },
+          { titulo: 'Controle parasitário', sub: 'Definir conforme categoria, peso e manejo.', data: new Date(), prioridade: 'info' },
+          { titulo: 'Controle de carrapatos', sub: 'Manter rotina preventiva e revisar produtos utilizados.', data: new Date(), prioridade: 'info' }
+        ]) + '</div>';
     }
 
     function renderArquivados() {
@@ -7166,10 +7247,32 @@ async function fazerLogin() {
                 <span class="tag" style="background:#F8FAFC;color:#334155;">${a.motivoArquivo === 'vendido' ? ' Vendido' : ' Faleceu'}</span>
               </div>
 
-              <div class="animal-obs">Arquivado em: ${formatarDataHora(a.dataArquivo)}</div>
-            </div>
+              <div class="animal-obs">Arquivado em: ${formatarDataHora(a.dataArquivo)}</div><div class="animal-actions"><button class="btn btn-danger btn-sm" onclick="excluirArquivadoDefinitivo('${escapeAttr(a.id)}', this)">Excluir definitivamente</button></div></div>
           </div>
         `).join('');
+    }
+
+    async function excluirArquivadoDefinitivo(id, btn) {
+      const travou = travarBotaoAcao(btn, 'Excluindo...');
+      if (travou === false) return;
+      try {
+        const animal = (DB.arquivados || []).find(a => a.id === id);
+        if (!animal) return alert('Animal arquivado não encontrado.');
+        const ok = confirm('Excluir definitivamente este animal arquivado?\n\nEsta ação é permanente e não poderá ser desfeita.');
+        if (!ok) return;
+        DB.arquivados = (DB.arquivados || []).filter(a => a.id !== id);
+        try {
+          const refArea = obterRefDadosArea(usuarioFirebase?.uid || auth.currentUser?.uid || '');
+          if (refArea) await refArea.collection('arquivados').doc(limparIdFirestore(id)).delete();
+        } catch (erroDelete) {
+          console.warn('Não foi possível remover o documento arquivado separado agora:', erroDelete);
+        }
+        await salvarDB({ sincronizarAnimais: false });
+        renderArquivados();
+        alert('Animal arquivado excluído definitivamente.');
+      } finally {
+        liberarBotaoAcao(btn);
+      }
     }
 
     function renderVendidosCorte() {
@@ -7238,7 +7341,7 @@ async function fazerLogin() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `ia-rural-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = `agromilk-backup-${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
       URL.revokeObjectURL(url);
     }
@@ -7280,166 +7383,37 @@ async function fazerLogin() {
     const tutorialPassos = [
       {
         title: 'Bem-vindo ao AgroMilk',
-        text: 'Este tutorial ensina o usuário a mexer em todo o app. Você pode rever depois no botão Tutorial.',
+        text: 'Este tutorial mostra a rotina principal do AgroMilk.',
         page: 'inicio',
         selector: '.nav-tab[data-page="inicio"]'
       },
       {
-        title: 'Escolha da área principal',
-        text: 'Aqui o usuário escolhe se quer trabalhar na área leiteira ou na área de confinamento. O menu se adapta sozinho.',
-        page: 'inicio',
-        selector: '#area-card-leiteiro',
-        before: async () => { await selecionarArea('leiteiro'); }
-      },
-      {
-        title: 'Confinamento / engorda',
-        text: 'Se escolher confinamento, aparecem abas específicas: Meu Rebanho, Lotes, Pesagens, Vacinas/Medicamentos, Financeiro, Registrar Trato, Compra de Ração/Silo, Mortes/Vendas, Fábrica de Ração e Veterinário.',
-        page: 'inicio',
-        selector: '#area-card-corte',
-        before: async () => { await selecionarArea('corte'); }
-      },
-      {
-        title: 'Meu Rebanho',
-        text: 'Nesta aba ficam todos os animais da área atual. Aqui o usuário consulta, edita e gera PDF individual.',
-        area: 'leiteiro',
+        title: 'Rebanho',
+        text: 'Cadastre, edite e acompanhe os animais da fazenda.',
         page: 'rebanho',
         selector: '.nav-tab[data-page="rebanho"]',
-        before: async () => { await selecionarArea('leiteiro'); }
+        before: async () => { showPage('rebanho'); }
       },
       {
-        title: 'Cadastrar Animal',
-        text: 'O cadastro permite informar nome, brinco, sexo, idade, foto, observações e os dados específicos de cada área.',
-        area: 'leiteiro',
-        page: 'rebanho',
-        selector: '#btn-toggle-form-animal',
-        before: async () => {
-          await selecionarArea('leiteiro');
-          showPage('rebanho');
-          const form = document.getElementById('form-animal');
-          if (form && form.classList.contains('hidden')) toggleForm('form-animal');
-        }
-      },
-      {
-        title: 'Genealogia no cadastro',
-        text: 'No cadastro o usuário pode preencher mãe, pai, avós e outras informações para montar a árvore genealógica do animal.',
-        area: 'leiteiro',
-        page: 'rebanho',
-        selector: '#a-mae',
-        before: async () => {
-          await selecionarArea('leiteiro');
-          showPage('rebanho');
-          const form = document.getElementById('form-animal');
-          if (form && form.classList.contains('hidden')) toggleForm('form-animal');
-        }
-      },
-      {
-        title: 'Registrar Pesagem Leite',
-        text: 'Na pesagem o usuário lança os litros por animal, salva o histórico do dia e o rebanho recebe a última pesagem automaticamente.',
-        area: 'leiteiro',
+        title: 'Produ\u00e7\u00e3o',
+        text: 'Registre pesagens de leite e acompanhe o hist\u00f3rico produtivo.',
         page: 'producao',
         selector: '.nav-tab[data-page="producao"]',
-        before: async () => { await selecionarArea('leiteiro'); }
+        before: async () => { showPage('producao'); }
       },
       {
-        title: 'Despesas do leite',
-        text: 'Aqui ele controla estoque, entregas e gasto da atividade leiteira.',
-        area: 'leiteiro',
+        title: 'Financeiro',
+        text: 'Controle despesas, entregas, estoque e resultado mensal.',
         page: 'despesas',
         selector: '.nav-tab[data-page="despesas"]',
-        before: async () => { await selecionarArea('leiteiro'); }
+        before: async () => { showPage('despesas'); }
       },
       {
-        title: 'Calendário',
-        text: 'O calendário ajuda a acompanhar secagem, pré-parto, parto e datas importantes da rotina reprodutiva.',
-        area: 'leiteiro',
-        page: 'calendario',
-        selector: '.nav-tab[data-page="calendario"]',
-        before: async () => { await selecionarArea('leiteiro'); }
-      },
-      {
-        title: 'Veterinário',
-        text: 'Esta aba reúne orientações rápidas para consulta dentro do sistema.',
-        page: 'veterinario',
-        selector: '.nav-tab[data-page="veterinario"]'
-      },
-      {
-        title: 'Árvore Genealógica',
-        text: 'Na área leiteira, aqui o usuário digita o nome do animal e vê os dados detalhados já registrados no app.',
-        area: 'leiteiro',
-        page: 'genealogia',
-        selector: '.nav-tab[data-page="genealogia"]',
-        before: async () => { await selecionarArea('leiteiro'); }
-      },
-      {
-        title: 'Busca e PDF do animal',
-        text: 'Nesta tela ele pesquisa um animal específico e pode baixar o PDF com genealogia, leite, peso, ganho e gastos registrados.',
-        area: 'leiteiro',
-        page: 'genealogia',
-        selector: '#genealogia-busca',
-        before: async () => { await selecionarArea('leiteiro'); }
-      },
-      {
-        title: 'Lotes do confinamento',
-        text: 'Na aba Lotes o usuário cria e gerencia lotes de animais. Cada lote mostra resumo de peso médio, custo sanitário, custo alimentar, custo total, mortos e vendidos.',
-        area: 'corte',
-        page: 'lotes-corte',
-        selector: '.nav-tab[data-page="lotes-corte"]',
-        before: async () => { await selecionarArea('corte'); }
-      },
-      {
-        title: 'Pesagens do confinamento',
-        text: 'Em Pesagens o usuário registra o peso de cada animal ou lote e acompanha o GMD (ganho médio diário) e o ganho total de peso.',
-        area: 'corte',
-        page: 'pesagens-corte',
-        selector: '.nav-tab[data-page="pesagens-corte"]',
-        before: async () => { await selecionarArea('corte'); }
-      },
-      {
-        title: 'Vacinas e Medicamentos',
-        text: 'Aqui o usuário registra vacinas, vermífugos, antibióticos e vitaminas por animal ou por lote. O custo entra automaticamente no financeiro.',
-        area: 'corte',
-        page: 'vacinas-medicamentos-corte',
-        selector: '.nav-tab[data-page="vacinas-medicamentos-corte"]',
-        before: async () => { await selecionarArea('corte'); }
-      },
-      {
-        title: 'Financeiro do confinamento',
-        text: 'Em Financeiro o usuário vê despesas, receitas e saldo do confinamento. O sistema calcula custo por lote, custo por animal e resultado estimado.',
-        area: 'corte',
-        page: 'financeiro-corte',
-        selector: '.nav-tab[data-page="financeiro-corte"]',
-        before: async () => { await selecionarArea('corte'); }
-      },
-      {
-        title: 'Custos e Despesas',
-        text: 'Nesta aba o usuário lança milho, silagem e ração e acompanha estoque, custo diário e gasto mensal do confinamento.',
-        area: 'corte',
-        page: 'despesas-corte',
-        selector: '.nav-tab[data-page="despesas-corte"]',
-        before: async () => { await selecionarArea('corte'); }
-      },
-      {
-        title: 'Mortes e Vendas',
-        text: 'Aqui ficam os animais que saíram do rebanho por venda ou morte. Vendas entram como receita e mortes como prejuízo no financeiro automaticamente.',
-        area: 'corte',
-        page: 'mortes-vendas-corte',
-        selector: '.nav-tab[data-page="mortes-vendas-corte"]',
-        before: async () => { await selecionarArea('corte'); }
-      },
-      {
-        title: 'Arquivados',
-        text: 'Na área leiteira, esta aba acompanha animais arquivados ou retirados da rotina principal. No confinamento, os detalhes ficam em Mortes/Vendas.',
-        area: 'leiteiro',
-        page: 'arquivados',
-        selector: '.nav-tab[data-page="arquivados"]',
-        before: async () => { await selecionarArea('leiteiro'); }
-      },
-      {
-        title: 'Tutorial concluído',
-        text: 'Pronto. O usuário já sabe onde mexer em tudo no app. Depois ele pode rever este passo a passo no botão Tutorial.',
-        page: 'inicio',
-        selector: '.nav-tab[data-page="inicio"]',
-        before: async () => { if (tutorialAreaOriginal) { await selecionarArea(tutorialAreaOriginal); } }
+        title: 'Mais',
+        text: 'Acesse protocolos, calend\u00e1rio, veterin\u00e1rio, genealogia, backup e instala\u00e7\u00e3o.',
+        page: 'mais',
+        selector: '.nav-tab[data-page="mais"]',
+        before: async () => { showPage('mais'); }
       }
     ];
 
@@ -7720,8 +7694,16 @@ async function fazerLogin() {
 
       const outrosGastosLeite = Array.isArray(DB.outrosGastosLeite) ? DB.outrosGastosLeite : [];
       const custoOutrosGastosMes = outrosGastosLeite.reduce((s, p) => s + (parseFloat(p.valorMensal) || 0), 0);
+      const medicacoes = Array.isArray(DB.medicacoes) ? DB.medicacoes : [];
+      const custoMedicacoesMes = medicacoes
+        .filter(m => {
+          if (!m.data) return false;
+          const d = new Date(m.data + 'T12:00:00');
+          return !isNaN(d.getTime()) && d.getMonth() === mesAtual && d.getFullYear() === anoAtual;
+        })
+        .reduce((s, m) => s + (parseFloat(m.valor) || 0), 0);
 
-      const totalDespesasMes = custoRacaoMes + custoSiloMes + custoProdutosLavagemMes + custoOutrosGastosMes;
+      const totalDespesasMes = custoRacaoMes + custoSiloMes + custoProdutosLavagemMes + custoOutrosGastosMes + custoMedicacoesMes;
       const lucroBruto = faturamentoMensalEstimado;
       const lucroLiquido = faturamentoMensalEstimado - totalDespesasMes;
       const resultadoParcialMes = faturamentoMensalReal - totalDespesasMes;
@@ -7734,7 +7716,7 @@ async function fazerLogin() {
         litrosBezerrosProjetadoMes, custoRacaoDia, custoRacaoMes,
         consumoRacaoDia, custoProdutosDia, custoSiloMes, litrosBezDia,
         custoLeiteBezerrosDia, custoLeiteBezerrosMes, descontoLeiteBezerrosRealMes,
-        custoProdutosLavagemMes, produtosLavagem, outrosGastosLeite, custoOutrosGastosMes,
+        custoProdutosLavagemMes, produtosLavagem, outrosGastosLeite, custoOutrosGastosMes, custoMedicacoesMes, medicacoes,
         totalDespesasMes, lucroBruto, lucroLiquido, resultadoParcialMes, resumoProdutosLeite
       };
     }
@@ -8005,7 +7987,7 @@ async function fazerLogin() {
       const avisoPreco = !r.precoLitro ? '<div class="alert-strip" style="margin-bottom:10px;"> Cadastre o <strong>Preço do Litro de Leite</strong> em "Registrar Pesagem Leite" para ativar os cálculos de faturamento.</div>' : '';
       el.innerHTML = avisoPreco + `
         <div style="display:flex;flex-direction:column;gap:10px;">
-          <div style="background:#0a150a;border:1px solid #1a3a1a;border-radius:12px;padding:14px;">
+          <div style="background:#fff;border:1px solid #1a3a1a;border-radius:12px;padding:14px;">
             <div style="font-size:13px;font-weight:800;color:#6dd56d;margin-bottom:10px;"> RECEITAS DO MÊS</div>
             <div style="display:grid;gap:6px;font-size:13px;">
               <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Preço do litro cadastrado</span><strong>R$ ${formatCurrencyBR(r.precoLitro)}</strong></div>
@@ -8033,7 +8015,7 @@ async function fazerLogin() {
               <div style="border-top:1px solid #3a1a1a;padding-top:8px;margin-top:4px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span><strong>TOTAL DESPESAS/MÊS</strong></span><strong style="color:#ef4444;">R$ ${formatCurrencyBR(r.totalDespesasMes)}</strong></div>
             </div>
           </div>
-          <div style="background:#0f0f0f;border:1px solid var(--border);border-radius:12px;padding:14px;">
+          <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px;">
             <div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:10px;"> RESULTADO</div>
             <div style="display:grid;gap:8px;font-size:14px;">
               <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span style="color:var(--muted);">Faturamento bruto projetado do mês</span><strong style="color:#6dd56d;">R$ ${formatCurrencyBR(r.lucroBruto)}</strong></div>
@@ -9434,7 +9416,7 @@ async function fazerLogin() {
 </script>
 
 <!-- PWA: Banner de instalação + Service Worker -->
-<div id="pwa-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#1a1a1a;color:var(--text);padding:14px 16px;box-shadow:0 -2px 12px rgba(0,0,0,0.4);align-items:center;gap:12px;flex-wrap:wrap;">
+<div id="pwa-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#fff;color:#111827;padding:14px 16px;box-shadow:0 -2px 12px rgba(0,0,0,0.4);align-items:center;gap:12px;flex-wrap:wrap;">
   <img src="icon-192.png" style="width:40px;height:40px;border-radius:10px;flex-shrink:0;" alt="AgroMilk"/>
   <div style="flex:1;min-width:160px;">
     <div style="font-weight:600;font-size:14px;">Instalar AgroMilk</div>

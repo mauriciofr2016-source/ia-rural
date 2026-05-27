@@ -1,4 +1,4 @@
-const CACHE_NAME = 'agromilk-cache-v4-ui';
+const CACHE_NAME = 'agromilk-cache-v8-calendario-textos';
 const APP_ASSETS = [
   './',
   './index.html',
@@ -8,7 +8,13 @@ const APP_ASSETS = [
   './icon-512.png',
   './favicon.png',
   './apple-touch-icon.png',
-  './logo_agromilk.png'
+  './logo_agromilk.png',
+  './js/ui.js',
+  './js/firebase.js',
+  './js/rebanho.js',
+  './js/producao.js',
+  './js/financeiro.js',
+  './js/calendar.js'
 ];
 
 const isFirebaseOrGoogleApi = url =>

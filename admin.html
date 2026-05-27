@@ -13,8 +13,8 @@
 
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'DM Sans',sans-serif;background:#000;min-height:100vh;color:#111827}
-#admin-login{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;background:#000}
+body{font-family:'DM Sans',sans-serif;background:#F5F7FA;min-height:100vh;color:#111827}
+#admin-login{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;background:#F5F7FA}
 .login-card{background:#fff;border-radius:16px;padding:36px 32px;width:100%;max-width:360px;box-shadow:0 4px 24px rgba(0,0,0,.10)}
 .login-logo{font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:4px}
 .login-logo span{color:#2d6a2d}
@@ -23,16 +23,16 @@ body{font-family:'DM Sans',sans-serif;background:#000;min-height:100vh;color:#11
 .field label{display:block;font-size:11px;color:#6b7280;margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
 .field input,.field select{width:100%;padding:10px 14px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;font-family:'DM Sans',sans-serif;background:#fff}
 .field input:focus,.field select:focus{outline:none;border-color:#2d6a2d}
-.btn-full{width:100%;padding:11px;background:#0f0f0f;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:4px}
-.btn-full:hover{background:#333}
+.btn-full{width:100%;padding:11px;background:#0B5CAD;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:4px}
+.btn-full:hover{background:#084B8A}
 .error-msg{background:#fee2e2;color:#b91c1c;padding:10px 14px;border-radius:8px;font-size:13px;margin-top:10px;display:none}
 
-#admin-painel{display:none;background:#000;min-height:100vh}
-.top-bar{background:#0f0f0f;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+#admin-painel{display:none;background:#F5F7FA;min-height:100vh}
+.top-bar{background:#0B5CAD;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .top-logo{font-family:'DM Serif Display',serif;font-size:18px;color:#fff}
 .top-logo span{color:#6dd56d}
-.top-badge{background:#1a1a1a;border:1px solid #333;color:#aaa;padding:5px 14px;border-radius:20px;font-size:12px}
-.btn-sair{background:transparent;border:1px solid #444;color:#aaa;padding:6px 14px;border-radius:20px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif}
+.top-badge{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);color:#EAF3FF;padding:5px 14px;border-radius:20px;font-size:12px}
+.btn-sair{background:transparent;border:1px solid rgba(255,255,255,.35);color:#EAF3FF;padding:6px 14px;border-radius:20px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif}
 .btn-sair:hover{border-color:#ef4444;color:#ef4444}
 
 .main{max-width:1000px;margin:0 auto;padding:24px 20px}
@@ -182,7 +182,7 @@ body{font-family:'DM Sans',sans-serif;background:#000;min-height:100vh;color:#11
           <label>Área do usuário</label>
           <select id="n-area">
             <option value="leiteira">Área Leiteira</option>
-            <option value="confinamento">Confinamento</option>
+            <option value="confinamento">?rea legada</option>
           </select>
         </div>
         <div class="field">
@@ -350,7 +350,7 @@ body{font-family:'DM Sans',sans-serif;background:#000;min-height:100vh;color:#11
         <label>Área do usuário</label>
         <select id="edit-area">
           <option value="leiteira">Área Leiteira</option>
-          <option value="confinamento">Confinamento</option>
+          <option value="confinamento">?rea legada</option>
         </select>
       </div>
       <div class="field">
@@ -541,7 +541,7 @@ function normalizarAreaConta(valor) {
 }
 
 function nomeAreaConta(valor) {
-  return normalizarAreaConta(valor) === 'confinamento' ? 'Confinamento' : 'Área Leiteira';
+  return normalizarAreaConta(valor) === 'confinamento' ? '?rea legada' : '?rea Leiteira';
 }
 
 
@@ -967,7 +967,7 @@ async function carregarUsuarios() {
           <div class="user-actions">
             <select class="btn btn-outline btn-xs" onchange="alterarAreaUsuario('${u.id}', this.value)" title="Área do usuário">
               <option value="leiteira" ${normalizarAreaConta(u.areaSistema || u.area) === 'leiteira' ? 'selected' : ''}>Área Leiteira</option>
-              <option value="confinamento" ${normalizarAreaConta(u.areaSistema || u.area) === 'confinamento' ? 'selected' : ''}>Confinamento</option>
+              <option value="confinamento" ${normalizarAreaConta(u.areaSistema || u.area) === 'confinamento' ? 'selected' : ''}>?rea legada</option>
             </select>
             <button class="btn btn-blue btn-xs" onclick="marcarPago('${u.id}')">Marcar pago</button>
             ${u.status === 'bloqueado' ?
