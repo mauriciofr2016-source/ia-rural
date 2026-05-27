@@ -1473,6 +1473,7 @@
 <div class="section-title">Meu Rebanho</div>
 <button class="btn btn-primary" id="btn-toggle-form-animal" onclick="toggleForm('form-animal')">+ Cadastrar Animal</button>
 <div class="hidden" id="form-animal" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);">
+<div class="info-box hidden" id="animal-edit-context" style="margin-bottom:12px;"><strong id="animal-edit-title">Editando animal</strong><br><span>Revise os campos abaixo e salve as alterações sem sair do Rebanho.</span></div>
 <div class="form-row">
 <div class="form-group">
 <label>Nome do animal</label>
@@ -1590,7 +1591,7 @@
 </div>
 <div style="display:flex; gap:8px; flex-wrap:wrap;">
 <button class="btn btn-success" id="btn-salvar-animal" onclick="salvarAnimal()"> Salvar Animal</button>
-<button class="btn btn-outline" onclick="cancelarEdicaoAnimal()">Cancelar</button>
+<button class="btn btn-outline hidden" id="btn-cancelar-edicao-animal" onclick="cancelarEdicaoAnimal()">Cancelar</button>
 </div>
 </div>
 </div>
@@ -2227,6 +2228,58 @@
       return (usuario || '').trim().toLowerCase().replace(/\s+/g, '');
     }
 
+    function dataHojeBR() {
+      return new Date().toLocaleDateString('pt-BR');
+    }
+
+    function dataHojeISO() {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    function dataBRParaISO(valor) {
+      const raw = String(valor || '').trim();
+      if (!raw) return '';
+      const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (iso) return raw;
+      const br = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if (!br) return '';
+      const isoFinal = `${br[3]}-${br[2]}-${br[1]}`;
+      const teste = new Date(isoFinal + 'T12:00:00');
+      return isNaN(teste.getTime()) ? '' : isoFinal;
+    }
+
+    function isoParaDataBR(valor) {
+      if (!valor) return '';
+      const raw = String(valor).trim();
+      const br = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if (br) return raw;
+      const iso = dataBRParaISO(raw);
+      if (!iso) return '';
+      const [ano, mes, dia] = iso.split('-');
+      return `${dia}/${mes}/${ano}`;
+    }
+
+    function prepararDataParaSalvar(valor) {
+      return dataBRParaISO(valor);
+    }
+
+    function aplicarMascaraDatasBR(root = document) {
+      root.querySelectorAll('.data-br-input').forEach(input => {
+        if (input.dataset.dataBrMask === '1') return;
+        input.dataset.dataBrMask = '1';
+        input.addEventListener('input', () => {
+          const digitos = input.value.replace(/\D/g, '').slice(0, 8);
+          input.value = digitos
+            .replace(/^(\d{2})(\d)/, '$1/$2')
+            .replace(/^(\d{2})\/(\d{2})(\d)/, '$1/$2/$3');
+        });
+        input.addEventListener('blur', () => {
+          const iso = dataBRParaISO(input.value);
+          if (iso) input.value = isoParaDataBR(iso);
+        });
+      });
+    }
+
     function usuarioParaEmail(usuario) {
       return `${normalizarUsuario(usuario)}@ia-rural.app`;
     }
@@ -2801,7 +2854,7 @@ if (auth) {
       }catch(e){console.error('Erro ao bloquear teste grátis vencido:',e);}
       return {bloqueado:true,mensagem};
     }
-    function normalizarProtocoloVaca(p={}){return {id:p.id||String(Date.now()),animal:p.animal||p.nomeAnimal||'',animalId:p.animalId||'',dataProtocolo:p.dataProtocolo||'',dataInseminacao:p.dataInseminacao||p.inseminacao||'',boi:p.boi||'',racaBoi:p.racaBoi||p.raca||'',dataToque:p.dataToque||'',status:p.status||'protocolada',ativo:p.ativo !== false,dataCriacao:p.dataCriacao||new Date().toISOString(),dataEncerramento:p.dataEncerramento||'',historico:Array.isArray(p.historico)?p.historico:[]};}
+    function normalizarProtocoloVaca(p={}){return {id:p.id||String(Date.now()),animal:p.animal||p.nomeAnimal||'',animalId:p.animalId||'',dataProtocolo:prepararDataParaSalvar(p.dataProtocolo)||'',dataInseminacao:prepararDataParaSalvar(p.dataInseminacao||p.inseminacao)||'',boi:p.boi||'',racaBoi:p.racaBoi||p.raca||'',dataToque:prepararDataParaSalvar(p.dataToque)||'',status:p.status||'protocolada',ativo:p.ativo !== false,dataCriacao:p.dataCriacao||new Date().toISOString(),dataEncerramento:p.dataEncerramento||'',historico:Array.isArray(p.historico)?p.historico:[]};}
     function normalizarMedicacao(m={}){return {id:m.id||('med_'+Date.now()),nome:m.nome||m.medicamento||'',animal:m.animal||m.animalNome||'',animalId:m.animalId||'',data:m.data||m.dataAplicacao||'',dataRepetir:m.dataRepetir||m.repetirEm||'',valor:parseFloat(m.valor||m.custo)||0,obs:m.obs||m.observacoes||'',status:m.status||'ativo',criadoEm:m.criadoEm||new Date().toISOString(),financeiroId:m.financeiroId||''};}
 
     function abrirAppLogado(usuario) {
@@ -3314,8 +3367,9 @@ if (auth) {
     }
 
     function calcularPrevisoesPrenhez(dataPrenha, animal) {
-      if (!dataPrenha) return { parto: '', secagem: '', preParto: '' };
-      const base = new Date(String(dataPrenha).slice(0, 10) + 'T12:00:00');
+      const dataBaseIso = prepararDataParaSalvar(dataPrenha);
+      if (!dataBaseIso) return { parto: '', secagem: '', preParto: '' };
+      const base = new Date(dataBaseIso + 'T12:00:00');
       if (isNaN(base.getTime())) return { parto: '', secagem: '', preParto: '' };
       const parto = new Date(base); parto.setDate(parto.getDate() + 280);
       const secagem = new Date(parto); secagem.setDate(secagem.getDate() - 60);
@@ -3411,12 +3465,13 @@ if (auth) {
       try {
         const animal = DB.animais.find(a => a && a.id === id);
         if (!animal) return alert('Animal não encontrado. Atualize a página e tente novamente.');
-        const hoje = new Date().toISOString().slice(0, 10);
-        const dataSecagem = prompt('Data em que a vaca ficou seca (AAAA-MM-DD):', hoje);
-        if (dataSecagem === null) return;
+        const dataSecagemInformada = prompt('Data em que a vaca ficou seca (dd/mm/aaaa):', dataHojeBR());
+        if (dataSecagemInformada === null) return;
+        const dataSecagem = prepararDataParaSalvar(dataSecagemInformada);
+        if (!dataSecagem) return alert('Informe a data da secagem no formato dd/mm/aaaa.');
         animal.secaConfirmada = true;
         animal.secagemConcluida = true;
-        animal.dataSecagemReal = (dataSecagem || hoje).slice(0, 10);
+        animal.dataSecagemReal = dataSecagem || dataHojeISO();
         animal.statusReprodutivo = 'seca';
         animal.lactacao = false;
         animal.atualizadoEm = new Date().toISOString();
@@ -3455,15 +3510,16 @@ if (auth) {
       try {
         const vaca = DB.animais.find(a => a && a.id === id);
         if (!vaca) return alert('Animal não encontrado. Atualize a página e tente novamente.');
-        const hoje = new Date().toISOString().slice(0, 10);
-        const dataParto = prompt('Data do parto (AAAA-MM-DD):', hoje);
-        if (dataParto === null) return;
+        const dataPartoInformada = prompt('Data do parto (dd/mm/aaaa):', dataHojeBR());
+        if (dataPartoInformada === null) return;
+        const dataParto = prepararDataParaSalvar(dataPartoInformada);
+        if (!dataParto) return alert('Informe a data do parto no formato dd/mm/aaaa.');
         const sexoCria = prompt('Sexo da cria (opcional: Fêmea ou Macho):', '') || '';
         const nomeCria = prompt('Nome ou brinco da cria (opcional):', '') || '';
         const racaCria = prompt('Raça da cria (opcional):', '') || '';
         const nasceuViva = confirm('A cria nasceu viva?\n\nOK = sim\nCancelar = não ou não informar');
         const obsCria = prompt('Observação do parto/cria (opcional):', '') || '';
-        const dataFinal = (dataParto || hoje).slice(0, 10);
+        const dataFinal = dataParto || dataHojeISO();
         const registroParto = {
           id: 'parto_' + Date.now(),
           data: dataFinal,
@@ -3773,8 +3829,9 @@ if (auth) {
     }
 
     function calcularDiasAte(dataIso) {
-      if (!dataIso) return null;
-      const alvo = new Date(String(dataIso).slice(0, 10) + 'T12:00:00');
+      const iso = prepararDataParaSalvar(dataIso);
+      if (!iso) return null;
+      const alvo = new Date(iso + 'T12:00:00');
       if (isNaN(alvo.getTime())) return null;
       const hoje = new Date();
       hoje.setHours(12, 0, 0, 0);
@@ -4425,7 +4482,8 @@ if (auth) {
         return;
       }
       animalEmEdicao = id;
-      const set = (campo, valor) => { const el = document.getElementById(campo); if (el) el.value = valor ? valor : ''; };
+      const camposData = new Set(['a-data-nascimento','a-data-prenha','a-data-peso-inicial','a-vacina','a-vermifugo','a-carrapato']);
+      const set = (campo, valor) => { const el = document.getElementById(campo); if (el) el.value = valor ? (camposData.has(campo) ? isoParaDataBR(valor) : valor) : ''; };
       set('a-nome', animal.nome || '');
       set('a-brinco', animal.brinco || '');
       set('a-sexo', animal.sexo || '');
@@ -4475,13 +4533,32 @@ if (auth) {
       atualizarTextoFormularioAnimal();
     }
 
+    function atualizarTextoFormularioAnimal() {
+      const btnSalvar = document.getElementById('btn-salvar-animal');
+      const btnCancelar = document.getElementById('btn-cancelar-edicao-animal');
+      const ctx = document.getElementById('animal-edit-context');
+      const titulo = document.getElementById('animal-edit-title');
+      const animal = animalEmEdicao ? (DB.animais || []).find(a => a && a.id === animalEmEdicao) : null;
+      if (animalEmEdicao && animal) {
+        if (btnSalvar) btnSalvar.textContent = 'Salvar alterações';
+        if (btnCancelar) btnCancelar.classList.remove('hidden');
+        if (ctx) ctx.classList.remove('hidden');
+        if (titulo) titulo.textContent = 'Editando animal: ' + (animal.nome || 'Animal');
+      } else {
+        if (btnSalvar) btnSalvar.textContent = 'Salvar Animal';
+        if (btnCancelar) btnCancelar.classList.add('hidden');
+        if (ctx) ctx.classList.add('hidden');
+        if (titulo) titulo.textContent = 'Editando animal';
+      }
+    }
+
     async function salvarAnimal() {
       const btnSalvar = document.getElementById('btn-salvar-animal');
 
       const setBotao = (salvando) => {
         if (!btnSalvar) return;
         btnSalvar.disabled = !!salvando;
-        btnSalvar.textContent = salvando ? (animalEmEdicao ? 'Salvando edição...' : 'Salvando animal...') : ' Salvar Animal';
+        btnSalvar.textContent = salvando ? (animalEmEdicao ? 'Salvando alterações...' : 'Salvando animal...') : (animalEmEdicao ? 'Salvar alterações' : 'Salvar Animal');
       };
 
       const valor = (id) => {
@@ -4595,21 +4672,21 @@ if (auth) {
         const nome = valor('a-nome');
         const brinco = valor('a-brinco');
         const sexo = valor('a-sexo');
-        const dataNascimento = valor('a-data-nascimento');
+        const dataNascimento = prepararDataParaSalvar(valor('a-data-nascimento'));
         const castrado = valor('a-castrado') === 'sim';
         const prenha = valor('a-prenha') === 'sim';
-        const dataPrenha = valor('a-data-prenha');
+        const dataPrenha = prepararDataParaSalvar(valor('a-data-prenha'));
         const lactacao = valor('a-lactacao') === 'sim';
         const faseCorte = valor('a-fase-corte');
         const loteCorte = area === 'corte' ? valor('a-lote-corte') : '';
         const loteSelecionadoCorte = loteCorte ? ((typeof getLotesCorte === 'function' ? getLotesCorte() : []).find(l => l.id === loteCorte) || null) : null;
         const pesoEstimado = parseFloat(valor('a-peso')) || 0;
         const pesoInicial = parseFloat(valor('a-peso-inicial')) || 0;
-        const dataPesoInicial = valor('a-data-peso-inicial');
+        const dataPesoInicial = prepararDataParaSalvar(valor('a-data-peso-inicial'));
         const sistemaAlimentar = valor('a-sistema-alimentar');
-        const vacinaData = valor('a-vacina');
-        const vermifugoData = valor('a-vermifugo');
-        const carrapatoData = valor('a-carrapato');
+        const vacinaData = prepararDataParaSalvar(valor('a-vacina'));
+        const vermifugoData = prepararDataParaSalvar(valor('a-vermifugo'));
+        const carrapatoData = prepararDataParaSalvar(valor('a-carrapato'));
         const obs = valor('a-obs');
 
         if (!nome) {
@@ -4781,6 +4858,7 @@ if (auth) {
           return;
         }
 
+        const eraEdicaoAnimal = !!animalEmEdicao;
         animalEmEdicao = null;
         try { if (typeof limparFormularioAnimal === 'function') limparFormularioAnimal(); } catch (e) { console.warn('Falha ao limpar formulário:', e); }
         try { document.getElementById('form-animal')?.classList.add('hidden'); } catch (_) {}
@@ -4788,7 +4866,7 @@ if (auth) {
         try { if (typeof renderTudo === 'function') renderTudo(); } catch (e) { console.warn('Falha ao renderizar:', e); }
         try { if (typeof showPage === 'function') showPage('rebanho'); } catch (e) { console.warn('Falha ao abrir rebanho:', e); }
 
-        alert('Animal salvo com sucesso.');
+        alert(eraEdicaoAnimal ? 'Alterações salvas com sucesso.' : 'Animal salvo com sucesso.');
       } catch (erroGeral) {
         console.error('Erro real ao salvar animal:', erroGeral);
         salvarLocalSeguro();
@@ -5937,7 +6015,7 @@ if (auth) {
       const animal = DB.animais[idx];
       if ((animal.area || 'leiteiro') === 'corte' && motivo === 'vendido') {
         document.getElementById('venda-preco').value = animal.precoVenda || '';
-        document.getElementById('venda-data').value = new Date().toISOString().slice(0, 10);
+        document.getElementById('venda-data').value = dataHojeBR();
         document.getElementById('venda-obs').value = '';
         fecharModal('modal-excluir');
         document.getElementById('modal-venda').classList.add('open');
@@ -5946,7 +6024,7 @@ if (auth) {
 
       // Para animal de corte que faleceu: abrir modal de morte detalhado
       if ((animal.area || 'leiteiro') === 'corte' && (motivo === 'faleceu' || motivo === 'morte' || motivo === 'morreu')) {
-        document.getElementById('morte-data').value = new Date().toISOString().slice(0, 10);
+        document.getElementById('morte-data').value = dataHojeBR();
         document.getElementById('morte-motivo').value = '';
         document.getElementById('morte-peso').value = animal.pesoEstimado || '';
         document.getElementById('morte-prejuizo').value = '';
@@ -5969,7 +6047,7 @@ if (auth) {
     }
 
     async function confirmarMorteAnimal(btn) {
-      const dataMorte = document.getElementById('morte-data')?.value;
+      const dataMorte = prepararDataParaSalvar(document.getElementById('morte-data')?.value);
       const motivoMorte = (document.getElementById('morte-motivo')?.value || '').trim();
       const pesoMorte = parseFloat(document.getElementById('morte-peso')?.value) || 0;
       const prejuizo = parseFloat(document.getElementById('morte-prejuizo')?.value) || 0;
@@ -6029,7 +6107,7 @@ if (auth) {
 
     async function confirmarVendaAnimal() {
       const precoVenda = parseFloat(document.getElementById('venda-preco').value) || 0;
-      const dataVenda = document.getElementById('venda-data').value;
+      const dataVenda = prepararDataParaSalvar(document.getElementById('venda-data').value);
       const obsVenda = document.getElementById('venda-obs').value.trim();
 
       if (!precoVenda || precoVenda <= 0) return alert('Informe o preço de venda.');
@@ -6106,8 +6184,9 @@ if (auth) {
     }
 
     function formatarDataBR(dataIso) {
-      if (!dataIso) return 'Data não informada';
-      const d = new Date(String(dataIso).slice(0, 10) + 'T12:00:00');
+      const iso = prepararDataParaSalvar(dataIso);
+      if (!iso) return 'Data não informada';
+      const d = new Date(iso + 'T12:00:00');
       return isNaN(d.getTime()) ? 'Data não informada' : d.toLocaleDateString('pt-BR');
     }
 
@@ -6215,7 +6294,7 @@ if (auth) {
             <button class="btn btn-outline btn-sm" onclick="fecharFormularioPesagemLeite()">Cancelar</button>
           </div>
           <label>Data da pesagem</label>
-          <input id="pesagem-leite-data" type="date" value="${hoje}" />
+          <input id="pesagem-leite-data" class="data-br-input" type="tel" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" value="${isoParaDataBR(hoje)}" />
           <div style="height:10px;"></div>
           ${emLactacao.map(a => `
             <div class="prod-card" style="box-shadow:none;border:1px solid var(--border);margin-bottom:10px;">
@@ -6232,6 +6311,7 @@ if (auth) {
           <button class="btn btn-primary prevent-double-click" id="btn-salvar-pesagem" onclick="salvarPesagemLeite(this)">Salvar pesagem</button>
         </div>
       `;
+      aplicarMascaraDatasBR(form);
       atualizarTotalProducao();
     }
 
@@ -6248,7 +6328,7 @@ if (auth) {
       if (salvandoPesagemLeite || (btn && btn.disabled)) return;
       salvandoPesagemLeite = true;
       if (btn) { btn.disabled = true; btn.dataset.originalText = btn.innerHTML; btn.innerHTML = 'Salvando...'; }
-      const data = document.getElementById('pesagem-leite-data')?.value || new Date().toISOString().slice(0, 10);
+      const data = prepararDataParaSalvar(document.getElementById('pesagem-leite-data')?.value || dataHojeBR());
       const emLactacao = obterAnimaisLeiteEmLactacao();
       const itens = emLactacao.map(a => {
         const buscar = periodo => parseFloat(document.querySelector(`.pesagem-input[data-animal-id="${CSS.escape(a.id)}"][data-periodo="${periodo}"]`)?.value) || 0;
@@ -6648,7 +6728,7 @@ if (auth) {
       const nomeAreaAtual = 'Gestao leiteira';
       if (areaInfo) areaInfo.textContent = nomeAreaAtual;
       const dataEl = document.getElementById('fr-data');
-      if (dataEl && !dataEl.value) dataEl.value = new Date().toISOString().slice(0,10);
+      if (dataEl && !dataEl.value) dataEl.value = dataHojeBR();
       renderEstoqueIngredientes();
       renderReceitasSelect();
       calcularFabricaRacao();
@@ -6682,7 +6762,7 @@ if (auth) {
       if (travou === false) return;
       try {
       const area = obterAreaAtual();
-      const data = document.getElementById('fr-data')?.value || new Date().toISOString().slice(0,10);
+      const data = prepararDataParaSalvar(document.getElementById('fr-data')?.value || dataHojeBR());
       const nome = (document.getElementById('fr-nome')?.value || '').trim() || 'Ração fabricada';
       const { total, custo } = calcularFabricaRacao();
       const composicao = montarComposicaoFabricaRacao();
@@ -6714,7 +6794,7 @@ if (auth) {
       try {
         const nome = document.getElementById('fr-nome');
         if (nome) nome.value = '';
-        if (limparData) { const data = document.getElementById('fr-data'); if (data) data.value = new Date().toISOString().slice(0,10); }
+        if (limparData) { const data = document.getElementById('fr-data'); if (data) data.value = dataHojeBR(); }
         INGREDIENTES_FABRICA_RACAO.forEach(i => { const el = document.getElementById('fr-' + i.id); if (el) el.value = ''; });
         calcularFabricaRacao();
         if (btn) alert('Campos da fábrica de ração limpos com sucesso.');
@@ -6931,7 +7011,7 @@ if (auth) {
       const travou = travarBotaoAcao(btn, 'Salvando...');
       if (travou === false) return;
       try {
-        const data = document.getElementById('dp-data')?.value || '';
+        const data = prepararDataParaSalvar(document.getElementById('dp-data')?.value || '');
         const produto = normalizarNomeProdutoLeite(document.getElementById('dp-produto')?.value);
         const quantidadeKg = parseBRNumber(document.getElementById('dp-quantidade')?.value);
         const valorTotal = parseBRNumber(document.getElementById('dp-valor-total')?.value);
@@ -7123,7 +7203,7 @@ if (auth) {
       const travou = travarBotaoAcao(btn, 'Salvando...');
       if (travou === false) return;
       try {
-      const data = document.getElementById('d-data').value;
+      const data = prepararDataParaSalvar(document.getElementById('d-data').value);
       const sacos = parseInt(document.getElementById('d-sacos').value);
       const tipo = parseInt(document.getElementById('d-tipo').value);
       let valorSaco = parseBRNumber(document.getElementById('d-valor-saco')?.value);
@@ -7240,8 +7320,8 @@ if (auth) {
         const idAtual = document.getElementById('med-id')?.value || '';
         const nome = (document.getElementById('med-nome')?.value || '').trim();
         const animalTexto = (document.getElementById('med-animal')?.value || '').trim();
-        const data = document.getElementById('med-data')?.value || '';
-        const dataRepetir = document.getElementById('med-repetir')?.value || '';
+        const data = prepararDataParaSalvar(document.getElementById('med-data')?.value || '');
+        const dataRepetir = prepararDataParaSalvar(document.getElementById('med-repetir')?.value || '');
         const valor = parseBRNumber(document.getElementById('med-valor')?.value);
         const obs = (document.getElementById('med-obs')?.value || '').trim();
         const status = document.getElementById('med-status')?.value || 'ativo';
@@ -7513,7 +7593,8 @@ if (auth) {
     }
 
     function renderProtocolarVaca() {
-      const hoje = new Date().toISOString().slice(0,10);
+      aplicarMascaraDatasBR();
+      const hoje = dataHojeBR();
       const dp = document.getElementById('pv-data-protocolo');
       if (dp && !dp.value) dp.value = hoje;
     }
@@ -7608,7 +7689,7 @@ if (auth) {
 
     function registrarInseminacaoAnimal(protocolo, dataInseminacao, boi = '', racaBoi = '') {
       if (!protocolo) return null;
-      protocolo.dataInseminacao = dataInseminacao || protocolo.dataInseminacao || '';
+      protocolo.dataInseminacao = prepararDataParaSalvar(dataInseminacao) || prepararDataParaSalvar(protocolo.dataInseminacao) || '';
       protocolo.boi = boi || protocolo.boi || '';
       protocolo.racaBoi = racaBoi || protocolo.racaBoi || '';
       return protocolo;
@@ -7616,7 +7697,8 @@ if (auth) {
 
     function confirmarPrenhezAnimal(animal, protocolo) {
       if (!animal || !protocolo || !protocolo.dataInseminacao) return null;
-      const basePrenhez = String(protocolo.dataInseminacao).slice(0, 10);
+      const basePrenhez = prepararDataParaSalvar(protocolo.dataInseminacao);
+      if (!basePrenhez) return null;
       const prev = calcularPrevisoesPrenhez(basePrenhez, animal);
       animal.prenha = true;
       animal.prenhezConfirmada = true;
@@ -7641,12 +7723,12 @@ if (auth) {
       const btn = btnOrigem || document.getElementById('btn-salvar-protocolo');
       const msg = document.getElementById('pv-msg');
       const animal = document.getElementById('pv-animal').value.trim();
-      const dataProtocolo = document.getElementById('pv-data-protocolo').value;
-      const dataInseminacao = document.getElementById('pv-data-inseminacao')?.value || '';
+      const dataProtocolo = prepararDataParaSalvar(document.getElementById('pv-data-protocolo').value);
+      const dataInseminacao = prepararDataParaSalvar(document.getElementById('pv-data-inseminacao')?.value || '');
       const boi = document.getElementById('pv-boi').value.trim();
       const racaBoi = document.getElementById('pv-raca-boi')?.value.trim() || '';
-      const dataToque = document.getElementById('pv-data-toque').value;
-      if (!animal || !dataProtocolo || !dataInseminacao || !boi || !dataToque) { alert('Preencha nome/brinco, data do protocolo, data da inseminação, nome do boi e data do toque.'); return; }
+      const dataToque = prepararDataParaSalvar(document.getElementById('pv-data-toque').value);
+      if (!animal || !dataProtocolo || !dataInseminacao || !boi || !dataToque) { alert('Preencha nome/brinco, data do protocolo, data da inseminação, nome do boi e data do toque no formato dd/mm/aaaa.'); return; }
       const animalRef = encontrarAnimalPorNomeOuBrinco(animal);
       const ativoExistente = obterProtocolosAtivosPrincipais().find(p => (animalRef && p.animalId === animalRef.id) || chaveAnimalProtocolo(p.animal) === chaveAnimalProtocolo(animal));
       if (ativoExistente && !confirm('Já existe um protocolo ativo para este animal. Deseja encerrar o protocolo anterior e salvar este novo protocolo?')) return;
@@ -7667,6 +7749,7 @@ if (auth) {
         criarProtocoloAnimal({ id: 'pv_' + Date.now(), animal: animalRef?.nome || animal, animalId: animalRef?.id || '', dataProtocolo, dataInseminacao, boi, racaBoi, dataToque, status: 'protocolada', historico: [] });
         await salvarDB();
         document.getElementById('pv-animal').value = '';
+        document.getElementById('pv-data-protocolo').value = dataHojeBR();
         if (document.getElementById('pv-data-inseminacao')) document.getElementById('pv-data-inseminacao').value = '';
         document.getElementById('pv-boi').value = '';
         if (document.getElementById('pv-raca-boi')) document.getElementById('pv-raca-boi').value = '';
@@ -7735,7 +7818,7 @@ if (auth) {
         if (String(status).toLowerCase().includes('prenhez confirmada')) {
           let dataInseminacaoConfirmada = p.dataInseminacao || '';
           if (!dataInseminacaoConfirmada) {
-            dataInseminacaoConfirmada = prompt('Informe a data da inseminação (AAAA-MM-DD) para calcular parto, pré-parto e secagem:', '');
+            dataInseminacaoConfirmada = prompt('Informe a data da inseminação (dd/mm/aaaa) para calcular parto, pré-parto e secagem:', '');
             if (!dataInseminacaoConfirmada) {
               alert('Prenhez não confirmada. A data da inseminação é obrigatória para calcular a previsão de parto.');
               p.status = statusAnterior || 'protocolada';
@@ -7745,16 +7828,17 @@ if (auth) {
               return;
             }
           }
-          const testeData = new Date(String(dataInseminacaoConfirmada).slice(0, 10) + 'T12:00:00');
+          dataInseminacaoConfirmada = prepararDataParaSalvar(dataInseminacaoConfirmada);
+          const testeData = new Date(dataInseminacaoConfirmada + 'T12:00:00');
           if (isNaN(testeData.getTime())) {
-            alert('Data da inseminação inválida. Informe no formato AAAA-MM-DD antes de confirmar a prenhez.');
+            alert('Data da inseminação inválida. Informe no formato dd/mm/aaaa antes de confirmar a prenhez.');
             p.status = statusAnterior || 'protocolada';
             p.ativo = ativoAnterior !== false;
             p.dataEncerramento = dataEncerramentoAnterior;
             p.historico.pop();
             return;
           }
-          registrarInseminacaoAnimal(p, String(dataInseminacaoConfirmada).slice(0, 10), p.boi, p.racaBoi);
+          registrarInseminacaoAnimal(p, dataInseminacaoConfirmada, p.boi, p.racaBoi);
           const animal = (p.animalId ? DB.animais.find(a => a.id === p.animalId) : encontrarAnimalPorNomeOuBrinco(p.animal));
           if (animal) {
             confirmarPrenhezAnimal(animal, p);
@@ -7778,12 +7862,12 @@ if (auth) {
       let boi = p.boi;
       if (alterar) { const novoBoi = prompt('Digite o nome do novo boi:', p.boi || ''); if (novoBoi === null) return; boi = novoBoi.trim() || p.boi; }
       const racaBoi = prompt('Raça do boi (opcional):', p.racaBoi || '') || '';
-      const dataProtocolo = prompt('Digite a nova data do protocolo (AAAA-MM-DD):', new Date().toISOString().slice(0,10));
-      if (!dataProtocolo) return;
-      const dataInseminacao = prompt('Digite a nova data da inseminação (AAAA-MM-DD):', p.dataInseminacao || dataProtocolo);
-      if (!dataInseminacao) return;
-      const dataToque = prompt('Digite a nova data do toque (AAAA-MM-DD):', p.dataToque || '');
-      if (!dataToque) return;
+      const dataProtocolo = prepararDataParaSalvar(prompt('Digite a nova data do protocolo (dd/mm/aaaa):', dataHojeBR()));
+      if (!dataProtocolo) return alert('Informe uma data de protocolo válida no formato dd/mm/aaaa.');
+      const dataInseminacao = prepararDataParaSalvar(prompt('Digite a nova data da inseminação (dd/mm/aaaa):', isoParaDataBR(p.dataInseminacao || dataProtocolo)));
+      if (!dataInseminacao) return alert('Informe uma data de inseminação válida no formato dd/mm/aaaa.');
+      const dataToque = prepararDataParaSalvar(prompt('Digite a nova data do toque (dd/mm/aaaa):', isoParaDataBR(p.dataToque || '')));
+      if (!dataToque) return alert('Informe uma data de toque válida no formato dd/mm/aaaa.');
       const travado = travarBotaoAcao(btn, 'Salvando...');
       if (travado === false) return;
       try {
@@ -10243,6 +10327,7 @@ if (auth) {
   <script>
     // AgroMilk: a sessão persistente do Firebase decide se abre direto no app.
     document.addEventListener('DOMContentLoaded', function() {
+      aplicarMascaraDatasBR();
       const landing = document.getElementById('landing-screen');
       if (landing) landing.style.display = 'none';
       const app = document.getElementById('app-wrapper');
