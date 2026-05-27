@@ -3059,8 +3059,11 @@ if (auth) {
         secagemConcluida: a?.secagemConcluida === true,
         dataSecagemReal: a?.dataSecagemReal || '',
         statusReprodutivo: a?.statusReprodutivo || '',
+        statusReproducao: a?.statusReproducao || '',
+        prenhezConfirmada: a?.prenhezConfirmada === true,
         partoRegistrado: a?.partoRegistrado === true,
         dataUltimoParto: a?.dataUltimoParto || '',
+        dataParto: a?.dataParto || '',
         totalCrias: typeof a?.totalCrias === 'number' ? a.totalCrias : (parseInt(a?.totalCrias, 10) || 0),
         historicoPartos: Array.isArray(a?.historicoPartos) ? a.historicoPartos : [],
         previsaoParto: a?.previsaoParto || '',
@@ -3131,6 +3134,11 @@ if (auth) {
       return a.secaConfirmada === true || a.secagemConcluida === true || texto.includes('seca');
     }
 
+    function animalEstaArquivadoOuEncerrado(a) {
+      const texto = [a?.status, a?.motivoArquivo, a?.statusArquivo].map(v => String(v || '').toLowerCase()).join(' ');
+      return a?.arquivado === true || a?.vendido === true || a?.morto === true || texto.includes('vendido') || texto.includes('morte') || texto.includes('morto') || texto.includes('falec');
+    }
+
     function animalDeveTerSecagem(a) {
       if (!a || (a.area || 'leiteiro') !== 'leiteiro') return false;
       if (animalEhNovilhaPrimeiraCria(a)) return false;
@@ -3148,6 +3156,7 @@ if (auth) {
 
     function obterStatusAtualAnimal(a) {
       const categoria = String(a?.categoria || '').trim();
+      if (deveGerarAlertaVacaVaziaPosParto(a)) return 'Vazia pós-parto';
       if (animalEstaSeca(a)) return 'Seca';
       if (animalEstaLactante(a)) return 'Lactante';
       if (animalEstaPrenha(a) && animalEhNovilhaPrimeiraCria(a)) return 'Novilha prenha';
@@ -3168,6 +3177,7 @@ if (auth) {
 
     function animalAptoParaAlertaReprodutivo(a) {
       if (!a || (a.area || 'leiteiro') !== 'leiteiro') return false;
+      if (animalEstaArquivadoOuEncerrado(a)) return false;
       const sexo = String(a.sexo || '').toLowerCase();
       const categoria = String(a.categoria || '').toLowerCase();
       if (!(sexo.includes('fêmea') || sexo.includes('femea') || categoria.includes('vaca') || categoria.includes('novilha'))) return false;
@@ -3190,6 +3200,12 @@ if (auth) {
       if (!dataParto) return false;
       const dias = calcularDiasAte(dataParto);
       return dias !== null && dias <= -20;
+    }
+
+    function diasVaziaPosParto(a) {
+      const dataParto = a?.dataUltimoParto || a?.dataParto || '';
+      const dias = calcularDiasAte(dataParto);
+      return dias === null ? null : Math.abs(dias);
     }
 
     function calcularPrevisoesPrenhez(dataPrenha, animal) {
@@ -3729,11 +3745,11 @@ if (auth) {
       animais
         .filter(deveGerarAlertaVacaVaziaPosParto)
         .forEach(a => {
-          const diasPosParto = Math.abs(calcularDiasAte(a.dataUltimoParto || a.dataParto || '') || 0);
+          const diasPosParto = diasVaziaPosParto(a) || 0;
           alertas.push({
             tipo: 'Vaca vazia',
             titulo: a.nome || a.brinco || 'Vaca pós-parto',
-            detalhe: `${diasPosParto} dia(s) pós-parto · agendar protocolo com veterinário`,
+            detalhe: `Vaca vazia há ${diasPosParto} dia(s) — agendar protocolo com veterinário.`,
             nivel: diasPosParto >= 30 ? 'warn' : 'info',
             ordem: 18
           });
@@ -5701,6 +5717,7 @@ if (auth) {
       const prenha = animalEstaPrenha(a);
       const qtdCrias = obterQuantidadeCriasAnimal(a);
       const textoCrias = qtdCrias > 0 ? `${qtdCrias} cria(s)` : 'Nenhuma cria registrada';
+      const diasVazia = deveGerarAlertaVacaVaziaPosParto(a) ? diasVaziaPosParto(a) : null;
       const prev = prenha ? ((a.previsaoParto || a.previsaoSecagem || a.previsaoPreParto) ? { parto: a.previsaoParto, secagem: animalDeveTerSecagem(a) ? (a.previsaoSecagem || '') : '', preParto: a.previsaoPreParto || '' } : calcularPrevisoesPrenhez(a.dataInseminacao || a.dataPrenha || '', a)) : null;
       const textoPartoSecagem = prev && prev.parto
         ? ((prev.secagem ? 'Secagem: ' + formatarDataBR(prev.secagem) + '<br>' : '') + (prev.preParto ? 'Pré-parto: ' + formatarDataBR(prev.preParto) + '<br>' : '') + 'Parto previsto: ' + formatarDataBR(prev.parto))
@@ -5719,6 +5736,7 @@ if (auth) {
         + item('Produção', (prod.total ? prod.total.toFixed(1).replace('.', ',') + ' L/dia' : 'Sem produção registrada') + (prod.racao ? ' - ração estimada ' + prod.racao.toFixed(1).replace('.', ',') + ' kg/dia' : ''))
         + item('Consumo', (custoRacao.kgDia ? custoRacao.kgDia.toFixed(1).replace('.', ',') + ' kg/dia de ração' : 'Sem consumo de ração calculado') + (custosProduto.length ? '<br>' + custosProduto.map(c => escapeHtml(c.produto) + ': ' + c.kgDia.toFixed(1).replace('.', ',') + ' kg/dia').join('<br>') : ''))
         + item('Reprodução', (prenha ? 'Prenha' : 'Não prenha') + (a.dataInseminacao ? ' - inseminação ' + formatarDataBR(a.dataInseminacao) : (a.dataPrenha ? ' - confirmação ' + formatarDataBR(a.dataPrenha) : '')))
+        + (diasVazia !== null ? item('Alerta pós-parto', 'Vaca vazia há ' + diasVazia + ' dia(s)<br>Agendar protocolo com veterinário.') : '')
         + item('Parto/secagem', textoPartoSecagem)
         + item('Genealogia', 'Mãe: ' + escapeHtml(genealogia.mae || 'não informada') + '<br>Pai: ' + escapeHtml(genealogia.pai || 'não informado') + '<br>Avós: ' + escapeHtml([genealogia.avoMaterna, genealogia.avoMaterno, genealogia.avoPaterna, genealogia.avoPaterno].filter(Boolean).join(', ') || 'não informado'))
         + item('Medicações', meds.length ? meds.map(m => escapeHtml(m.nome) + ' - ' + (m.data ? formatarDataBR(m.data) : 'sem data') + ' - ' + escapeHtml(m.status || 'ativo')).join('<br>') : 'Sem medicação registrada')
@@ -7449,6 +7467,7 @@ if (auth) {
       animal.prenhezConfirmada = false;
       animal.dataPrenha = '';
       animal.dataInseminacao = '';
+      animal.dataParto = dataFinal;
       animal.previsaoParto = '';
       animal.previsaoSecagem = '';
       animal.previsaoPreParto = '';
@@ -7698,9 +7717,19 @@ if (auth) {
       const vacinas = document.getElementById('lista-vacinas');
       if (!lista || !vacinas) return;
 
-      const grupos = { partos: [], preparto: [], secagens: [], toques: [], inseminacoes: [], protocolos: [], medicacoes: [], estoque: [] };
+      const grupos = { partos: [], preparto: [], secagens: [], posparto: [], toques: [], inseminacoes: [], protocolos: [], medicacoes: [], estoque: [] };
 
       DB.animais.filter(a => (a.area || 'leiteiro') === 'leiteiro').forEach(a => {
+        if (deveGerarAlertaVacaVaziaPosParto(a)) {
+          const dias = diasVaziaPosParto(a) || 0;
+          const dataParto = a.dataUltimoParto || a.dataParto || '';
+          grupos.posparto.push({
+            titulo: 'Vaca vazia - ' + (a.nome || 'animal'),
+            sub: 'Vazia há ' + dias + ' dia(s). Agendar protocolo com veterinário.',
+            data: dataParto ? new Date(dataParto + 'T12:00:00') : new Date(),
+            prioridade: dias >= 30 ? 'warn' : 'info'
+          });
+        }
         const basePrenhezAnimal = a.dataInseminacao || a.dataPrenha || '';
         if (animalEstaPrenha(a) && basePrenhezAnimal && !a.partoRegistrado) {
           const base = new Date(basePrenhezAnimal + 'T12:00:00');
@@ -7761,6 +7790,7 @@ if (auth) {
           + renderGrupoCalendario('Partos previstos', 'partos', grupos.partos)
           + renderGrupoCalendario('Pré-parto', 'preparto', grupos.preparto)
           + renderGrupoCalendario('Secagens previstas', 'secagens', grupos.secagens)
+          + renderGrupoCalendario('Pós-parto', 'posparto', grupos.posparto)
           + renderGrupoCalendario('Toques', 'toques', grupos.toques)
           + renderGrupoCalendario('Inseminações', 'inseminacoes', grupos.inseminacoes)
           + renderGrupoCalendario('Protocolos', 'protocolos', grupos.protocolos)

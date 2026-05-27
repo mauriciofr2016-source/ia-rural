@@ -1,4 +1,4 @@
-const CACHE_NAME = 'agromilk-cache-v12-radio-player';
+const CACHE_NAME = 'agromilk-cache-v13-vaca-vazia-posparto';
 const APP_ASSETS = [
   './',
   './index.html',
