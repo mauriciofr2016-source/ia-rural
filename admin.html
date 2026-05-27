@@ -554,6 +554,14 @@ function somarDiasISO(dias) {
   return d.toISOString();
 }
 
+function pagamentoNoMesAtual(iso) {
+  if (!iso) return false;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return false;
+  const agora = new Date();
+  return d.getFullYear() === agora.getFullYear() && d.getMonth() === agora.getMonth();
+}
+
 function getTesteGratisStatus(user) {
   const dias = Number(user.testeGratisDias || 0);
   if (!dias || !user.testeGratisFim) return 'Sem teste grátis';
@@ -807,44 +815,47 @@ async function marcarPago(id) {
     const doc = await ref.get();
     if (!doc.exists) return alert('Usuário não encontrado.');
 
-    const u = doc.data();
+    const u = { id: doc.id, ...(doc.data() || {}) };
+    const firebaseUid = u.firebaseUid || doc.id;
     const valor = Number(u.valorMensal || 30);
     const agora = new Date().toISOString();
-    const novoStatus = 'ativo';
 
     await ref.update({
+      status: 'ativo',
+      accountStatus: 'ativo',
       ultimoPagamento: agora,
       ultimoValorPago: valor,
-      status: novoStatus,
-      accountStatus: 'ativo',
       bloqueioMotivo: ''
     });
 
-    await db.collection('users').doc(u.firebaseUid).set({
-      accountStatus: novoStatus,
-      areaSistema: normalizarAreaConta(u.areaSistema || u.area),
-      bloqueioMotivo: '',
-      billing: {
-        plano: u.plano || 'mensal',
-        valorMensal: valor,
-        diaVencimento: Number(u.diaVencimento || 0),
-        formaPagamento: u.formaPagamento || '',
-        ultimoPagamento: agora,
-        ultimoValorPago: valor
-      }
-    }, { merge: true });
+    if (firebaseUid) {
+      await db.collection('users').doc(firebaseUid).set({
+        accountStatus: 'ativo',
+        bloqueioMotivo: '',
+        billing: {
+          plano: u.plano || 'mensal',
+          valorMensal: valor,
+          diaVencimento: Number(u.diaVencimento || 0),
+          formaPagamento: u.formaPagamento || 'pix',
+          ultimoPagamento: agora,
+          ultimoValorPago: valor
+        }
+      }, { merge: true });
+    }
 
     await db.collection('admin_pagamentos').add({
-      userId: u.id,
+      userId: u.id || id,
+      firebaseUid,
       nome: u.nome || '',
       usuario: u.usuario || '',
-      valor: valor,
-      formaPagamento: u.formaPagamento || '',
+      valor,
+      formaPagamento: u.formaPagamento || 'pix',
       dataPagamento: agora,
       referenciaMes: `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`
     });
 
     await carregarTudoAdmin();
+    mostrarToastAdmin('Pagamento marcado. Acesso liberado.');
   } catch (erro) {
     console.error(erro);
     alert('Erro ao marcar pagamento: ' + erro.message);
@@ -857,17 +868,25 @@ async function bloquearUsuario(id) {
     const doc = await ref.get();
     if (!doc.exists) return alert('Usuário não encontrado.');
 
-    const u = doc.data();
+    const u = { id: doc.id, ...(doc.data() || {}) };
+    const firebaseUid = u.firebaseUid || doc.id;
+    const motivo = 'Acesso bloqueado pelo administrador.';
 
-    const motivo = 'Seu acesso foi bloqueado pelo administrador. Entre em contato com o suporte para regularizar.';
-    await ref.update({ status: 'bloqueado', bloqueioMotivo: motivo });
-
-    await db.collection('users').doc(u.firebaseUid).set({
+    await ref.update({
+      status: 'bloqueado',
       accountStatus: 'bloqueado',
       bloqueioMotivo: motivo
-    }, { merge: true });
+    });
+
+    if (firebaseUid) {
+      await db.collection('users').doc(firebaseUid).set({
+        accountStatus: 'bloqueado',
+        bloqueioMotivo: motivo
+      }, { merge: true });
+    }
 
     await carregarTudoAdmin();
+    mostrarToastAdmin('Usuário bloqueado com sucesso.');
   } catch (erro) {
     console.error(erro);
     alert('Erro ao bloquear usuário: ' + erro.message);
@@ -880,16 +899,24 @@ async function desbloquearUsuario(id) {
     const doc = await ref.get();
     if (!doc.exists) return alert('Usuário não encontrado.');
 
-    const u = doc.data();
+    const u = { id: doc.id, ...(doc.data() || {}) };
+    const firebaseUid = u.firebaseUid || doc.id;
 
-    await ref.update({ status: 'ativo', bloqueioMotivo: '' });
-
-    await db.collection('users').doc(u.firebaseUid).set({
+    await ref.update({
+      status: 'ativo',
       accountStatus: 'ativo',
       bloqueioMotivo: ''
-    }, { merge: true });
+    });
+
+    if (firebaseUid) {
+      await db.collection('users').doc(firebaseUid).set({
+        accountStatus: 'ativo',
+        bloqueioMotivo: ''
+      }, { merge: true });
+    }
 
     await carregarTudoAdmin();
+    mostrarToastAdmin('Usuário desbloqueado com sucesso.');
   } catch (erro) {
     console.error(erro);
     alert('Erro ao desbloquear usuário: ' + erro.message);
