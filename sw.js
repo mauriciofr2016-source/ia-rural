@@ -1,13 +1,14 @@
-const CACHE_NAME = 'agromilk-cache-v13-vaca-vazia-posparto';
+const CACHE_NAME = 'agromilk-cache-v14-pwa-fotos-financeiro';
 const APP_ASSETS = [
   './',
   './index.html',
   './admin.html',
   './manifest.json',
-  './icon-192.png',
-  './icon-512.png',
+  './manifest.json?v=20260527-pwa2',
+  './icon-192-v2.png',
+  './icon-512-v2.png',
   './favicon.png',
-  './apple-touch-icon.png',
+  './apple-touch-icon-v2.png',
   './logo_agromilk.png'
 ];
 
@@ -25,7 +26,11 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))))
+      .then(keys => Promise.all(
+        keys
+          .filter(key => key !== CACHE_NAME && /^agromilk/i.test(key))
+          .map(key => caches.delete(key))
+      ))
       .then(() => self.clients.claim())
   );
 });

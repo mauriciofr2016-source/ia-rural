@@ -6,8 +6,8 @@
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>AgroMilk - Gestão Leiteira Inteligente</title>
 <link rel="icon" type="image/png" href="favicon.png"/>
-<link rel="apple-touch-icon" href="apple-touch-icon.png"/>
-<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="apple-touch-icon-v2.png"/>
+  <link rel="manifest" href="manifest.json?v=20260527-pwa2"/>
 <meta name="theme-color" content="#0B5CAD"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="AgroMilk"/>
@@ -1309,11 +1309,11 @@
     .install-help{display:none;position:fixed;inset:auto 14px 18px 14px;z-index:10000;background:#080808;border:1px solid var(--border);border-radius:18px;padding:16px;color:var(--text);box-shadow:0 14px 40px rgba(0,0,0,.45)}
     .install-help strong{display:block;margin-bottom:6px}
     .install-help p{color:var(--muted);font-size:13px;line-height:1.5;margin-bottom:10px}
-    .trial-banner,.update-banner{display:none;position:sticky;top:0;z-index:120;background:#211606;border-bottom:1px solid #8a5a10;color:var(--text);padding:11px 14px;font-size:13px;line-height:1.45}
+    .trial-banner,.update-banner{display:none;position:sticky;top:0;z-index:120;background:#eaf2ff;border-bottom:1px solid #bfdbfe;color:#0f172a;padding:11px 14px;font-size:13px;line-height:1.45}
     .trial-banner button,.update-banner button{margin-left:8px}
     .onboarding-card,.quick-summary-grid{margin-top:14px}
     .quick-summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
-    .quick-summary-card{border:1px solid var(--border);border-radius:14px;background:#050505;padding:14px}
+    .quick-summary-card{border:1px solid #dbe7f3;border-radius:14px;background:#fff;padding:14px;box-shadow:0 10px 26px rgba(15,23,42,.08);color:#0f172a}
     .quick-summary-card strong{display:block;font-size:20px;margin-bottom:4px}
     .quick-summary-card span{color:var(--muted);font-size:12px;line-height:1.4}
     .onboard-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
@@ -1360,7 +1360,7 @@
 <div id="prelogin-screen" style="display:none!important">
   <main class="prelogin-shell">
     <div class="prelogin-top">
-      <div class="prelogin-brand"><img src="icon-192.png" alt="AgroMilk"/>Agro<span style="color:#2EAD4F">Milk</span></div>
+      <div class="prelogin-brand"><img src="icon-192-v2.png" alt="AgroMilk"/>Agro<span style="color:#2EAD4F">Milk</span></div>
       <div class="prelogin-actions">
         <button class="prelogin-btn" type="button" onclick="mostrarLoginSimples()">Já tenho conta</button>
         <button class="prelogin-btn green" type="button" onclick="abrirWhatsAppSuporte({motivo:'generico'})">Falar com suporte</button>
@@ -1390,7 +1390,7 @@
 </div>
 <div id="tela-cadastro" style="display:none">
   <div class="signup-box">
-    <div class="prelogin-brand" style="margin-bottom:12px"><img src="icon-192.png" alt="AgroMilk"/>Agro<span style="color:#2EAD4F">Milk</span></div>
+    <div class="prelogin-brand" style="margin-bottom:12px"><img src="icon-192-v2.png" alt="AgroMilk"/>Agro<span style="color:#2EAD4F">Milk</span></div>
     <h2>Criar conta grátis</h2>
     <p>Preencha os dados da fazenda. Seu teste grátis de 15 dias começa assim que a conta for criada.</p>
     <div class="login-field"><label>Nome da fazenda ou produtor</label><input id="cadastro-nome" type="text" autocomplete="organization" placeholder="Ex: Fazenda Boa Vista"/></div>
@@ -1416,7 +1416,7 @@
 <div id="tela-login"><div class="login-box"><div class="login-brand-row"><div class="login-logo">Agro<span>Milk</span></div><img class="login-brand-image" alt="Logo AgroMilk" src="logo_agromilk.png"></div><div class="login-tagline">Entre com seu usuário e senha.</div><div class="login-field"><label>Usuário</label><input id="login-usuario" onkeydown="if(event.key==='Enter')fazerLogin()" placeholder="Seu usuário" type="text"/></div><div class="login-field"><label>Senha</label><input id="login-senha" onkeydown="if(event.key==='Enter')fazerLogin()" placeholder="********" type="password"/></div><button class="login-btn" onclick="fazerLogin()">Entrar</button><button class="login-back" onclick="mostrarCadastroConta()">Criar conta grátis</button><div class="login-error" id="login-erro">Usuário ou senha incorretos. Verifique e tente novamente.</div><div class="login-footer">AgroMilk · Gestão leiteira inteligente</div></div></div>
 <div id="app-wrapper">
 <div class="trial-banner" id="trial-banner"></div>
-<div class="update-banner" id="update-banner">Nova versão disponível <button class="prelogin-btn primary" type="button" onclick="atualizarAppAgora()">Atualizar agora</button></div>
+<div class="update-banner" id="update-banner">Atualização disponível. Clique para atualizar o AgroMilk. <button class="prelogin-btn primary" type="button" onclick="atualizarAppAgora()">Atualizar</button></div>
 <nav>
 <div class="nav-header">
 <div class="nav-brand-row"><img alt="Logo AgroMilk" src="logo_agromilk.png"><div class="nav-logo">Agro<span>Milk</span></div></div>
@@ -3503,7 +3503,18 @@ if (auth) {
       box?.classList.remove('hidden');
     }
 
-    function compactarFotoAnimal(file, maxLado = 420, qualidade = 0.45) {
+    function gerarDataUrlImagemOtimizada(canvas, qualidade = 0.75) {
+      let webp = '';
+      try {
+        webp = canvas.toDataURL('image/webp', qualidade);
+      } catch (_) {
+        webp = '';
+      }
+      if (webp && webp.startsWith('data:image/webp')) return webp;
+      return canvas.toDataURL('image/jpeg', qualidade);
+    }
+
+    function compactarFotoAnimal(file, maxLado = 800, qualidade = 0.75) {
       return new Promise((resolve) => {
         if (!file || !file.type || !file.type.startsWith('image/')) {
           resolve('');
@@ -3534,7 +3545,7 @@ if (auth) {
               const ctx = canvas.getContext('2d', { alpha: false });
               ctx.drawImage(img, 0, 0, largura, altura);
 
-              const compactada = canvas.toDataURL('image/jpeg', qualidade);
+              const compactada = gerarDataUrlImagemOtimizada(canvas, qualidade);
               const original = typeof reader.result === 'string' ? reader.result : '';
               resolve(compactada && (!original || compactada.length < original.length) ? compactada : original);
             } catch (erroCanvas) {
@@ -3549,10 +3560,10 @@ if (auth) {
     }
 
     function otimizarImagemAnimal(file) {
-      return compactarFotoAnimal(file, 420, 0.45);
+      return compactarFotoAnimal(file, 800, 0.75);
     }
 
-    function compactarDataUrlAnimal(dataUrl, maxLado = 420, qualidade = 0.45) {
+    function compactarDataUrlAnimal(dataUrl, maxLado = 800, qualidade = 0.72) {
       return new Promise((resolve) => {
         if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) {
           resolve(dataUrl || '');
@@ -3573,7 +3584,7 @@ if (auth) {
             canvas.height = altura;
             const ctx = canvas.getContext('2d', { alpha: false });
             ctx.drawImage(img, 0, 0, largura, altura);
-            const compactada = canvas.toDataURL('image/jpeg', qualidade);
+            const compactada = gerarDataUrlImagemOtimizada(canvas, qualidade);
             resolve(compactada && compactada.length < dataUrl.length ? compactada : dataUrl);
           } catch (_) {
             resolve(dataUrl);
@@ -3590,8 +3601,8 @@ if (auth) {
         for (const animal of (Array.isArray(lista) ? lista : [])) {
           if (!animal || !animal.foto || typeof animal.foto !== 'string') continue;
           // Base64 grande é a principal causa de lentidão. Compacta fotos antigas uma vez.
-          if (animal.foto.length > 180000) {
-            const reduzida = await compactarDataUrlAnimal(animal.foto, 420, 0.45);
+          if (animal.foto.length > 260000) {
+            const reduzida = await compactarDataUrlAnimal(animal.foto, 800, 0.72);
             if (reduzida && reduzida.length < animal.foto.length) {
               animal.foto = reduzida;
               alterou = true;
@@ -5550,7 +5561,7 @@ if (auth) {
           windowWidth: 760
         });
         const nome = (animal.nome || 'animal').replace(/[^a-z0-9_-]+/gi, '_');
-        pdf.save(`IA_Rural_${nome}.pdf`);
+        pdf.save(`AgroMilk_${nome}.pdf`);
       } catch (erro) {
         console.error(erro);
         alert('Não foi possível gerar o PDF deste animal.');
@@ -5564,7 +5575,7 @@ if (auth) {
       const { area, producao, peso, genealogia } = rel;
       return `
         <div class="animal-item" style="align-items:flex-start;">
-          ${animal.foto ? `<img class="animal-photo" src="${animal.foto}" alt="Foto de ${escapeAttr(animal.nome)}" />` : `<div class="animal-avatar">${emojiAnimal(animal.categoria)}</div>`}
+          ${animal.foto ? `<img class="animal-photo" src="${animal.foto}" alt="Foto de ${escapeAttr(animal.nome)}" loading="lazy" decoding="async" />` : `<div class="animal-avatar">${emojiAnimal(animal.categoria)}</div>`}
           <div class="animal-body">
             <div class="animal-name">${escapeHtml(animal.nome)} ${animal.brinco ? `<span style="font-size:11px;color:var(--muted);font-weight:400;">· Brinco ${escapeHtml(animal.brinco)}</span>` : ''}</div>
             <div class="animal-meta">${area === 'leiteiro' ? 'Área leiteira' : 'Área confinamento'} · ${escapeHtml(animal.categoria || 'Não definido')}</div>
@@ -7828,7 +7839,7 @@ if (auth) {
         .sort((a, b) => new Date(b.dataArquivo || 0) - new Date(a.dataArquivo || 0))
         .map(a => `
           <div class="animal-item">
-            ${a.foto ? `<img class="animal-photo" src="${a.foto}" alt="Foto de ${a.nome}" />` : `<div class="animal-avatar">${emojiAnimal(a.categoria)}</div>`}
+            ${a.foto ? `<img class="animal-photo" src="${a.foto}" alt="Foto de ${a.nome}" loading="lazy" decoding="async" />` : `<div class="animal-avatar">${emojiAnimal(a.categoria)}</div>`}
 
             <div class="animal-body">
               <div class="animal-name">
@@ -7893,7 +7904,7 @@ if (auth) {
           const r = a.resumoVenda || montarResumoVenda(a, a.precoVenda || 0, a.dataVenda || new Date().toISOString().slice(0,10));
           return `
           <div class="animal-item">
-            ${a.foto ? `<img class="animal-photo" src="${a.foto}" alt="Foto de ${a.nome}" />` : `<div class="animal-avatar">${emojiAnimal(a.categoria)}</div>`}
+            ${a.foto ? `<img class="animal-photo" src="${a.foto}" alt="Foto de ${a.nome}" loading="lazy" decoding="async" />` : `<div class="animal-avatar">${emojiAnimal(a.categoria)}</div>`}
             <div class="animal-body">
               <div class="animal-name">${a.nome}${a.brinco ? `<span style="font-size:11px;color:var(--muted);font-weight:400;">· Brinco ${a.brinco}</span>` : ''}</div>
               <div class="tag-wrap">
@@ -9988,7 +9999,7 @@ if (auth) {
 
 <!-- PWA: Banner de instalação + Service Worker -->
 <div id="pwa-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#fff;color:#111827;padding:14px 16px;box-shadow:0 -2px 12px rgba(0,0,0,0.4);align-items:center;gap:12px;flex-wrap:wrap;">
-  <img src="icon-192.png" style="width:40px;height:40px;border-radius:10px;flex-shrink:0;" alt="AgroMilk"/>
+  <img src="icon-192-v2.png" style="width:40px;height:40px;border-radius:10px;flex-shrink:0;" alt="AgroMilk"/>
   <div style="flex:1;min-width:160px;">
     <div style="font-weight:600;font-size:14px;">Instalar AgroMilk</div>
     <div style="font-size:12px;color:#aaa;margin-top:2px;">Adicione o app à tela inicial para acesso rápido e uso offline.</div>
@@ -10017,20 +10028,24 @@ if (auth) {
 <script>
   // Service Worker
   let novoServiceWorker = null;
+  let registroServiceWorkerAgroMilk = null;
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('./sw.js').then(reg => {
+        registroServiceWorkerAgroMilk = reg;
+        if (reg.waiting && navigator.serviceWorker.controller) {
+          mostrarBannerAtualizacaoAgroMilk(reg.waiting);
+        }
         reg.addEventListener('updatefound', () => {
           const worker = reg.installing;
           if (!worker) return;
           worker.addEventListener('statechange', () => {
             if (worker.state === 'installed' && navigator.serviceWorker.controller) {
-              novoServiceWorker = worker;
-              const banner = document.getElementById('update-banner');
-              if (banner) banner.style.display = 'block';
+              mostrarBannerAtualizacaoAgroMilk(worker);
             }
           });
         });
+        if (typeof reg.update === 'function') reg.update().catch(() => {});
       }).catch(() => {});
     });
     navigator.serviceWorker.addEventListener('controllerchange', () => {
@@ -10039,6 +10054,12 @@ if (auth) {
         window.location.reload();
       }
     });
+  }
+
+  function mostrarBannerAtualizacaoAgroMilk(worker) {
+    novoServiceWorker = worker || novoServiceWorker;
+    const banner = document.getElementById('update-banner');
+    if (banner) banner.style.display = 'block';
   }
 
   // Banner de instalação PWA
@@ -10088,12 +10109,15 @@ if (auth) {
   });
 
   async function atualizarAppAgora() {
+    const banner = document.getElementById('update-banner');
+    if (banner) banner.style.display = 'none';
     try {
-      if (novoServiceWorker) novoServiceWorker.postMessage({ type: 'SKIP_WAITING' });
       if (window.caches) {
         const keys = await caches.keys();
-        await Promise.all(keys.filter(k => k !== 'ia-rural-v19-onboarding-pwa-auto-cadastro').map(k => caches.delete(k)));
+        await Promise.all(keys.filter(k => /^agromilk/i.test(k) || /^ia-rural/i.test(k)).map(k => caches.delete(k)));
       }
+      const worker = novoServiceWorker || (registroServiceWorkerAgroMilk && registroServiceWorkerAgroMilk.waiting);
+      if (worker) worker.postMessage({ type: 'SKIP_WAITING' });
       setTimeout(() => window.location.reload(), 500);
     } catch (e) {
       window.location.reload();
