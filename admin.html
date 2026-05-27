@@ -100,8 +100,8 @@ body{font-family:'DM Sans',sans-serif;background:#F5F7FA;min-height:100vh;color:
 }
 </style>
 <link rel="icon" type="image/png" href="favicon.png">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon-v2.png">
+<link rel="manifest" href="manifest.json?v=20260527-launch">
 <meta name="theme-color" content="#0B5CAD">
 </head>
 <body>
@@ -191,6 +191,7 @@ body{font-family:'DM Sans',sans-serif;background:#F5F7FA;min-height:100vh;color:
             <option value="0">Sem teste grátis</option>
             <option value="10">Teste grátis de 10 dias</option>
             <option value="20">Teste grátis de 20 dias</option>
+            <option value="30">Acesso inicial de 30 dias</option>
           </select>
           <div class="senha-hint">Ao vencer, o acesso bloqueia automaticamente no login com aviso ao cliente.</div>
         </div>
@@ -373,6 +374,7 @@ body{font-family:'DM Sans',sans-serif;background:#F5F7FA;min-height:100vh;color:
           <option value="0">Sem teste grátis</option>
           <option value="10">Teste grátis de 10 dias</option>
           <option value="20">Teste grátis de 20 dias</option>
+          <option value="30">Acesso inicial de 30 dias</option>
         </select>
         <div class="senha-hint" id="edit-teste-hint">Se alterar aqui, o prazo será recalculado a partir de hoje.</div>
       </div>
@@ -515,6 +517,11 @@ function isPaidThisMonth(iso) {
 function getStatusPagamento(user) {
   // Verifica pagamento deste mês primeiro, independente de valor/vencimento
   if (isPaidThisMonth(user.ultimoPagamento)) return 'pago';
+  const acessoAte = user.vencimentoAcesso || user.vencimentoTrial || '';
+  if (acessoAte) {
+    const fim = new Date(acessoAte);
+    if (!isNaN(fim.getTime()) && new Date() > fim && !isPaidThisMonth(user.ultimoPagamento)) return 'vencido';
+  }
   const valor = Number(user.valorMensal || 0);
   const vencimento = Number(user.diaVencimento || 0);
   if (!valor || !vencimento) return 'pendente';
@@ -611,7 +618,7 @@ async function bloquearTestesGratisVencidos(lista) {
     const testeVencido = dias > 0 && fim && !isNaN(fim.getTime()) && agora > fim && u.status !== 'bloqueado' && !u.ultimoPagamento;
     if (!testeVencido) continue;
 
-    const motivo = `Seu teste grátis de ${dias} dias venceu em ${formatData(u.testeGratisFim)}. Para liberar o acesso, entre em contato com o suporte.`;
+    const motivo = 'Seu período inicial terminou. Para continuar usando o AgroMilk, a mensalidade é R$29,90. Entre em contato para liberar seu acesso.';
     updates.push(db.collection('admin_usuarios').doc(u.id).update({ status: 'bloqueado', accountStatus: 'bloqueado', bloqueioMotivo: motivo }));
     if (u.firebaseUid) {
       updates.push(db.collection('users').doc(u.firebaseUid).set({
@@ -740,6 +747,7 @@ async function criarUsuario() {
       id: uid,
       nome,
       usuario,
+      senha,
       senhaDefinidaEm: new Date().toISOString(),
       status,
       obs,
@@ -817,14 +825,22 @@ async function marcarPago(id) {
 
     const u = { id: doc.id, ...(doc.data() || {}) };
     const firebaseUid = u.firebaseUid || doc.id;
-    const valor = Number(u.valorMensal || 30);
+    const valor = Number(u.valorMensal || 29.90);
     const agora = new Date().toISOString();
+    const vencimento = new Date();
+    vencimento.setHours(23, 59, 59, 999);
+    vencimento.setDate(vencimento.getDate() + 30);
+    const vencimentoIso = vencimento.toISOString();
 
     await ref.update({
       status: 'ativo',
       accountStatus: 'ativo',
       ultimoPagamento: agora,
       ultimoValorPago: valor,
+      diaVencimento: vencimento.getDate(),
+      vencimentoAcesso: vencimentoIso,
+      vencimentoTrial: vencimentoIso,
+      testeGratisFim: vencimentoIso,
       bloqueioMotivo: ''
     });
 
@@ -835,10 +851,19 @@ async function marcarPago(id) {
         billing: {
           plano: u.plano || 'mensal',
           valorMensal: valor,
-          diaVencimento: Number(u.diaVencimento || 0),
+          diaVencimento: vencimento.getDate(),
           formaPagamento: u.formaPagamento || 'pix',
           ultimoPagamento: agora,
           ultimoValorPago: valor
+        },
+        vencimentoAcesso: vencimentoIso,
+        vencimentoTrial: vencimentoIso,
+        trial: {
+          enabled: true,
+          days: Number(u.testeGratisDias || 30),
+          startedAt: u.testeGratisInicio || agora,
+          endsAt: vencimentoIso,
+          expired: false
         }
       }, { merge: true });
     }
@@ -969,12 +994,12 @@ async function carregarUsuarios() {
             <div class="user-name">${u.nome} <span class="badge ${getContaBadgeClass(u.status)}">${u.status}</span></div>
             <div class="user-meta">
               Login: <strong>${u.usuario}</strong> &nbsp;·&nbsp; Área: <strong>${nomeAreaConta(u.areaSistema || u.area)}</strong> &nbsp;·&nbsp;
-              Senha: <span id="senha-${u.id}" style="font-family:monospace">não exibida</span>
+              Senha: <span id="senha-${u.id}" style="font-family:monospace">${u.senha || 'não informada'}</span>
               ${u.obs ? '&nbsp;·&nbsp; ' + u.obs : ''}
             </div>
             <div class="user-meta section-space">
               Plano: <strong>${u.plano || 'mensal'}</strong> &nbsp;·&nbsp;
-              Valor: <strong>${formatMoney(u.valorMensal || 30)}</strong> &nbsp;·&nbsp;
+              Valor: <strong>${formatMoney(u.valorMensal || 29.90)}</strong> &nbsp;·&nbsp;
               Vencimento: <strong>dia ${u.diaVencimento || '-'}</strong> &nbsp;·&nbsp;
               Situação: <span class="badge ${getStatusBadgeClass(statusPg)}">${statusPg}</span>
             </div>
@@ -1217,8 +1242,7 @@ async function salvarEdicao() {
     await ref.update({
       nome,
       usuario,
-      senha: firebase.firestore.FieldValue.delete(),
-      ...(senha ? { senhaDefinidaEm: new Date().toISOString() } : {}),
+      ...(senha ? { senha, senhaDefinidaEm: new Date().toISOString() } : {}),
       status,
       obs,
       whatsapp,

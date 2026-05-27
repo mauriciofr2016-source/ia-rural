@@ -1,10 +1,10 @@
-const CACHE_NAME = 'agromilk-cache-v14-pwa-fotos-financeiro';
+const CACHE_NAME = 'agromilk-cache-v15-lancamento-landing';
 const APP_ASSETS = [
   './',
   './index.html',
   './admin.html',
   './manifest.json',
-  './manifest.json?v=20260527-pwa2',
+  './manifest.json?v=20260527-launch',
   './icon-192-v2.png',
   './icon-512-v2.png',
   './favicon.png',
