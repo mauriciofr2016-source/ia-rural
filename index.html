@@ -2105,6 +2105,13 @@
     let salvandoProtocoloVaca = false;
     let restaurandoSessaoFirebase = false;
     let loginManualEmAndamento = false;
+    let dadosIniciaisCarregados = false;
+    let sincronizacaoDadosPromise = null;
+    let sincronizacaoDadosEmAndamento = false;
+    let versaoDadosMemoria = 0;
+    let assinaturaDadosMemoria = '';
+    let paginaAtualAgroMilk = 'inicio';
+    const renderCachePaginas = {};
     const calendarioExpandido = {};
     const rebanhoExpandido = {};
     let historicoProtocolosAberto = false;
@@ -2366,8 +2373,7 @@ async function fazerLogin(btn) {
     DB = DB_PADRAO();
     aplicarAreaPermitidaOuRedirecionar(areaLoginSelecionada || usuarioAreaPermitida || 'leiteira');
     abrirAppLogado(usuario);
-    mostrarCarregandoDadosIniciais();
-    await carregarFirestore();
+    await carregarDadosIniciais();
   } catch (erro) {
     console.error(erro);
     let msg = 'Não foi possível entrar. Verifique usuário e senha.';
@@ -2436,8 +2442,7 @@ if (auth) {
       DB = DB_PADRAO();
       aplicarAreaPermitidaOuRedirecionar(usuarioAreaPermitida || 'leiteira');
       abrirAppLogado(usuario);
-      mostrarCarregandoDadosIniciais();
-      await carregarFirestore();
+      await carregarDadosIniciais();
     } catch (erroSessao) {
       console.error('Erro ao restaurar sessão:', erroSessao);
     } finally {
@@ -2759,7 +2764,7 @@ if (auth) {
         abrirAppLogado(usuario);
         await salvarDBConfirmado({ sincronizarAnimais: false }, 'Conta criada, mas não foi possível confirmar os dados iniciais na nuvem. Verifique a conexão e tente entrar novamente.');
         setOk('Acesso criado com sucesso. Abrindo o AgroMilk...');
-        await carregarFirestore();
+        await carregarDadosIniciais();
       } catch (e) {
         console.error('Erro ao criar conta:', e);
         const code = e?.code || '';
@@ -2785,6 +2790,12 @@ if (auth) {
         usuarioLogado = null;
         usuarioAreaPermitida = '';
         areaLoginSelecionada = '';
+        dadosIniciaisCarregados = false;
+        sincronizacaoDadosPromise = null;
+        sincronizacaoDadosEmAndamento = false;
+        assinaturaDadosMemoria = '';
+        versaoDadosMemoria = 0;
+        invalidarRenderizacoesRapidas();
         try { if (typeof DB_PADRAO === 'function') DB = DB_PADRAO(); } catch(e) {}
         document.getElementById('app-wrapper').style.display = 'none';
         document.getElementById('tela-login').style.display = 'none';
@@ -2926,6 +2937,7 @@ if (auth) {
 
       const page = document.getElementById('page-' + id);
       if (page) page.classList.add('active');
+      paginaAtualAgroMilk = id;
 
       const navSectionMap = {
         'protocolar-vaca': 'mais',
@@ -2940,8 +2952,31 @@ if (auth) {
       const tab = document.querySelector(`.nav-tab[data-page="${tabPage}"]`);
       if (tab && !tab.classList.contains('hidden')) tab.classList.add('active');
 
+      renderizarPaginaAtualRapida(id);
+    }
+
+    function deveRenderizarPagina(id, forcar = false) {
+      if (forcar) return true;
+      return renderCachePaginas[id] !== versaoDadosMemoria;
+    }
+
+    function marcarPaginaRenderizada(id) {
+      renderCachePaginas[id] = versaoDadosMemoria;
+    }
+
+    function invalidarRenderizacoesRapidas() {
+      Object.keys(renderCachePaginas).forEach(k => delete renderCachePaginas[k]);
+    }
+
+    function marcarDadosMemoriaAlterados() {
+      versaoDadosMemoria += 1;
+      invalidarRenderizacoesRapidas();
+    }
+
+    function renderizarPaginaAtualRapida(id = paginaAtualAgroMilk, forcar = false) {
+      if (!deveRenderizarPagina(id, forcar)) return;
       if (id === 'inicio') atualizarHomeArea();
-      if (id === 'rebanho') renderRebanho();
+      if (id === 'rebanho') renderizarMeuRebanhoRapido();
       if (id === 'producao') { renderProducao(); try { carregarPrecoLitroNaTela(); } catch(e) {} }
       if (id === 'medicacoes') renderMedicacoes();
       if (id === 'despesas') renderDespesas();
@@ -2963,6 +2998,7 @@ if (auth) {
       if (id === 'vacinas-medicamentos-corte') renderVacinasMedicamentosCorte();
       if (id === 'financeiro-corte') renderFinanceiroCorte();
       if (id === 'mortes-vendas-corte') renderMovimentacoesCorte();
+      marcarPaginaRenderizada(id);
     }
 
     function getUidAtualSeguro() {
@@ -4234,6 +4270,84 @@ if (auth) {
       try { renderMovimentacoesCorte(); } catch(e) {}
     }
 
+    function dbTemCacheUtil(dbOrigem) {
+      const db = dbOrigem || DB || {};
+      return !!(
+        (Array.isArray(db.animais) && db.animais.length) ||
+        (Array.isArray(db.protocolosVacas) && db.protocolosVacas.length) ||
+        (Array.isArray(db.medicacoes) && db.medicacoes.length) ||
+        (Array.isArray(db.historicoPesagensLeite) && db.historicoPesagensLeite.length) ||
+        (db.producao && typeof db.producao === 'object' && Object.keys(db.producao).length)
+      );
+    }
+
+    function assinaturaDBLeve(dbOrigem) {
+      const db = dbOrigem || DB || {};
+      return JSON.stringify({
+        animais: (db.animais || []).map(a => [a.id, a.nome, a.brinco, a.lactacao, a.prenha, a.atualizadoEm, a.dataArquivo]),
+        protocolosVacas: (db.protocolosVacas || []).map(p => [p.id, p.animalId, p.status, p.ativo, p.dataProtocolo, p.dataToque, p.dataEncerramento]),
+        medicacoes: (db.medicacoes || []).map(m => [m.id, m.status, m.data, m.dataRepetir]),
+        historicoPesagensLeite: (db.historicoPesagensLeite || []).map(p => [p.id, p.data, p.total, p.atualizadoEm]),
+        producao: db.producao || {},
+        areaSelecionada: db.areaSelecionada || ''
+      });
+    }
+
+    function renderizarHomeRapida() {
+      try { atualizarHomeArea(); } catch(e) { console.warn('Falha ao renderizar Início:', e); }
+    }
+
+    function renderizarMeuRebanhoRapido() {
+      const lista = document.getElementById('lista-rebanho');
+      const contador = document.getElementById('count-rebanho');
+      if (!dbTemCacheUtil(DB) && lista) {
+        lista.innerHTML = '<div class="loading-state"><strong>Carregando dados...</strong><br>Buscando as informações salvas.</div>';
+        if (contador) contador.textContent = '...';
+        return;
+      }
+      try { renderRebanho(); } catch(e) { console.warn('Falha ao renderizar Meu Rebanho:', e); }
+    }
+
+    function renderizarTelasPrioritariasRapidas(forcar = false) {
+      if (forcar) invalidarRenderizacoesRapidas();
+      try { renderizarHomeRapida(); marcarPaginaRenderizada('inicio'); } catch(e) {}
+      try { renderizarMeuRebanhoRapido(); marcarPaginaRenderizada('rebanho'); } catch(e) {}
+      try { renderProducao(); marcarPaginaRenderizada('producao'); } catch(e) {}
+      try { renderVacasProtocoladas(); marcarPaginaRenderizada('vacas-protocoladas'); } catch(e) {}
+    }
+
+    async function carregarDadosIniciais(opcoes = {}) {
+      const sincronizar = opcoes.sincronizar !== false;
+      if ((!usuarioFirebase || !usuarioFirebase.uid) && auth.currentUser) usuarioFirebase = auth.currentUser;
+      const local = carregarLocalPorUsuario(usuarioLogado || '');
+      DB = normalizarDB(local || {});
+      DB.areaSelecionada = areaContaParaInterna(obterAreaContaAtualSegura());
+      assinaturaDadosMemoria = assinaturaDBLeve(DB);
+      dadosIniciaisCarregados = true;
+      marcarDadosMemoriaAlterados();
+
+      if (dbTemCacheUtil(DB)) {
+        renderizarTelasPrioritariasRapidas(true);
+        renderizarPaginaAtualRapida(paginaAtualAgroMilk, true);
+      } else {
+        mostrarCarregandoDadosIniciais();
+      }
+
+      if (sincronizar) sincronizarDadosEmSegundoPlano();
+    }
+
+    function sincronizarDadosEmSegundoPlano() {
+      if (sincronizacaoDadosPromise) return sincronizacaoDadosPromise;
+      sincronizacaoDadosEmAndamento = true;
+      sincronizacaoDadosPromise = carregarFirestore({ segundoPlano: true })
+        .catch(e => console.warn('Sincronização em segundo plano falhou:', e))
+        .finally(() => {
+          sincronizacaoDadosEmAndamento = false;
+          sincronizacaoDadosPromise = null;
+        });
+      return sincronizacaoDadosPromise;
+    }
+
     async function carregarColecaoAnimais(nomeColecao) {
       if (!usuarioFirebase) return [];
       const areaConta = obterAreaContaAtualSegura();
@@ -4348,19 +4462,20 @@ if (auth) {
     function mostrarCarregandoDadosIniciais() {
       const lista = document.getElementById('lista-rebanho');
       if (lista) {
-        lista.innerHTML = '<div class="loading-state"><strong>Carregando rebanho...</strong><br>Buscando as informações salvas na nuvem.</div>';
+        lista.innerHTML = '<div class="loading-state"><strong>Carregando dados...</strong><br>Buscando as informações salvas.</div>';
       }
       const contador = document.getElementById('count-rebanho');
       if (contador) contador.textContent = '...';
     }
 
-    async function carregarFirestore() {
+    async function carregarFirestore(opcoes = {}) {
       if ((!usuarioFirebase || !usuarioFirebase.uid) && auth.currentUser) {
         usuarioFirebase = auth.currentUser;
       }
       if (!usuarioFirebase || !usuarioFirebase.uid) return;
 
       let dadosLocais = DB_PADRAO();
+      const assinaturaAntes = assinaturaDadosMemoria || assinaturaDBLeve(DB);
 
       try {
         // Busca a área real do usuário direto no Firestore antes de qualquer outra coisa.
@@ -4383,6 +4498,7 @@ if (auth) {
         const areaConta = obterAreaContaAtualSegura();
         const areaInterna = areaContaParaInterna(areaConta);
         dadosLocais = carregarLocalPorUsuario(usuarioLogado || '');
+        const semCacheLocal = !dbTemCacheUtil(dadosLocais);
         const refArea = obterRefDadosArea(usuarioFirebase.uid);
 
         let appDataNuvem = {};
@@ -4425,6 +4541,11 @@ if (auth) {
         DB.areaSelecionada = areaInterna;
         const baixaEstoqueAplicada = processarBaixaEstoqueDiaria();
         salvarLocal();
+        const assinaturaDepois = assinaturaDBLeve(DB);
+        const dadosMudaram = assinaturaDepois !== assinaturaAntes;
+        assinaturaDadosMemoria = assinaturaDepois;
+        dadosIniciaisCarregados = true;
+        if (dadosMudaram) marcarDadosMemoriaAlterados();
         if (baixaEstoqueAplicada) {
           try { await salvarDB({ sincronizarAnimais: false }); } catch(e) { console.warn('Baixa automática de estoque não sincronizada agora:', e); }
         }
@@ -4454,13 +4575,20 @@ if (auth) {
           console.warn('Não foi possível enviar backup local para a nuvem agora:', erroResgateNuvem);
         }
 
-        renderTudo();
+        if (dadosMudaram || semCacheLocal || !opcoes.segundoPlano) {
+          renderizarTelasPrioritariasRapidas(true);
+          renderizarPaginaAtualRapida(paginaAtualAgroMilk, true);
+        }
       } catch (e) {
         console.error('Erro ao carregar Firestore:', e);
         DB = dadosLocais;
         DB.areaSelecionada = areaContaParaInterna(areaLoginSelecionada || 'leiteira');
         salvarLocal();
-        renderTudo();
+        assinaturaDadosMemoria = assinaturaDBLeve(DB);
+        dadosIniciaisCarregados = true;
+        marcarDadosMemoriaAlterados();
+        renderizarTelasPrioritariasRapidas(true);
+        renderizarPaginaAtualRapida(paginaAtualAgroMilk, true);
       }
     }
 
@@ -6396,8 +6524,8 @@ if (auth) {
         lista.innerHTML = `<div class="empty-state"><div class="empty-icon"></div>Nenhuma pesagem salva ainda.<br/>Clique em <strong>Registrar pesagem</strong> para criar o primeiro histórico.</div>`;
         return;
       }
-      lista.innerHTML = historico.map((p, idx) => {
-        const aberta = idx === 0;
+      lista.innerHTML = historico.map((p) => {
+        const aberta = false;
         const total = parseFloat(p.total) || (p.itens || []).reduce((s, i) => s + (parseFloat(i.total) || 0), 0);
         return `
           <div class="prod-card">
