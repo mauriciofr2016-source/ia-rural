@@ -1328,7 +1328,7 @@
     .landing-hero-logo{width:100%;max-width:330px;justify-self:end;filter:drop-shadow(0 0 18px rgba(255,255,255,.08));object-fit:contain}
     .landing-kicker{color:#6dd56d;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px}.landing-hero h1{font-family:'DM Serif Display',serif;font-size:clamp(34px,6vw,62px);line-height:1.02;margin-bottom:12px}.landing-hero p{max-width:720px;color:var(--muted);font-size:15px;line-height:1.7}
     .landing-area-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:24px}.landing-area-card{background:#000;border:1px solid var(--border);border-radius:20px;padding:20px;cursor:pointer;transition:.2s;text-align:left;color:var(--text);font-family:'DM Sans',sans-serif}.landing-area-card:hover{border-color:#6dd56d;transform:translateY(-2px)}.landing-area-card .area-logo{width:54px;height:54px;object-fit:contain;margin-bottom:10px;display:block}.landing-area-card h2{font-size:20px;margin-bottom:7px}.landing-area-card p{font-size:13px;color:var(--muted);line-height:1.6}.landing-note{margin-top:18px;color:#cbd5e1;font-size:13px;line-height:1.6}
-    #prelogin-screen{display:flex}#tela-login{display:none}#landing-screen{display:none!important}.login-back{margin-top:10px;background:transparent;color:#0B5CAD;border:none;cursor:pointer;font-size:12px;font-family:'DM Sans',sans-serif}.login-area-chip{display:none!important}
+    #prelogin-screen{display:none!important}#tela-login{display:none}#landing-screen{display:none!important}.login-back{margin-top:10px;background:transparent;color:#0B5CAD;border:none;cursor:pointer;font-size:12px;font-family:'DM Sans',sans-serif}.login-area-chip{display:none!important}.home-alerts-only{display:block;padding-top:18px}.home-alerts-only .smart-alerts-panel{margin-top:0}
     .login-brand-row{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:12px}
     .login-brand-image{width:118px;height:74px;object-fit:contain;display:block}
     .nav-brand-row{display:flex;align-items:center;gap:10px}
@@ -1420,7 +1420,7 @@
   <button class="prelogin-btn primary" type="button" onclick="fecharAjudaInstalacao()">Entendi</button>
 </div>
 <div id="landing-screen" style="display:none!important"></div>
-<div id="tela-login"><div class="login-box"><div class="login-brand-row"><div class="login-logo">Agro<span>Milk</span></div><img class="login-brand-image" alt="Logo AgroMilk" src="logo_agromilk.png"></div><div class="login-tagline">Entre com seu usuário e senha.</div><div class="login-field"><label>Usuário</label><input id="login-usuario" onkeydown="if(event.key==='Enter')fazerLogin()" placeholder="Seu usuário" type="text"/></div><div class="login-field"><label>Senha</label><input id="login-senha" onkeydown="if(event.key==='Enter')fazerLogin()" placeholder="********" type="password"/></div><button class="login-btn" onclick="fazerLogin()">Entrar</button><button class="login-back" onclick="mostrarCadastroConta()">Criar meu acesso</button><div class="login-error" id="login-erro">Usuário ou senha incorretos. Verifique e tente novamente.</div><div class="login-footer">AgroMilk · Gestão leiteira inteligente</div></div></div>
+<div id="tela-login"><div class="login-box"><div class="login-brand-row"><div class="login-logo">Agro<span>Milk</span></div><img class="login-brand-image" alt="Logo AgroMilk" src="logo_agromilk.png"></div><div class="login-tagline">Entre com seu usuário e senha.</div><div class="login-field"><label>Usuário</label><input id="login-usuario" onkeydown="if(event.key==='Enter')fazerLogin()" placeholder="Seu usuário" type="text"/></div><div class="login-field"><label>Senha</label><input id="login-senha" onkeydown="if(event.key==='Enter')fazerLogin()" placeholder="********" type="password"/></div><button class="login-btn" onclick="fazerLogin(this)">Entrar</button><button class="login-back" onclick="mostrarCadastroConta()">Cadastrar</button><div class="login-error" id="login-erro">Usuário ou senha incorretos. Verifique e tente novamente.</div><div class="login-footer">AgroMilk ajuda a organizar rebanho, pesagens, financeiro, estoque, medicações e lembretes da rotina leiteira em um só lugar.</div></div></div>
 <div id="app-wrapper">
 <div class="trial-banner" id="trial-banner"></div>
 <div class="update-banner" id="update-banner">Atualização disponível. Clique para atualizar o AgroMilk. <button class="prelogin-btn primary" type="button" onclick="atualizarAppAgora()">Atualizar</button></div>
@@ -1466,7 +1466,7 @@
     </div>
   </div>
 </div>
-<div class="page active" id="page-inicio"><div class="welcome-hero"><h1>Bem-vindo ao<br/><span>AgroMilk</span></h1><p class="muted" id="home-area-logada">Gest&atilde;o leiteira inteligente para a rotina da fazenda.</p><div class="features-grid" id="features-grid-home"></div><div class="smart-alerts-panel" id="smart-alerts-home"><div class="smart-alerts-head"><div><div class="smart-alerts-title">Alertas inteligentes</div><div class="smart-alerts-sub">Partos, secagens, protocolos e exames calculados com os dados j&aacute; cadastrados.</div></div></div><div class="smart-alerts-grid" id="smart-alerts-grid"><div class="smart-alert-empty">Nenhum alerta importante no momento.</div></div></div><div id="onboarding-primeiros-passos"></div><div id="quick-summary-home"></div></div></div>
+<div class="page active" id="page-inicio"><div class="welcome-hero home-alerts-only"><div class="smart-alerts-panel" id="smart-alerts-home"><div class="smart-alerts-head"><div><div class="smart-alerts-title">Lembretes inteligentes</div><div class="smart-alerts-sub">Partos, secagens, protocolos e exames calculados com os dados j&aacute; cadastrados.</div></div></div><div class="smart-alerts-grid" id="smart-alerts-grid"><div class="smart-alert-empty">Nenhum alerta importante no momento.</div></div></div></div></div>
 <div class="page" id="page-rebanho">
 <div class="backup-notice">Dados salvos localmente e sincronizados na nuvem para o usuário logado.</div>
 <div class="card">
@@ -2324,16 +2324,19 @@
   }
 }
 
-async function fazerLogin() {
+async function fazerLogin(btn) {
   const usuario = normalizarUsuario(document.getElementById('login-usuario').value);
   const senha = document.getElementById('login-senha').value;
   const erroBox = document.getElementById('login-erro');
+  const travado = travarBotaoAcao(btn, 'Entrando...');
+  if (travado === false) return;
 
   erroBox.style.display = 'none';
 
   if (!usuario || !senha) {
     erroBox.textContent = 'Informe usuário e senha.';
     erroBox.style.display = 'block';
+    liberarBotaoAcao(btn);
     return;
   }
 
@@ -2383,6 +2386,7 @@ async function fazerLogin() {
     erroBox.style.display = 'block';
   } finally {
     loginManualEmAndamento = false;
+    liberarBotaoAcao(btn);
   }
 }
 
@@ -2616,7 +2620,7 @@ if (auth) {
       return areaEncontrada || normalizarAreaAcesso(areaLoginSelecionada) || 'leiteira';
     }
     function abrirLoginArea(area){mostrarLoginSimples();}
-    function voltarLanding(){areaLoginSelecionada='';document.getElementById('login-usuario').value='';document.getElementById('login-senha').value='';document.getElementById('login-erro').style.display='none';document.getElementById('tela-login').style.display='none';document.getElementById('tela-cadastro').style.display='none';document.getElementById('app-wrapper').style.display='none';document.getElementById('prelogin-screen').style.display='flex';carregarConfigWhatsApp();}
+    function voltarLanding(){areaLoginSelecionada='leiteira';document.getElementById('login-usuario').value='';document.getElementById('login-senha').value='';document.getElementById('login-erro').style.display='none';document.getElementById('tela-cadastro').style.display='none';mostrarLoginSimples();carregarConfigWhatsApp();}
 
     function mostrarLoginSimples() {
       areaLoginSelecionada = 'leiteira';
@@ -2649,9 +2653,7 @@ if (auth) {
       const cadastro = document.getElementById('tela-cadastro');
       if (cadastro) cadastro.style.display = 'none';
       document.getElementById('ajuda-instalacao')?.classList.add('hidden');
-      document.getElementById('tela-login').style.display = 'none';
-      document.getElementById('app-wrapper').style.display = 'none';
-      document.getElementById('prelogin-screen').style.display = 'flex';
+      mostrarLoginSimples();
     }
 
     function fecharAjudaInstalacao() {
@@ -2749,14 +2751,14 @@ if (auth) {
             ultimoValorPago: 0
           }
         }, { merge: true });
-        setOk('Acesso criado com sucesso. Abrindo o AgroMilk...');
         usuarioFirebase = cred.user;
         usuarioLogado = usuario;
         usuarioAreaPermitida = 'leiteira';
         DB = DB_PADRAO();
         aplicarAreaPermitidaOuRedirecionar('leiteira');
         abrirAppLogado(usuario);
-        await salvarDB({ sincronizarAnimais: false });
+        await salvarDBConfirmado({ sincronizarAnimais: false }, 'Conta criada, mas não foi possível confirmar os dados iniciais na nuvem. Verifique a conexão e tente entrar novamente.');
+        setOk('Acesso criado com sucesso. Abrindo o AgroMilk...');
         await carregarFirestore();
       } catch (e) {
         console.error('Erro ao criar conta:', e);
@@ -2789,11 +2791,12 @@ if (auth) {
         const cadastro = document.getElementById('tela-cadastro');
         if (cadastro) cadastro.style.display = 'none';
         const prelogin = document.getElementById('prelogin-screen');
-        if (prelogin) prelogin.style.display = 'flex';
+        if (prelogin) prelogin.style.display = 'none';
         const loginUsuario = document.getElementById('login-usuario');
         const loginSenha = document.getElementById('login-senha');
         if (loginUsuario) loginUsuario.value = '';
         if (loginSenha) loginSenha.value = '';
+        mostrarLoginSimples();
         try { carregarConfigWhatsApp(); } catch(e) {}
       } catch (e) {
         console.error('Erro ao sair:', e);
@@ -4045,30 +4048,16 @@ if (auth) {
       if (cardLeite) cardLeite.classList.add('active');
 
       if (title && desc) {
-        title.textContent = 'AgroMilk ativo';
-        desc.textContent = 'Produ\u00e7\u00e3o, rebanho, financeiro e calend\u00e1rio organizados para a rotina leiteira.';
+        title.textContent = '';
+        desc.textContent = '';
       }
 
       if (guideTitle && guideContent) {
-        guideTitle.textContent = 'Como usar o AgroMilk';
-        guideContent.innerHTML = `
-          <p style="margin-bottom:8px;"><strong>1.</strong> Cadastre seus animais em <strong>Rebanho</strong> com nome, brinco, sexo e idade.</p>
-          <p style="margin-bottom:8px;"><strong>2.</strong> Use <strong>Produ\u00e7\u00e3o</strong> para registrar pesagens de leite e acompanhar o hist\u00f3rico.</p>
-          <p style="margin-bottom:8px;"><strong>3.</strong> Em <strong>Financeiro</strong>, controle despesas, entregas, ra\u00e7\u00e3o, silo e estoque.</p>
-          <p style="margin-bottom:8px;"><strong>4.</strong> Em <strong>Mais</strong>, acesse protocolos, calend\u00e1rio, veterin\u00e1rio, genealogia, backup e instala\u00e7\u00e3o.</p>
-          <p><strong>5.</strong> Seus dados ficam salvos no navegador e tamb\u00e9m na nuvem do usu\u00e1rio logado.</p>
-        `;
+        guideTitle.textContent = '';
+        guideContent.innerHTML = '';
       }
 
-      if (grid) {
-        grid.innerHTML = getHomeFeatures('leiteiro').map(item => `
-          <div class="feat-card" onclick="${item.action}">
-            <div class="feat-icon">${item.icon}</div>
-            <div class="feat-label">${item.label}</div>
-            <div class="feat-desc">${item.desc}</div>
-          </div>
-        `).join('');
-      }
+      if (grid) grid.innerHTML = '';
 
       renderAlertasInteligentesHome();
     }
@@ -4106,7 +4095,7 @@ if (auth) {
       areaLoginSelecionada = areaContaDesejada;
       aplicarAreaNaInterface();
       atualizarCategoria();
-      await salvarDB();
+      await salvarDBConfirmado({}, 'Não foi possível salvar a alteração do animal na nuvem. Verifique a conexão e tente novamente.');
     }
 
     function irParaAreaPrincipal() {
@@ -4883,7 +4872,8 @@ if (auth) {
       if (animal.area === 'corte') {
         animal.consumoEstimado = getConsumoTotalAnimal(animal);
       }
-      await salvarDB();
+      await salvarDBConfirmado({}, 'Não foi possível salvar a anotação na nuvem. Verifique a conexão e tente novamente.');
+      alert('Anotação salva com sucesso.');
       renderRebanho();
       renderSanitarioCorte();
       renderNutricaoCorte();
@@ -5148,7 +5138,7 @@ if (auth) {
         }
 
         DB.entregasCorte.push(registro);
-        await salvarDB({ sincronizarAnimais: false });
+        await salvarDBConfirmado({ sincronizarAnimais: false }, 'Não foi possível salvar o estoque na nuvem. Verifique a conexão e tente novamente.');
         ['dc-milho-data','dc-milho-sacos','dc-milho-preco-saco','dc-milho-ton','dc-milho-preco-ton'].forEach(id => {
           const el = document.getElementById(id); if (el) el.value = '';
         });
@@ -5176,7 +5166,7 @@ if (auth) {
           precoUnitario: precoTon,
           precoTotal: ton * precoTon
         });
-        await salvarDB({ sincronizarAnimais: false });
+        await salvarDBConfirmado({ sincronizarAnimais: false }, 'Não foi possível salvar a entrega de silagem na nuvem. Verifique a conexão e tente novamente.');
         ['dc-silagem-data','dc-silagem-ton','dc-silagem-preco-ton'].forEach(id => {
           const el = document.getElementById(id); if (el) el.value = '';
         });
@@ -5203,7 +5193,7 @@ if (auth) {
           precoUnitario: precoSaco,
           precoTotal: sacos * precoSaco
         });
-        await salvarDB({ sincronizarAnimais: false });
+        await salvarDBConfirmado({ sincronizarAnimais: false }, 'Não foi possível salvar a entrega de ração na nuvem. Verifique a conexão e tente novamente.');
         ['dc-racao-data','dc-racao-sacos','dc-racao-preco-saco'].forEach(id => {
           const el = document.getElementById(id); if (el) el.value = '';
         });
@@ -5232,7 +5222,7 @@ if (auth) {
       if (!confirmar) return;
 
       DB.entregasCorte.splice(i, 1);
-      await salvarDB({ sincronizarAnimais: false });
+      await salvarDBConfirmado({ sincronizarAnimais: false }, 'Não foi possível excluir a entrega na nuvem. Verifique a conexão e tente novamente.');
       renderDespesasCorte();
       renderNutricaoCorte();
       renderVendidosCorte();
@@ -5998,7 +5988,7 @@ if (auth) {
       const nova = prompt(`Digite a anotação rápida para ${nome}:`, atual);
       if (nova === null) return;
       animal.anotacaoRapida = nova.trim();
-      await salvarDB();
+      await salvarDBConfirmado({}, 'Não foi possível arquivar o animal na nuvem. Verifique a conexão e tente novamente.');
       renderRebanho();
     }
 
@@ -6040,7 +6030,7 @@ if (auth) {
       DB.arquivados.push(removido);
 
       delete DB.producao[removido.id];
-      await salvarDB();
+      await salvarDBConfirmado({}, 'Não foi possível registrar a venda na nuvem. Verifique a conexão e tente novamente.');
 
       fecharModal('modal-excluir');
       renderTudo();
@@ -6093,7 +6083,7 @@ if (auth) {
         }
 
         delete DB.producao[animal.id];
-        await salvarDB();
+        await salvarDBConfirmado({}, 'Não foi possível registrar a morte na nuvem. Verifique a conexão e tente novamente.');
         fecharModal('modal-morte-corte');
         renderTudo();
         showPage('mortes-vendas-corte');
@@ -6148,7 +6138,7 @@ if (auth) {
         });
       }
 
-      await salvarDB();
+      await salvarDBConfirmado({}, 'Não foi possível salvar a área selecionada na nuvem. Verifique a conexão e tente novamente.');
       fecharModal('modal-venda');
       renderTudo();
       if (animal.area === 'corte') {
@@ -6327,63 +6317,74 @@ if (auth) {
     async function salvarPesagemLeite(btn) {
       if (salvandoPesagemLeite || (btn && btn.disabled)) return;
       salvandoPesagemLeite = true;
-      if (btn) { btn.disabled = true; btn.dataset.originalText = btn.innerHTML; btn.innerHTML = 'Salvando...'; }
-      const data = prepararDataParaSalvar(document.getElementById('pesagem-leite-data')?.value || dataHojeBR());
-      const emLactacao = obterAnimaisLeiteEmLactacao();
-      const itens = emLactacao.map(a => {
-        const buscar = periodo => parseFloat(document.querySelector(`.pesagem-input[data-animal-id="${CSS.escape(a.id)}"][data-periodo="${periodo}"]`)?.value) || 0;
-        const manha = buscar('manha');
-        const tarde = buscar('tarde');
-        const noite = buscar('noite');
-        const total = manha + tarde + noite;
-        return { animalId: a.id, nome: a.nome || '', brinco: a.brinco || '', manha, tarde, noite, total };
-      }).filter(i => i.total > 0);
-
-      if (!itens.length) {
+      const travou = travarBotaoAcao(btn, 'Salvando...');
+      if (travou === false) {
         salvandoPesagemLeite = false;
-        if (btn) { btn.disabled = false; btn.innerHTML = btn.dataset.originalText || 'Salvar pesagem'; }
-        return alert('Informe pelo menos uma quantidade de leite antes de salvar.');
-      }
-
-      if (!DB.producao || typeof DB.producao !== 'object') DB.producao = {};
-      itens.forEach(i => {
-        DB.producao[i.animalId] = { manha: i.manha, tarde: i.tarde, noite: i.noite, total: i.total, data };
-      });
-
-      const historico = getHistoricoPesagensLeite();
-      const registro = {
-        id: pesagemLeiteEmEdicao || ('pesagem_' + Date.now()),
-        data,
-        criadoEm: pesagemLeiteEmEdicao ? (historico.find(p => p.id === pesagemLeiteEmEdicao)?.criadoEm || new Date().toISOString()) : new Date().toISOString(),
-        atualizadoEm: new Date().toISOString(),
-        itens,
-        total: itens.reduce((s, i) => s + i.total, 0)
-      };
-      const idsAfetadosEdicao = new Set(itens.map(i => i.animalId).filter(Boolean));
-      if (pesagemLeiteEmEdicao) {
-        const pesagemAntiga = historico.find(p => p.id === pesagemLeiteEmEdicao);
-        (pesagemAntiga?.itens || []).forEach(i => { if (i?.animalId) idsAfetadosEdicao.add(i.animalId); });
-        DB.historicoPesagensLeite = historico.filter(p => p.id !== pesagemLeiteEmEdicao);
-      }
-      getHistoricoPesagensLeite().unshift(registro);
-      recalcularProducaoLeiteAPartirDoHistorico(idsAfetadosEdicao);
-
-      const eraEdicaoPesagem = !!pesagemLeiteEmEdicao;
-      const ok = await salvarDB({ sincronizarAnimais: false });
-      if (!ok) {
-        alert('Não consegui confirmar a pesagem na nuvem. Verifique a internet e tente novamente.');
         return;
       }
-      fecharFormularioPesagemLeite();
-      renderProducao();
-      renderRebanho();
-      renderDespesas();
-      alert(eraEdicaoPesagem ? 'Pesagem do leite atualizada com sucesso.' : 'Pesagem do leite salva com sucesso.');
-      pesagemLeiteEmEdicao = null;
-      salvandoPesagemLeite = false;
-      if (btn) {
-        btn.disabled = false;
-        btn.innerHTML = btn.dataset.originalText || 'Salvar pesagem';
+      const producaoAntes = JSON.parse(JSON.stringify(DB.producao || {}));
+      const historicoAntes = JSON.parse(JSON.stringify(DB.historicoPesagensLeite || []));
+      const idEdicaoAntes = pesagemLeiteEmEdicao;
+      try {
+        const data = prepararDataParaSalvar(document.getElementById('pesagem-leite-data')?.value || dataHojeBR());
+        const emLactacao = obterAnimaisLeiteEmLactacao();
+        const itens = emLactacao.map(a => {
+          const buscar = periodo => parseFloat(document.querySelector(`.pesagem-input[data-animal-id="${CSS.escape(a.id)}"][data-periodo="${periodo}"]`)?.value) || 0;
+          const manha = buscar('manha');
+          const tarde = buscar('tarde');
+          const noite = buscar('noite');
+          const total = manha + tarde + noite;
+          return { animalId: a.id, nome: a.nome || '', brinco: a.brinco || '', manha, tarde, noite, total };
+        }).filter(i => i.total > 0);
+
+        if (!itens.length) {
+          alert('Informe pelo menos uma quantidade de leite antes de salvar.');
+          return;
+        }
+
+        if (!DB.producao || typeof DB.producao !== 'object') DB.producao = {};
+        itens.forEach(i => {
+          DB.producao[i.animalId] = { manha: i.manha, tarde: i.tarde, noite: i.noite, total: i.total, data };
+        });
+
+        const historico = getHistoricoPesagensLeite();
+        const registro = {
+          id: pesagemLeiteEmEdicao || ('pesagem_' + Date.now()),
+          data,
+          criadoEm: pesagemLeiteEmEdicao ? (historico.find(p => p.id === pesagemLeiteEmEdicao)?.criadoEm || new Date().toISOString()) : new Date().toISOString(),
+          atualizadoEm: new Date().toISOString(),
+          itens,
+          total: itens.reduce((s, i) => s + i.total, 0)
+        };
+        const idsAfetadosEdicao = new Set(itens.map(i => i.animalId).filter(Boolean));
+        if (pesagemLeiteEmEdicao) {
+          const pesagemAntiga = historico.find(p => p.id === pesagemLeiteEmEdicao);
+          (pesagemAntiga?.itens || []).forEach(i => { if (i?.animalId) idsAfetadosEdicao.add(i.animalId); });
+          DB.historicoPesagensLeite = historico.filter(p => p.id !== pesagemLeiteEmEdicao);
+        }
+        getHistoricoPesagensLeite().unshift(registro);
+        recalcularProducaoLeiteAPartirDoHistorico(idsAfetadosEdicao);
+
+        const eraEdicaoPesagem = !!pesagemLeiteEmEdicao;
+        await salvarDBConfirmado({ sincronizarAnimais: false }, 'Não consegui confirmar a pesagem na nuvem. Verifique a internet e tente novamente.');
+        fecharFormularioPesagemLeite();
+        renderProducao();
+        renderRebanho();
+        renderDespesas();
+        alert(eraEdicaoPesagem ? 'Pesagem do leite atualizada com sucesso.' : 'Pesagem do leite salva com sucesso.');
+        pesagemLeiteEmEdicao = null;
+      } catch (e) {
+        DB.producao = producaoAntes;
+        DB.historicoPesagensLeite = historicoAntes;
+        pesagemLeiteEmEdicao = idEdicaoAntes;
+        renderProducao();
+        renderRebanho();
+        renderDespesas();
+        console.error('Erro ao salvar pesagem do leite:', e);
+        if (!e?.alertaJaExibido) alert(e?.message || 'Erro ao salvar pesagem do leite. Tente novamente.');
+      } finally {
+        salvandoPesagemLeite = false;
+        liberarBotaoAcao(btn);
       }
     }
 
@@ -6435,6 +6436,8 @@ if (auth) {
     async function excluirPesagemLeite(id, btn) {
       const travou = travarBotaoAcao(btn, 'Excluindo...');
       if (travou === false) return;
+      const producaoAntes = JSON.parse(JSON.stringify(DB.producao || {}));
+      const historicoAntes = JSON.parse(JSON.stringify(DB.historicoPesagensLeite || []));
       try {
         const pesagem = getHistoricoPesagensLeite().find(p => p.id === id);
         if (!pesagem) {
@@ -6447,18 +6450,19 @@ if (auth) {
         DB.historicoPesagensLeite = getHistoricoPesagensLeite().filter(p => p.id !== id);
         recalcularProducaoLeiteAPartirDoHistorico(idsAfetados);
 
-        const ok = await salvarDB({ sincronizarAnimais: false });
-        if (!ok) {
-          alert('Não consegui confirmar a exclusão na nuvem. Verifique a internet e tente novamente.');
-          return;
-        }
+        await salvarDBConfirmado({ sincronizarAnimais: false }, 'Não consegui confirmar a exclusão na nuvem. Verifique a internet e tente novamente.');
         renderProducao();
         renderRebanho();
         renderDespesas();
         alert('Pesagem excluída com sucesso. O Meu Rebanho foi atualizado.');
       } catch (e) {
+        DB.producao = producaoAntes;
+        DB.historicoPesagensLeite = historicoAntes;
+        renderProducao();
+        renderRebanho();
+        renderDespesas();
         console.error('Erro ao excluir pesagem:', e);
-        alert('Falha ao excluir a pesagem. Verifique a internet e tente novamente.');
+        if (!e?.alertaJaExibido) alert('Falha ao excluir a pesagem. Verifique a internet e tente novamente.');
       } finally {
         liberarBotaoAcao(btn);
       }
@@ -6585,9 +6589,21 @@ if (auth) {
       btn.style.cursor = '';
     }
 
+    async function salvarDBConfirmado(opcoes = {}, mensagemErro = 'Não foi possível confirmar o salvamento na nuvem. Verifique a conexão e tente novamente.') {
+      const ok = await salvarDB(opcoes);
+      if (!ok) {
+        const erro = new Error(mensagemErro);
+        erro.alertaJaExibido = true;
+        alert(mensagemErro);
+        throw erro;
+      }
+      return true;
+    }
+
     async function salvarEstoqueIngredientes(btn) {
       const travou = travarBotaoAcao(btn, 'Salvando...');
       if (travou === false) return;
+      const precoAntes = DB.precoLitroLeite;
       try {
         if (!DB.estoqueIngredientes) DB.estoqueIngredientes = {};
         INGREDIENTES_FABRICA_RACAO.forEach(i => {
@@ -6597,7 +6613,7 @@ if (auth) {
             DB.estoqueIngredientes[i.id] = { kg, preco };
           }
         });
-        await salvarDB({ sincronizarAnimais: false });
+        await salvarDBConfirmado({ sincronizarAnimais: false }, 'Não foi possível salvar o estoque na nuvem. Verifique a conexão e tente novamente.');
         calcularFabricaRacao();
         alert('Estoque salvo com sucesso.');
       } finally {
@@ -6682,7 +6698,7 @@ if (auth) {
         alert(`Receita "${nome}" salva!`);
       }
       DB.receitasRacao = receitas;
-      await salvarDB({ sincronizarAnimais: false });
+      await salvarDBConfirmado({ sincronizarAnimais: false }, 'Não foi possível salvar a receita na nuvem. Verifique a conexão e tente novamente.');
       renderReceitasSelect();
       } finally {
         liberarBotaoAcao(btn);
@@ -6701,7 +6717,7 @@ if (auth) {
       if (!confirm(`Deseja excluir a receita "${nome}"?`)) return;
       receitas.splice(idx, 1);
       DB.receitasRacao = receitas;
-      await salvarDB({ sincronizarAnimais: false });
+      await salvarDBConfirmado({ sincronizarAnimais: false }, 'Não foi possível excluir a receita na nuvem. Verifique a conexão e tente novamente.');
       renderReceitasSelect();
       limparFabricaRacao(true);
       alert('Receita excluída com sucesso.');
@@ -6777,7 +6793,7 @@ if (auth) {
         DB.entregas.push({ id: registroFormula.id, data, sacos: 'Fábrica', tipoKg: 'mistura', totalKg: total, produto: nome, precoTotal: custo, origem: 'Fábrica de Ração', composicao });
         DB.estoqueRacao = (parseFloat(DB.estoqueRacao) || 0) + total;
       }
-      await salvarDB({ sincronizarAnimais: false });
+      await salvarDBConfirmado({ sincronizarAnimais: false }, 'Não foi possível salvar a ração fabricada na nuvem. Verifique a conexão e tente novamente.');
       limparFabricaRacao(false);
       renderFabricaRacao();
       try { renderDespesas(); } catch(e) {}
@@ -6823,7 +6839,7 @@ if (auth) {
       DB.producao[animalId][periodo] = parseFloat(valor) || 0;
       DB.producao[animalId].total = (parseFloat(DB.producao[animalId].manha) || 0) + (parseFloat(DB.producao[animalId].tarde) || 0) + (parseFloat(DB.producao[animalId].noite) || 0);
       DB.producao[animalId].data = new Date().toISOString().slice(0, 10);
-      await salvarDB({ sincronizarAnimais: false });
+      await salvarDBConfirmado({ sincronizarAnimais: false }, 'Não foi possível salvar a produção na nuvem. Verifique a conexão e tente novamente.');
       atualizarTotalProducao();
       renderRebanho();
       renderDespesas();
@@ -7043,7 +7059,7 @@ if (auth) {
           criadoEm: new Date().toISOString()
         });
 
-        await salvarDB({ sincronizarAnimais: false });
+        await salvarDBConfirmado({ sincronizarAnimais: false }, 'Não foi possível salvar o produto na nuvem. Verifique a conexão e tente novamente.');
         ['dp-data','dp-produto','dp-quantidade','dp-valor-total','dp-consumo-total-dia'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
         const lista = document.getElementById('dp-lista-animais');
         if (lista) { lista.innerHTML = ''; lista.classList.add('hidden'); }
@@ -7076,7 +7092,7 @@ if (auth) {
         const item = lista[idx];
         if (!confirm(`Deseja excluir a entrega de ${item.produto || 'produto'}? O consumo também sairá do Meu Rebanho.`)) return;
         lista.splice(idx, 1);
-        await salvarDB({ sincronizarAnimais: false });
+        await salvarDBConfirmado({ sincronizarAnimais: false }, 'Não foi possível excluir a entrega do produto na nuvem. Verifique a conexão e tente novamente.');
         renderDespesas();
         renderRebanho();
         alert('Entrega do produto excluída com sucesso.');
@@ -7229,7 +7245,7 @@ if (auth) {
       });
 
       DB.estoqueRacao += totalKg;
-      await salvarDB({ sincronizarAnimais: false });
+      await salvarDBConfirmado({ sincronizarAnimais: false }, 'Não foi possível salvar a entrega na nuvem. Verifique a conexão e tente novamente.');
 
       document.getElementById('d-data').value = '';
       document.getElementById('d-sacos').value = '';
@@ -7266,7 +7282,7 @@ if (auth) {
 
       DB.entregas.splice(i, 1);
       DB.estoqueRacao = Math.max(0, (parseFloat(DB.estoqueRacao) || 0) - totalKg);
-      await salvarDB({ sincronizarAnimais: false });
+      await salvarDBConfirmado({ sincronizarAnimais: false }, 'Não foi possível excluir a entrega na nuvem. Verifique a conexão e tente novamente.');
       renderDespesas();
       alert('Entrega excluída com sucesso.');
       } finally {
@@ -7350,7 +7366,7 @@ if (auth) {
         if (idx >= 0) lista[idx] = registro;
         else lista.unshift(registro);
 
-        await salvarDB({ sincronizarAnimais: false });
+        await salvarDBConfirmado({ sincronizarAnimais: false }, 'Não foi possível salvar a medicação na nuvem. Verifique a conexão e tente novamente.');
         limparFormMedicacao();
         renderMedicacoes();
         renderDespesas();
@@ -7370,7 +7386,8 @@ if (auth) {
         const med = getMedicacoes().find(m => m.id === id);
         if (!med) return;
         med.status = status;
-        await salvarDB({ sincronizarAnimais: false });
+        await salvarDBConfirmado({ sincronizarAnimais: false }, 'Não foi possível atualizar a medicação na nuvem. Verifique a conexão e tente novamente.');
+        alert('Status da medicação atualizado com sucesso.');
         renderMedicacoes();
         renderAlertasInteligentesHome();
       } finally {
@@ -7384,10 +7401,11 @@ if (auth) {
       try {
         if (!confirm('Excluir esta medicação?')) return;
         DB.medicacoes = getMedicacoes().filter(m => m.id !== id);
-        await salvarDB({ sincronizarAnimais: false });
+        await salvarDBConfirmado({ sincronizarAnimais: false }, 'Não foi possível excluir a medicação na nuvem. Verifique a conexão e tente novamente.');
         renderMedicacoes();
         renderDespesas();
         renderAlertasInteligentesHome();
+        alert('Medicação excluída com sucesso.');
       } finally {
         liberarBotaoAcao(btn);
       }
@@ -7747,7 +7765,7 @@ if (auth) {
           }
         }
         criarProtocoloAnimal({ id: 'pv_' + Date.now(), animal: animalRef?.nome || animal, animalId: animalRef?.id || '', dataProtocolo, dataInseminacao, boi, racaBoi, dataToque, status: 'protocolada', historico: [] });
-        await salvarDB();
+        await salvarDBConfirmado({}, 'Não foi possível salvar o protocolo na nuvem. Verifique a conexão e tente novamente.');
         document.getElementById('pv-animal').value = '';
         document.getElementById('pv-data-protocolo').value = dataHojeBR();
         if (document.getElementById('pv-data-inseminacao')) document.getElementById('pv-data-inseminacao').value = '';
@@ -7790,12 +7808,12 @@ if (auth) {
       if (travado === false) return;
       try {
         DB.protocolosVacas = DB.protocolosVacas.filter(item => item.id !== id);
-        await salvarDB();
+        await salvarDBConfirmado({}, 'Não foi possível excluir o protocolo na nuvem. Verifique a conexão e tente novamente.');
         renderVacasProtocoladas(); renderCalendario(); renderAlertasInteligentesHome();
         alert('Protocolo excluído com sucesso.');
       } catch (erro) {
         console.error('Erro ao excluir protocolo:', erro);
-        alert('Erro ao excluir protocolo.');
+        if (!erro?.alertaJaExibido) alert('Erro ao excluir protocolo.');
       } finally {
         liberarBotaoAcao(btn);
       }
@@ -7844,11 +7862,11 @@ if (auth) {
             confirmarPrenhezAnimal(animal, p);
           }
         }
-        await salvarDB(); renderVacasProtocoladas(); renderCalendario(); renderAlertasInteligentesHome(); renderRebanho();
+        await salvarDBConfirmado({}, 'Não foi possível salvar o status do protocolo na nuvem. Verifique a conexão e tente novamente.'); renderVacasProtocoladas(); renderCalendario(); renderAlertasInteligentesHome(); renderRebanho();
         alert('Status salvo com sucesso.');
       } catch (erro) {
         console.error('Erro ao salvar status do protocolo:', erro);
-        alert('Erro ao salvar status do protocolo.');
+        if (!erro?.alertaJaExibido) alert('Erro ao salvar status do protocolo.');
       } finally {
         liberarBotaoAcao(btn);
       }
@@ -7877,11 +7895,11 @@ if (auth) {
         p.historico = Array.isArray(p.historico) ? p.historico : [];
         p.historico.push({ status: 'Encerrado para novo protocolo', data: new Date().toISOString() });
         criarProtocoloAnimal({ id: 'pv_' + Date.now(), animal: p.animal, animalId: p.animalId || '', dataProtocolo, dataInseminacao, boi, racaBoi, dataToque, status: 'protocolada', historico: [{ status: 'Criado a partir de novo protocolo', protocoloAnterior: id, data: new Date().toISOString() }] });
-        await salvarDB(); renderVacasProtocoladas(); renderCalendario(); renderAlertasInteligentesHome();
+        await salvarDBConfirmado({}, 'Não foi possível salvar o novo protocolo na nuvem. Verifique a conexão e tente novamente.'); renderVacasProtocoladas(); renderCalendario(); renderAlertasInteligentesHome();
         alert('Novo protocolo salvo com sucesso.');
       } catch (erro) {
         console.error('Erro ao criar novo protocolo:', erro);
-        alert('Erro ao salvar novo protocolo.');
+        if (!erro?.alertaJaExibido) alert('Erro ao salvar novo protocolo.');
       } finally {
         liberarBotaoAcao(btn);
       }
@@ -8063,7 +8081,7 @@ if (auth) {
         } catch (erroDelete) {
           console.warn('Não foi possível remover o documento arquivado separado agora:', erroDelete);
         }
-        await salvarDB({ sincronizarAnimais: false });
+        await salvarDBConfirmado({ sincronizarAnimais: false }, 'Não foi possível excluir o animal arquivado na nuvem. Verifique a conexão e tente novamente.');
         renderArquivados();
         alert('Animal arquivado excluído definitivamente.');
       } finally {
@@ -8151,7 +8169,7 @@ if (auth) {
         const dados = JSON.parse(texto);
         DB = normalizarDB(dados);
         DB.ultimoBackup = new Date().toISOString();
-        await salvarDB();
+        await salvarDBConfirmado({}, 'Não foi possível confirmar a importação do backup na nuvem. Verifique a conexão e tente novamente.');
         renderTudo();
         fecharModal('modal-backup');
         alert('Backup importado com sucesso.');
@@ -8510,14 +8528,16 @@ if (auth) {
         const val = parseFloat(document.getElementById('preco-litro-leite')?.value) || 0;
         if (val <= 0) { alert('Informe um valor válido para o preço do litro.'); return; }
         DB.precoLitroLeite = val;
-        const ok = await salvarDB({ sincronizarAnimais: false });
-        if (!ok) { alert('Não foi possível salvar o preço na nuvem. Verifique a conexão.'); return; }
+        await salvarDBConfirmado({ sincronizarAnimais: false }, 'Não foi possível salvar o preço na nuvem. Verifique a conexão.');
         const status = document.getElementById('preco-litro-status');
         if (status) {
           status.textContent = ' Preço salvo: R$ ' + val.toFixed(2).replace('.', ',') + '/L — todos os cálculos foram atualizados.';
           setTimeout(() => { if (status) status.textContent = ''; }, 5000);
         }
         renderDespesas();
+      } catch (e) {
+        DB.precoLitroLeite = precoAntes;
+        if (!e?.alertaJaExibido) alert(e?.message || 'Erro ao salvar preço do litro.');
       } finally {
         liberarBotaoAcao(btn);
       }
@@ -8558,8 +8578,7 @@ if (auth) {
         const litrosDia = parseFloat(document.getElementById('bezerros-litros-dia')?.value) || 0;
         const quantidadeBezerros = parseFloat(document.getElementById('bezerros-quantidade')?.value) || 0;
         DB.leiteBezerros = { litrosDia, quantidadeBezerros };
-        const ok = await salvarDB({ sincronizarAnimais: false });
-        if (!ok) { alert('Não foi possível salvar na nuvem. Verifique a conexão.'); return; }
+        await salvarDBConfirmado({ sincronizarAnimais: false }, 'Não foi possível salvar na nuvem. Verifique a conexão.');
         const status = document.getElementById('bezerros-status');
         if (status) {
           status.textContent = ' Salvo! ' + litrosDia.toFixed(1).replace('.', ',') + ' L/dia para bezerros registrados.';
@@ -8610,8 +8629,7 @@ if (auth) {
         if (!nome) { alert('Informe o nome do produto.'); return; }
         if (valorMensal <= 0) { alert('Informe o valor mensal do produto.'); return; }
         getProdutosLavagem().push({ id: 'lav_' + Date.now(), nome, valorMensal, criadoEm: new Date().toISOString() });
-        const ok = await salvarDB({ sincronizarAnimais: false });
-        if (!ok) { alert('Não foi possível salvar na nuvem. Verifique a conexão.'); return; }
+        await salvarDBConfirmado({ sincronizarAnimais: false }, 'Não foi possível salvar na nuvem. Verifique a conexão.');
         const nomeEl = document.getElementById('lavagem-produto-nome');
         const valorEl = document.getElementById('lavagem-produto-valor');
         if (nomeEl) nomeEl.value = '';
@@ -8636,7 +8654,7 @@ if (auth) {
         const item = lista[indice];
         if (!confirm('Deseja excluir o produto "' + (item.nome || 'produto') + '"?')) return;
         lista.splice(indice, 1);
-        await salvarDB({ sincronizarAnimais: false });
+        await salvarDBConfirmado({ sincronizarAnimais: false }, 'Não foi possível excluir o produto na nuvem. Verifique a conexão.');
         renderListaProdutosLavagem();
         alert('Produto excluído com sucesso.');
       } finally {
@@ -8695,8 +8713,7 @@ if (auth) {
         if (!novos.length) { alert('Preencha pelo menos um gasto com nome e valor.'); return; }
         const lista = getOutrosGastosLeite();
         novos.forEach(item => lista.push(item));
-        const ok = await salvarDB({ sincronizarAnimais: false });
-        if (!ok) { alert('Não foi possível salvar na nuvem. Verifique a conexão.'); return; }
+        await salvarDBConfirmado({ sincronizarAnimais: false }, 'Não foi possível salvar na nuvem. Verifique a conexão.');
         for (let i = 1; i <= 3; i++) {
           const nomeEl = document.getElementById('outro-gasto-nome-' + i);
           const valorEl = document.getElementById('outro-gasto-valor-' + i);
@@ -8725,7 +8742,7 @@ if (auth) {
         const item = lista[indice];
         if (!confirm('Deseja excluir o gasto "' + (item.nome || 'outro gasto') + '"?')) return;
         lista.splice(indice, 1);
-        await salvarDB({ sincronizarAnimais: false });
+        await salvarDBConfirmado({ sincronizarAnimais: false }, 'Não foi possível excluir o gasto na nuvem. Verifique a conexão.');
         renderListaOutrosGastosLeite();
         try { renderRelatorioFinanceiro(); } catch(e) {}
         alert('Gasto excluído com sucesso.');
@@ -8971,7 +8988,7 @@ if (auth) {
       else DB.lotesCorte.push(lote);
       try {
         if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
-        await salvarDB();
+        await salvarDBConfirmado({}, 'Não foi possível salvar o lote na nuvem. Verifique a conexão e tente novamente.');
         document.getElementById('form-lote-corte').classList.add('hidden');
         document.getElementById('lc-id').value = '';
         renderLotesCorte();
@@ -8987,7 +9004,7 @@ if (auth) {
       DB.lotesCorte = DB.lotesCorte.filter(l => l.id !== id);
       try {
         if (btn) { btn.disabled = true; btn.textContent = 'Excluindo...'; }
-        await salvarDB();
+        await salvarDBConfirmado({}, 'Não foi possível excluir o lote na nuvem. Verifique a conexão e tente novamente.');
         renderLotesCorte();
         mostrarMensagemCorte('Lote excluído. ');
       } catch(e) { alert('Erro ao excluir: ' + e.message); }
@@ -9260,7 +9277,7 @@ if (auth) {
 
       try {
         if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
-        await salvarDB();
+        await salvarDBConfirmado({}, 'Não foi possível salvar a pesagem na nuvem. Verifique a conexão e tente novamente.');
         document.getElementById('form-pesagem-corte').classList.add('hidden');
         renderPesagensCorte();
         renderRebanho();
@@ -9274,7 +9291,7 @@ if (auth) {
       DB.pesagensCorte = DB.pesagensCorte.filter(p => p.id !== id);
       try {
         if (btn) { btn.disabled = true; }
-        await salvarDB();
+        await salvarDBConfirmado({}, 'Não foi possível excluir a pesagem na nuvem. Verifique a conexão e tente novamente.');
         renderPesagensCorte();
         mostrarMensagemCorte('Pesagem excluída. ');
       } catch(e) { alert('Erro: ' + e.message); }
@@ -9425,7 +9442,7 @@ if (auth) {
       }
       try {
         if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
-        await salvarDB();
+        await salvarDBConfirmado({}, 'Não foi possível salvar o registro sanitário na nuvem. Verifique a conexão e tente novamente.');
         document.getElementById('form-sanitario-historico').classList.add('hidden');
         renderVacinasMedicamentosCorte();
         renderFinanceiroCorte();
@@ -9453,7 +9470,7 @@ if (auth) {
       }
       try {
         if (btn) { btn.disabled = true; }
-        await salvarDB();
+        await salvarDBConfirmado({}, 'Não foi possível excluir o registro sanitário na nuvem. Verifique a conexão e tente novamente.');
         renderVacinasMedicamentosCorte();
         renderFinanceiroCorte();
         mostrarMensagemCorte('Registro excluído. ');
@@ -9628,7 +9645,7 @@ if (auth) {
       }
       try {
         if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
-        await salvarDB();
+        await salvarDBConfirmado({}, 'Não foi possível salvar o trato na nuvem. Verifique a conexão e tente novamente.');
         renderTratoCorte();
         renderLotesCorte();
         renderFinanceiroCorte();
@@ -9644,7 +9661,7 @@ if (auth) {
       if (Array.isArray(DB.financeiroCorte)) DB.financeiroCorte = DB.financeiroCorte.filter(f => !(f.origem === 'trato' && f.tratoId === id));
       try {
         if (btn) { btn.disabled = true; btn.textContent = 'Excluindo...'; }
-        await salvarDB();
+        await salvarDBConfirmado({}, 'Não foi possível excluir o trato na nuvem. Verifique a conexão e tente novamente.');
         renderTratoCorte();
         renderLotesCorte();
         renderFinanceiroCorte();
@@ -9773,7 +9790,7 @@ if (auth) {
       else DB.financeiroCorte.push(lanc);
       try {
         if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
-        await salvarDB();
+        await salvarDBConfirmado({}, 'Não foi possível salvar o lançamento financeiro na nuvem. Verifique a conexão e tente novamente.');
         fecharFormFinanceiroCorte();
         renderFinanceiroCorte();
         mostrarMensagemCorte(lanc.tipo==='receita' ? 'Receita registrada! ' : 'Despesa registrada! ');
@@ -9786,7 +9803,7 @@ if (auth) {
       DB.financeiroCorte = DB.financeiroCorte.filter(f => f.id !== id);
       try {
         if (btn) { btn.disabled = true; }
-        await salvarDB();
+        await salvarDBConfirmado({}, 'Não foi possível excluir o lançamento financeiro na nuvem. Verifique a conexão e tente novamente.');
         renderFinanceiroCorte();
         mostrarMensagemCorte('Lançamento excluído. ');
       } catch(e) { alert('Erro: '+e.message); }
@@ -10335,9 +10352,10 @@ if (auth) {
       const cadastro = document.getElementById('tela-cadastro');
       const prelogin = document.getElementById('prelogin-screen');
       if (app && app.style.display !== 'block') {
-        if (login) login.style.display = 'none';
+        if (login) login.style.display = 'flex';
         if (cadastro) cadastro.style.display = 'none';
-        if (prelogin) prelogin.style.display = 'flex';
+        if (prelogin) prelogin.style.display = 'none';
+        setTimeout(() => document.getElementById('login-usuario')?.focus(), 50);
       }
     });
   </script>

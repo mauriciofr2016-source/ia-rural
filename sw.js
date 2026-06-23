@@ -1,4 +1,4 @@
-const CACHE_NAME = 'agromilk-cache-v16-datas-botoes';
+const CACHE_NAME = 'agromilk-cache-v17-login-home-salvamentos';
 const APP_ASSETS = [
   './',
   './index.html',
