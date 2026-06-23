@@ -28,13 +28,8 @@
           return false;
         }
         btn.dataset.processing = '1';
-        const original = btn.innerHTML;
-        btn.disabled = true;
-        if (!texto.includes('salvando')) btn.innerHTML = 'Processando...';
         setTimeout(() => {
           btn.dataset.processing = '0';
-          btn.disabled = false;
-          btn.innerHTML = original;
         }, 2500);
       }, true);
     }
@@ -4513,6 +4508,10 @@ if (auth) {
         const arquivadosSeparados = await carregarColecaoAnimais('arquivados');
         const protocolosSeparados = await carregarColecaoProtocolosVacas();
 
+        if (opcoes.segundoPlano && assinaturaDadosMemoria && assinaturaDadosMemoria !== assinaturaAntes) {
+          dadosLocais = mesclarDBSeguro(carregarLocalPorUsuario(usuarioLogado || ''), DB);
+        }
+
         const nuvemNormalizada = {
           ...appDataNuvem,
           animais: animaisSeparados.length ? animaisSeparados : (appDataNuvem.animais || []),
@@ -6443,7 +6442,7 @@ if (auth) {
     }
 
     async function salvarPesagemLeite(btn) {
-      if (salvandoPesagemLeite || (btn && btn.disabled)) return;
+      if (salvandoPesagemLeite || (btn && btn.dataset.processando === '1')) return;
       salvandoPesagemLeite = true;
       const travou = travarBotaoAcao(btn, 'Salvando...');
       if (travou === false) {
@@ -6725,6 +6724,8 @@ if (auth) {
         alert(mensagemErro);
         throw erro;
       }
+      assinaturaDadosMemoria = assinaturaDBLeve(DB);
+      marcarDadosMemoriaAlterados();
       return true;
     }
 
