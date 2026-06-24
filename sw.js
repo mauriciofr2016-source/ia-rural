@@ -1,4 +1,4 @@
-const CACHE_NAME = 'agromilk-cache-v19-pesagem-click-save';
+const CACHE_NAME = 'agromilk-cache-v20-resumo-financeiro-home';
 const APP_ASSETS = [
   './',
   './index.html',
