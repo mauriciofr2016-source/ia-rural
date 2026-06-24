@@ -1,4 +1,4 @@
-const CACHE_NAME = 'agromilk-cache-v20-resumo-financeiro-home';
+const CACHE_NAME = 'agromilk-cache-v21-estoque-silo-continuo';
 const APP_ASSETS = [
   './',
   './index.html',

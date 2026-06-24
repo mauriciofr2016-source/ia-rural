@@ -930,7 +930,7 @@
     .vet-card h4 {
       font-size: 14px;
       margin-bottom: 6px;
-      color: #ffffff;
+      color: var(--text);
     }
 
     .event-item p,
@@ -4063,15 +4063,15 @@ if (auth) {
           });
         }
         const resumoProdutos = calcularResumoProdutosLeiteEstoque();
-        if (resumoProdutos.diasRestantes !== null && resumoProdutos.diasRestantes <= 10) {
+        resumoProdutos.ativos.filter(item => item.diasRestantes !== null && item.diasRestantes <= 10).forEach(item => {
           alertas.push({
             tipo: 'Estoque',
-            titulo: 'Silo/produtos perto de acabar',
-            detalhe: `${resumoProdutos.diasRestantes <= 0 ? 'Estoque crítico' : 'Restam cerca de ' + resumoProdutos.diasRestantes + ' dia(s)'}`,
-            nivel: resumoProdutos.diasRestantes <= 2 ? 'danger' : 'warn',
-            ordem: resumoProdutos.diasRestantes
+            titulo: `${item.produto || 'Silo'} perto de acabar`,
+            detalhe: `${item.diasRestantes <= 0 ? 'Estoque crítico' : 'Restam cerca de ' + item.diasRestantes + ' dia(s)'}`,
+            nivel: item.diasRestantes <= 2 ? 'danger' : 'warn',
+            ordem: item.diasRestantes
           });
-        }
+        });
       } catch(e) {}
 
       return alertas
@@ -7086,44 +7086,79 @@ if (auth) {
       return DB.entregasProdutosLeite;
     }
 
+    function normalizarChaveProdutoLeite(nome) {
+      return String(nome || 'produto').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') || 'produto';
+    }
+
     function calcularResumoProdutosLeiteEstoque() {
       const entregas = getEntregasProdutosLeite();
       const hoje = new Date();
       hoje.setHours(12, 0, 0, 0);
       const msDia = 24 * 60 * 60 * 1000;
 
-      const itens = entregas.map(e => {
-        const quantidadeKg = parseFloat(e.quantidadeKg) || 0;
-        const valorTotal = parseFloat(e.valorTotal) || 0;
-        const valorKg = parseFloat(e.valorKg) || (quantidadeKg > 0 && valorTotal > 0 ? valorTotal / quantidadeKg : 0);
-        const consumoDia = parseFloat(e.consumoTotalDia) || 0;
-        let diasDecorridos = 0;
-        if (e.data) {
-          const dataEntrega = new Date(e.data + 'T12:00:00');
-          if (!isNaN(dataEntrega.getTime())) {
-            diasDecorridos = Math.max(0, Math.floor((hoje - dataEntrega) / msDia));
-          }
-        }
-        const consumidoKg = consumoDia > 0 ? Math.min(quantidadeKg, diasDecorridos * consumoDia) : 0;
-        const estoqueKg = Math.max(0, quantidadeKg - consumidoKg);
-        const ativo = estoqueKg > 0.0001 && consumoDia > 0;
-        const diasRestantes = ativo ? Math.floor(estoqueKg / consumoDia) : null;
-        const dataFim = diasRestantes !== null ? addDias(new Date(hoje), diasRestantes) : null;
-        return {
-          ...e,
-          quantidadeKg,
-          valorTotal,
-          valorKg,
-          consumoDia,
-          consumidoKg,
-          estoqueKg,
-          ativo,
-          diasRestantes,
-          dataFim,
-          custoDia: ativo ? consumoDia * valorKg : 0,
-          custoMes: ativo ? consumoDia * valorKg * 30 : 0
-        };
+      const itensPorId = new Map();
+      const entregasPorProduto = new Map();
+      entregas.forEach(e => {
+        const chave = normalizarChaveProdutoLeite(e.produto);
+        if (!entregasPorProduto.has(chave)) entregasPorProduto.set(chave, []);
+        entregasPorProduto.get(chave).push(e);
       });
+
+      entregasPorProduto.forEach(lista => {
+        const ordenadas = lista.slice().sort((a, b) => {
+          const dataA = new Date((a.data || '9999-12-31') + 'T12:00:00').getTime();
+          const dataB = new Date((b.data || '9999-12-31') + 'T12:00:00').getTime();
+          return dataA - dataB || String(a.criadoEm || '').localeCompare(String(b.criadoEm || ''));
+        });
+        let estoqueAtualKg = 0;
+        let consumoDiaAtivo = 0;
+        let dataReferencia = null;
+        let ultimaEntrega = null;
+
+        ordenadas.forEach(e => {
+          const dataEntrega = e.data ? new Date(e.data + 'T12:00:00') : null;
+          if (dataReferencia && dataEntrega && !isNaN(dataEntrega.getTime())) {
+            const dias = Math.max(0, Math.floor((dataEntrega - dataReferencia) / msDia));
+            estoqueAtualKg = Math.max(0, estoqueAtualKg - (dias * consumoDiaAtivo));
+          }
+          const quantidadeKg = parseFloat(e.quantidadeKg) || 0;
+          const modoEstoque = e.modoEstoque === 'reiniciar' ? 'reiniciar' : 'somar';
+          estoqueAtualKg = modoEstoque === 'reiniciar' ? quantidadeKg : estoqueAtualKg + quantidadeKg;
+          const consumoInformado = parseFloat(e.consumoTotalDia) || 0;
+          if (consumoInformado > 0) consumoDiaAtivo = consumoInformado;
+          if (dataEntrega && !isNaN(dataEntrega.getTime())) dataReferencia = dataEntrega;
+          ultimaEntrega = e;
+        });
+
+        if (dataReferencia) {
+          const diasAteHoje = Math.max(0, Math.floor((hoje - dataReferencia) / msDia));
+          estoqueAtualKg = Math.max(0, estoqueAtualKg - (diasAteHoje * consumoDiaAtivo));
+        }
+        if (!ultimaEntrega) return;
+
+        const valorKgAtual = parseFloat(ultimaEntrega.valorKg) || 0;
+        const ativo = estoqueAtualKg > 0.0001 && consumoDiaAtivo > 0;
+        const diasRestantes = ativo ? Math.floor(estoqueAtualKg / consumoDiaAtivo) : null;
+        const dataFim = diasRestantes !== null ? addDias(new Date(hoje), diasRestantes) : null;
+        ordenadas.forEach(e => {
+          const ehUltima = e.id === ultimaEntrega.id;
+          itensPorId.set(e.id, {
+            ...e,
+            quantidadeKg: parseFloat(e.quantidadeKg) || 0,
+            valorTotal: parseFloat(e.valorTotal) || 0,
+            valorKg: parseFloat(e.valorKg) || 0,
+            consumoDia: ehUltima ? consumoDiaAtivo : (parseFloat(e.consumoTotalDia) || 0),
+            estoqueKg: ehUltima ? estoqueAtualKg : 0,
+            ativo: ehUltima && ativo,
+            diasRestantes: ehUltima ? diasRestantes : null,
+            dataFim: ehUltima ? dataFim : null,
+            custoDia: ehUltima && ativo ? consumoDiaAtivo * valorKgAtual : 0,
+            custoMes: ehUltima && ativo ? consumoDiaAtivo * valorKgAtual * 30 : 0
+          });
+        });
+      });
+
+      const itens = entregas.map(e => itensPorId.get(e.id)).filter(Boolean);
 
       const ativos = itens.filter(i => i.ativo);
       const totalKg = itens.reduce((s, i) => s + i.quantidadeKg, 0);
@@ -7133,7 +7168,7 @@ if (auth) {
       const custoDia = ativos.reduce((s, i) => s + i.custoDia, 0);
       const diasRestantes = consumoDia > 0 ? Math.floor(estoqueKg / consumoDia) : null;
       const dataFim = diasRestantes !== null ? addDias(new Date(hoje), diasRestantes) : null;
-      const valorKgMedio = totalKg > 0 ? valorTotal / totalKg : 0;
+      const valorKgMedio = estoqueKg > 0 ? ativos.reduce((s, i) => s + (i.estoqueKg * i.valorKg), 0) / estoqueKg : 0;
 
       return {
         itens,
@@ -7236,6 +7271,20 @@ if (auth) {
         const consumoTotalDia = somaIndividual > 0 ? somaIndividual : consumoTotalDiaInformado;
         if (consumoTotalDia <= 0) return alert('Informe a quantidade total usada por dia ou registre a quantidade por animal.');
 
+        const resumoAtual = calcularResumoProdutosLeiteEstoque();
+        const entregaAtiva = resumoAtual.ativos.find(e => normalizarChaveProdutoLeite(e.produto) === normalizarChaveProdutoLeite(produto));
+        let modoEstoque = 'reiniciar';
+        if (entregaAtiva) {
+          const acrescentar = confirm(`Já existe um estoque estimado de ${entregaAtiva.estoqueKg.toFixed(1).replace('.', ',')} kg de ${produto}.\n\nOK: acrescentar esta entrega ao estoque atual.\nCancelar: escolher reiniciar o estoque com esta nova entrega.`);
+          if (acrescentar) {
+            modoEstoque = 'somar';
+          } else if (confirm(`Reiniciar o estoque de ${produto} com esta entrega?\n\nOK: reiniciar com a nova quantidade.\nCancelar: voltar sem salvar.`)) {
+            modoEstoque = 'reiniciar';
+          } else {
+            return;
+          }
+        }
+
         getEntregasProdutosLeite().push({
           id: 'prod_leite_' + Date.now(),
           data,
@@ -7245,6 +7294,7 @@ if (auth) {
           valorKg: quantidadeKg > 0 ? valorTotal / quantidadeKg : 0,
           consumoTotalDia,
           consumoPorAnimal,
+          modoEstoque,
           criadoEm: new Date().toISOString()
         });
 
@@ -7291,7 +7341,7 @@ if (auth) {
     }
 
     function obterConsumoProdutosLeiteAnimal(animalId) {
-      const entregas = getEntregasProdutosLeite();
+      const entregas = calcularResumoProdutosLeiteEstoque().ativos;
       const itens = [];
       entregas.forEach(e => {
         const valorKg = parseFloat(e.valorKg) || 0;
@@ -7352,6 +7402,7 @@ if (auth) {
           : `<p>Consumo lançado como total diário. Ele entra nos totais do produto, mas não é distribuído no Meu Rebanho porque nenhum animal foi preenchido individualmente.</p>`;
         return `
           <div class="delivery-item">
+            <p>Data da entrega: <strong>${formatarDataBR(e.data)}</strong> · Estoque: <strong>${e.modoEstoque === 'reiniciar' ? 'reiniciado com esta entrega' : 'acrescentado ao saldo anterior'}</strong></p>
             <h4>${escapeHtml(e.produto || 'Produto')} · ${formatarDataBR(e.data)}</h4>
             <p>Total entregue: <strong>${(parseFloat(e.quantidadeKg)||0).toFixed(1).replace('.', ',')} kg</strong> · Valor: <strong>R$ ${formatCurrencyBR(e.valorTotal || 0)}</strong></p>
             <p>Valor por kg: <strong>R$ ${formatCurrencyBR(valorKg)}</strong></p>
@@ -8187,7 +8238,9 @@ if (auth) {
         const diasRacao = consumo > 0 ? Math.floor(estoque / consumo) : null;
         if (diasRacao !== null && diasRacao <= 10) grupos.estoque.push({ titulo: 'Ração perto de acabar', sub: 'Restam cerca de ' + diasRacao + ' dia(s) pelo consumo atual.', data: addDias(new Date(), Math.max(diasRacao, 0)), prioridade: diasRacao <= 2 ? 'danger' : 'warn' });
         const resumo = calcularResumoProdutosLeiteEstoque();
-        if (resumo.diasRestantes !== null && resumo.diasRestantes <= 10) grupos.estoque.push({ titulo: 'Silo/produtos perto de acabar', sub: 'Restam cerca de ' + resumo.diasRestantes + ' dia(s).', data: addDias(new Date(), Math.max(resumo.diasRestantes, 0)), prioridade: resumo.diasRestantes <= 2 ? 'danger' : 'warn' });
+        resumo.ativos.filter(item => item.diasRestantes !== null && item.diasRestantes <= 10).forEach(item => {
+          grupos.estoque.push({ titulo: (item.produto || 'Silo') + ' perto de acabar', sub: 'Restam cerca de ' + item.diasRestantes + ' dia(s).', data: addDias(new Date(), Math.max(item.diasRestantes, 0)), prioridade: item.diasRestantes <= 2 ? 'danger' : 'warn' });
+        });
       } catch(e) {}
 
       const total = Object.values(grupos).reduce((s, arr) => s + arr.length, 0);
